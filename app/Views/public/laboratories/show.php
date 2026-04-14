@@ -1,0 +1,886 @@
+<?= $this->extend('layouts/main_user') ?>
+<?= $this->section('content') ?>
+
+<?php
+$picName = trim((string)($lab['pic_name'] ?? ''));
+$picEmail = trim((string)($lab['pic_email'] ?? ''));
+$picPhone = trim((string)($lab['pic_phone'] ?? ''));
+
+if ($picName === '') {
+    $picName = 'null';
+}
+if ($picEmail === '') {
+    $picEmail = 'null';
+}
+if ($picPhone === '') {
+    $picPhone = 'null';
+}
+?>
+
+<!-- ============================================================
+     LABORATORY DETAIL PAGE CONTENT
+     ============================================================ -->
+<div class="lab-detail-page">
+    <div class="container">
+        
+        <!-- Breadcrumb -->
+        <div class="lab-breadcrumb">
+            <a href="<?= site_url('/laboratories') ?>" class="back-link">
+                <i class="bi bi-arrow-left"></i>
+                Back to Laboratory Directory
+            </a>
+        </div>
+
+        <!-- Lab Header -->
+        <div class="lab-header-card">
+            <div class="lab-header-content">
+                <div class="lab-header-info">
+                    <h1 class="lab-title"><?= esc($lab['name']) ?></h1>
+                    
+                    <?php if (!empty($lab['room'])): ?>
+                        <div class="lab-room">
+                            <i class="bi bi-door-open"></i>
+                            Room <?= esc($lab['room']) ?>
+                        </div>
+                    <?php endif; ?>
+                    
+                    <p class="lab-description">
+                        Select equipment, check real-time availability, and submit your booking request 
+                        for this state-of-the-art laboratory facility.
+                    </p>
+                </div>
+                
+                <!-- Lab Image -->
+                <?php 
+                $labImagePath = $lab['image'] ?? '';
+                $labImageExists = false;
+                if (!empty($labImagePath)) {
+                    $fullImagePath = WRITEPATH . str_replace('uploads/', 'uploads/', $labImagePath);
+                    $labImageExists = file_exists($fullImagePath);
+                }
+                ?>
+                
+                <?php if (!empty($lab['image'])): ?>
+                    <div class="lab-header-image">
+                        <img src="<?= base_url($lab['image']) ?>" 
+                             alt="<?= esc($lab['name']) ?>"
+                             onerror="this.onerror=null; this.src='<?= base_url('images/assets/placeholder_asset.png') ?>';">
+                    </div>
+                <?php else: ?>
+                    <!-- Placeholder when no image exists -->
+                    <div class="lab-header-image">
+                        <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #e0f2fe, #eff6ff); border-radius: 16px; display: flex; align-items: center; justify-content: center; color: #3b82f6; font-size: 3rem;">
+                            <i class="bi bi-building"></i>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Person in Charge Card -->
+            <div class="col-lg-4">
+                <div class="pic-card">
+                    <div class="pic-content">
+                        <!-- PIC Image -->
+                        <?php 
+                        $picImagePath = $lab['pic_image'] ?? '';
+                        $picImageExists = false;
+                        if (!empty($picImagePath)) {
+                            $fullPicPath = WRITEPATH . str_replace('uploads/', 'uploads/', $picImagePath);
+                            $picImageExists = file_exists($fullPicPath);
+                        }
+                        ?>
+                        
+                        <div class="pic-avatar">
+                            <?php if (!empty($lab['pic_image'])): ?>
+                                <img src="<?= base_url($lab['pic_image']) ?>" 
+                                     alt="<?= esc($picName) ?>"
+                                     onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                <i class="bi bi-person-gear" style="display: none; font-size: 2.5rem; color: #3b82f6;"></i>
+                            <?php else: ?>
+                                <i class="bi bi-person-gear"></i>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <div class="pic-info">
+                            <div class="pic-label">Person in Charge</div>
+                            <div class="pic-name"><?= esc($picName) ?></div>
+                            
+                            <div class="pic-contact">
+                                <div class="contact-item">
+                                    <i class="bi bi-envelope"></i>
+                                    <?php if ($picEmail !== 'null'): ?>
+                                        <a href="mailto:<?= esc($picEmail) ?>"><?= esc($picEmail) ?></a>
+                                    <?php else: ?>
+                                        <?= esc($picEmail) ?>
+                                    <?php endif; ?>
+                                </div>
+                                
+                                <div class="contact-item">
+                                    <i class="bi bi-telephone"></i>
+                                    <?= esc($picPhone) ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="pic-note">
+                        <i class="bi bi-info-circle"></i>
+                        External users and guests must contact the PIC to arrange bookings.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Equipment Section -->
+            <div class="col-lg-8">
+                <div class="equipment-card">
+                    <div class="equipment-header">
+                        <h2 class="equipment-title">
+                            <i class="bi bi-tools"></i>
+                            Available Equipment
+                        </h2>
+                        <span class="equipment-badge">
+                            <?= count($assets) ?> Equipment Available
+                        </span>
+                    </div>
+                    
+                    <?php if (empty($assets)): ?>
+                        <div class="text-center py-5">
+                            <i class="bi bi-tools text-primary fs-1 mb-3"></i>
+                            <h4 class="fw-semibold text-primary mb-2">No Equipment Configured</h4>
+                            <p class="text-muted">This laboratory does not have any equipment listed yet.</p>
+                        </div>
+                    <?php else: ?>
+                        <div class="table-responsive">
+                            <table class="equipment-table">
+                                <thead>
+                                    <tr>
+                                        <th class="equipment-checkbox"></th>
+                                        <th>Equipment Details</th>
+                                        <th class="text-center">Status</th>
+                                        <th class="text-center">Quantity</th>
+                                        <th class="text-center">Request Quantity</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php 
+                                    $unavailableStatuses = ['maintenance', 'faulty'];
+                                    $availableCount = 0;
+                                    ?>
+                                    <?php foreach ($assets as $a): ?>
+                                        <?php 
+                                        $availableUnits = max((int) ($a['quantity'] ?? 0), 0);
+                                        $totalUnits = max((int) ($a['total_quantity'] ?? 0), $availableUnits);
+                                        $maintenanceUnits = max($totalUnits - $availableUnits, 0);
+                                        $isAvailable = ($availableUnits > 0);
+                                        if ($isAvailable) $availableCount++;
+                                        
+                                        $statusClass = '';
+                                        $statusText = $maintenanceUnits > 0 && $availableUnits > 0 ? 'Partially Available' : ucfirst($a['status']);
+                                        switch($a['status']) {
+                                            case 'available':
+                                                $statusClass = 'status-available';
+                                                break;
+                                            case 'maintenance':
+                                                $statusClass = 'status-maintenance';
+                                                break;
+                                            case 'faulty':
+                                                $statusClass = 'status-faulty';
+                                                break;
+                                            default:
+                                                $statusClass = 'status-unavailable';
+                                        }
+                                        ?>
+                                        <tr data-asset-id="<?= esc($a['id']) ?>" 
+                                            data-status="<?= esc(strtolower($maintenanceUnits > 0 && $availableUnits > 0 ? 'partially available' : $a['status'])) ?>"
+                                            data-quantity="<?= esc($availableUnits) ?>"
+                                            class="<?= !$isAvailable ? 'text-muted' : '' ?>">
+                                            <td class="equipment-checkbox" data-label="Select">
+                                                <input type="checkbox"
+                                                       class="form-check-input asset-checkbox"
+                                                       data-asset-id="<?= esc($a['id']) ?>"
+                                                       <?= !$isAvailable ? 'disabled' : '' ?>
+                                                       <?= !$isAvailable ? 'title=\"Equipment is not available for booking\"' : '' ?>>
+                                            </td>
+                                            <td data-label="Equipment">
+                                                <div class="equipment-name"><?= esc($a['name']) ?></div>
+                                                <?php if (!empty($a['description'])): ?>
+                                                    <div class="equipment-desc"><?= esc($a['description']) ?></div>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td class="text-center" data-label="Status">
+                                                <span class="equipment-status <?= $statusClass ?>">
+                                                    <?= $statusText ?>
+                                                </span>
+                                            </td>
+                                            <td class="text-center" data-label="Quantity">
+                                                <span class="quantity-badge <?= !$isAvailable ? 'unavailable' : '' ?>">
+                                                    <?= esc($availableUnits) ?> available / <?= esc($totalUnits) ?> total
+                                                </span>
+                                            </td>
+                                            <td class="text-center" data-label="Request Qty">
+                                                <input type="number"
+                                                       class="form-control quantity-input asset-qty"
+                                                       data-asset-id="<?= esc($a['id']) ?>"
+                                                       value="<?= $isAvailable ? '1' : '0' ?>"
+                                                       min="0"
+                                                       max="<?= $isAvailable ? esc($availableUnits) : '0' ?>"
+                                                       <?= !$isAvailable ? 'disabled' : '' ?>
+                                                       <?= !$isAvailable ? 'title=\"Cannot request unavailable equipment\"' : '' ?>>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                            
+                            <!-- Equipment availability summary -->
+                            <div class="mt-4 pt-4 border-top">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-center gap-2 mb-2">
+                                            <div class="status-available p-2 rounded"></div>
+                                            <span class="small">Available for booking</span>
+                                            <span class="badge bg-primary ms-auto"><?= $availableCount ?></span>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2 mb-2">
+                                            <div class="status-maintenance p-2 rounded"></div>
+                                            <span class="small">Under maintenance</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-center gap-2 mb-2">
+                                            <div class="status-faulty p-2 rounded"></div>
+                                            <span class="small">Faulty/Not working</span>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="status-unavailable p-2 rounded"></div>
+                                            <span class="small">Other status</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+
+        <!-- Booking CTA Card -->
+        <div class="booking-card">
+            <h2 class="booking-title">
+                <i class="bi bi-calendar-check"></i>
+                <?php if ($bookingMode === 'uthm'): ?>
+                    Ready to Book?
+                <?php else: ?>
+                    How to Book This Laboratory
+                <?php endif; ?>
+            </h2>
+            
+            <p class="booking-description">
+                <?php if ($bookingMode === 'uthm'): ?>
+                    Select your required equipment above, check the calendar availability below, 
+                    then launch the booking wizard to complete your reservation request.
+                    <span class="text-danger fw-semibold d-block mt-1">Note: Only equipment marked as "Available" can be booked.</span>
+                <?php else: ?>
+                    You can browse equipment and view availability, but online booking is exclusively 
+                    available for UTHM users. External users should contact the Person in Charge.
+                <?php endif; ?>
+            </p>
+            
+            <div class="booking-alert">
+                <i class="bi bi-info-circle"></i>
+                <p>Availability is calculated based on your selected equipment and may vary between timeslots.</p>
+            </div>
+            
+            <?php if ($bookingMode === 'uthm'): ?>
+                <button id="openBookingWizardBtn"
+                        class="btn booking-btn"
+                        data-lab-id="<?= esc($lab['id']) ?>"
+                        disabled>
+                    <i class="bi bi-magic me-1"></i>
+                    Launch Booking Wizard (Select Equipment First)
+                </button>
+            <?php else: ?>
+                <button id="openBookingWizardBtn"
+                        class="btn booking-btn booking-btn-outline"
+                        type="button">
+                    <i class="bi bi-person-gear me-1"></i>
+                    Contact PIC for Booking
+                </button>
+            <?php endif; ?>
+        </div>
+
+        <!-- Calendar Section -->
+        <div class="calendar-card">
+            <div class="calendar-header">
+                <h2 class="calendar-title">
+                    <i class="bi bi-calendar3"></i>
+                    Laboratory Availability
+                </h2>
+            <div class="calendar-note">
+                Select equipment above to view real-time availability. Click on any date to see available timeslots.
+                <span class="d-block text-danger small mt-1">Note: Equipment can still be booked when some units remain available, even if other units are under maintenance.</span>
+            </div>
+        </div>
+            <div id="labCalendar"></div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Include booking modal (adapts to bookingMode inside) -->
+<?= $this->include('public/booking/booking_modal', [
+    'lab'          => $lab,
+    'faculties'    => $faculties,
+    'bookingMode'  => $bookingMode,
+    'userProfile'  => $userProfile ?? null
+]) ?>
+
+<!-- FULLCALENDAR -->
+<link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const LAB_ID      = <?= (int) $lab['id'] ?>;
+    const BOOKING_MODE = "<?= esc($bookingMode) ?>";
+
+    const calendarEl       = document.getElementById("labCalendar");
+    const assetCheckboxes  = document.querySelectorAll(".asset-checkbox");
+    const openWizardBtn    = document.getElementById("openBookingWizardBtn");
+    const hiddenAssetField = document.getElementById("asset_selection_modal");
+    const hiddenLabIdInput = document.getElementById("labIdInput");
+    const todayDate = new Date();
+    todayDate.setHours(0, 0, 0, 0);
+
+    // -------------------------------
+    // Check if equipment is available based on status
+    // -------------------------------
+    function isEquipmentAvailable(assetId) {
+        const row = document.querySelector(`tr[data-asset-id="${assetId}"]`);
+        if (!row) return false;
+
+        const status = row.dataset.status || '';
+        const qty = parseInt(row.dataset.quantity || '0', 10);
+
+        return status !== 'maintenance' && status !== 'faulty' && qty > 0;
+    }
+
+    // -------------------------------
+    // Build asset selection string
+    // -------------------------------
+    function buildAssetSelectionString() {
+        const parts = [];
+        document.querySelectorAll(".asset-checkbox").forEach(cb => {
+            const id = cb.dataset.assetId;
+            
+            // Skip if equipment is not available
+            if (!isEquipmentAvailable(id)) return;
+            
+            // Skip if not checked
+            if (!cb.checked) return;
+            
+            const qtyInput = document.querySelector(`.asset-qty[data-asset-id="${id}"]`);
+            if (qtyInput && qtyInput.value) {
+                const qty = parseInt(qtyInput.value, 10);
+                if (!isNaN(qty) && qty > 0) {
+                    parts.push(`${id}:${qty}`);
+                }
+            }
+        });
+        return parts.join(",");
+    }
+
+    function syncAssetSelectionToModal() {
+        if (!hiddenAssetField) return;
+        hiddenAssetField.value = buildAssetSelectionString();
+        window.dispatchEvent(new Event("assetSelectionUpdated"));
+    }
+
+    // -------------------------------
+    // Get available assets count
+    // -------------------------------
+    function getAvailableAssetsCount() {
+        let count = 0;
+        document.querySelectorAll(".asset-checkbox").forEach(cb => {
+            const id = cb.dataset.assetId;
+            if (isEquipmentAvailable(id) && cb.checked) {
+                count++;
+            }
+        });
+        return count;
+    }
+
+    // -------------------------------
+    // Update booking button state
+    // -------------------------------
+    function updateBookingButton() {
+        if (!openWizardBtn) return;
+        
+        const availableCount = getAvailableAssetsCount();
+        
+        if (BOOKING_MODE === 'uthm') {
+            if (availableCount > 0) {
+                openWizardBtn.disabled = false;
+                openWizardBtn.innerHTML = '<i class="bi bi-magic me-1"></i>Launch Booking Wizard';
+            } else {
+                openWizardBtn.disabled = true;
+                openWizardBtn.innerHTML = '<i class="bi bi-magic me-1"></i>Launch Booking Wizard (Select Equipment First)';
+            }
+        }
+    }
+
+    // -------------------------------
+    // Enable/disable quantity inputs with animations
+    // -------------------------------
+    assetCheckboxes.forEach(cb => {
+        cb.addEventListener("change", () => {
+            const id = cb.dataset.assetId;
+            const qtyInput = document.querySelector(`.asset-qty[data-asset-id="${id}"]`);
+            const row = cb.closest('tr');
+            
+            if (!qtyInput || !row) return;
+
+            // Add visual feedback
+            if (cb.checked && isEquipmentAvailable(id)) {
+                row.style.transform = 'translateY(-2px)';
+                row.style.boxShadow = '0 4px 15px rgba(59, 130, 246, 0.1)';
+                qtyInput.disabled = false;
+                qtyInput.style.borderColor = '#3b82f6';
+                if (!qtyInput.value || parseInt(qtyInput.value, 10) < 1) {
+                    qtyInput.value = 1;
+                }
+            } else {
+                row.style.transform = '';
+                row.style.boxShadow = '';
+                qtyInput.disabled = true;
+                qtyInput.style.borderColor = '#e2e8f0';
+                if (!isEquipmentAvailable(id)) {
+                    qtyInput.value = 0;
+                }
+            }
+
+            setTimeout(() => {
+                row.style.transition = 'all 0.3s ease';
+            }, 10);
+
+            updateBookingButton();
+            refreshCalendar();
+            syncAssetSelectionToModal();
+        });
+    });
+
+    // Quantity input event listeners
+    document.querySelectorAll(".asset-qty").forEach(input => {
+        input.addEventListener("change", () => {
+            const assetId = input.dataset.assetId;
+            const row = document.querySelector(`tr[data-asset-id="${assetId}"]`);
+            
+            if (!isEquipmentAvailable(assetId)) {
+                input.value = 0;
+                return;
+            }
+            
+            if (parseInt(input.value, 10) < 1) input.value = 1;
+            const max = parseInt(input.max, 10);
+            if (parseInt(input.value, 10) > max) input.value = max;
+            
+            // Visual feedback
+            input.style.transform = 'scale(1.05)';
+            setTimeout(() => {
+                input.style.transform = '';
+                input.style.transition = 'transform 0.2s ease';
+            }, 200);
+            
+            refreshCalendar();
+            syncAssetSelectionToModal();
+        });
+        
+        input.addEventListener("input", () => {
+            const assetId = input.dataset.assetId;
+            if (!isEquipmentAvailable(assetId)) {
+                input.value = 0;
+            }
+        });
+    });
+
+    // -------------------------------
+    // FullCalendar setup with custom styling
+    // -------------------------------
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: "dayGridMonth",
+        height: "auto",
+        eventDisplay: "block",
+        headerToolbar: {
+            left: "prev,next today",
+            center: "title",
+            right: "dayGridMonth,timeGridWeek,timeGridDay"
+        },
+        buttonText: {
+            today: "Today",
+            month: "Month",
+            week: "Week",
+            day: "Day"
+        },
+        dateClick: (info) => {
+            const clickedDate = new Date(info.dateStr + "T00:00:00");
+            if (clickedDate < todayDate) {
+                return;
+            }
+            loadDaySlots(info.dateStr);
+        },
+        dayCellClassNames: (info) => {
+            const cellDate = new Date(info.date.getFullYear(), info.date.getMonth(), info.date.getDate());
+            return cellDate < todayDate ? ["fc-day-past-disabled"] : [];
+        },
+        eventDidMount: (info) => {
+            // Add tooltip for events
+            info.el.title = info.event.title;
+        },
+        datesSet: () => {
+            // Refresh calendar when view changes
+            refreshCalendar();
+        }
+    });
+
+    calendar.render();
+
+    // -------------------------------
+    // Refresh availability on calendar
+    // -------------------------------
+    function refreshCalendar() {
+        const assets = buildAssetSelectionString();
+        if (!assets) {
+            calendar.removeAllEvents();
+            return;
+        }
+
+        // Show loading state
+        calendar.updateSize();
+        
+        fetch(`/api/calendar-with-assets/${LAB_ID}?assets=${encodeURIComponent(assets)}`)
+            .then(r => r.json())
+            .then(data => {
+                calendar.removeAllEvents();
+
+                (data.unavailableDates || []).forEach(date => {
+                    calendar.addEvent({
+                        start: date,
+                        allDay: true,
+                        title: "Fully Unavailable",
+                        color: "#ef4444",
+                        classNames: ["fc-event-unavailable"]
+                    });
+                });
+
+                // Add available dates if needed
+                if (data.availableDates && data.availableDates.length > 0) {
+                    data.availableDates.forEach(date => {
+                        calendar.addEvent({
+                            start: date,
+                            allDay: true,
+                            title: "Available",
+                            color: "#10b981",
+                            classNames: ["fc-event-available"]
+                        });
+                    });
+                }
+            })
+            .catch(() => {
+                // Show error state
+                calendar.addEvent({
+                    title: "Error loading availability",
+                    start: new Date(),
+                    allDay: true,
+                    color: "#f97316"
+                });
+            });
+    }
+
+    // -------------------------------
+    // Load day slots for clicked date
+    // -------------------------------
+    function loadDaySlots(dateStr) {
+        const assets = buildAssetSelectionString();
+        if (!assets) {
+            showAlert("Please select at least one available equipment item first.", "warning");
+            return;
+        }
+
+        // Show loading
+        showLoadingPopup();
+
+        fetch(`/api/bookings/day-with-assets/${LAB_ID}/${dateStr}?assets=${encodeURIComponent(assets)}`)
+            .then(r => r.json())
+            .then(data => {
+                showSlotPopup(dateStr, data.slots || []);
+            })
+            .catch(() => {
+                showAlert("Unable to load timeslots for this date.", "error");
+            });
+    }
+
+    // -------------------------------
+    // Timeslot popup - Enhanced Design
+    // -------------------------------
+    function showSlotPopup(dateStr, slots) {
+        const formattedDate = new Date(dateStr).toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        let html = `
+            <div class="slot-popup">
+                <div class="slot-header mb-4">
+                    <h4 class="fw-bold text-primary mb-1">${formattedDate}</h4>
+                    <p class="text-muted mb-0">Available timeslots for selected equipment</p>
+                </div>
+        `;
+
+        if (!slots.length) {
+            html += `
+                <div class="no-slots text-center py-4">
+                    <i class="bi bi-calendar-x text-primary fs-1 mb-3"></i>
+                    <p class="text-muted">No timeslots available for this date.</p>
+                </div>
+            `;
+        }
+
+        slots.forEach((slot, index) => {
+            const colorClass = slot.can_book ? "slot-available" : "slot-unavailable";
+            const statusText = slot.can_book ? "Available" : "Unavailable";
+            const statusIcon = slot.can_book ? "bi-check-circle" : "bi-x-circle";
+
+            html += `
+                <div class="slot-item ${colorClass} mb-3">
+                    <div class="slot-info">
+                        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                            <div>
+                                <h6 class="fw-semibold mb-0">${slot.label}</h6>
+                                <small class="text-muted">${slot.start} - ${slot.end}</small>
+                            </div>
+                            <span class="slot-status badge ${slot.can_book ? 'bg-success' : 'bg-secondary'}">
+                                <i class="bi ${statusIcon} me-1"></i>${statusText}
+                            </span>
+                        </div>
+
+                        <div class="slot-assets">
+                            <small class="d-block mb-1"><strong>Equipment Status:</strong></small>
+                            <ul class="mb-0 ps-3">
+            `;
+
+            (slot.assets || []).forEach(a => {
+                const icon = a.remaining >= a.requested ? "bi-check-circle text-success" : "bi-x-circle text-danger";
+                html += `
+                    <li class="small">
+                        <i class="bi ${icon} me-1"></i>
+                        ${a.name}: Requested ${a.requested}, Available ${a.remaining}
+                    </li>
+                `;
+            });
+
+            html += `</ul>`;
+
+            if (slot.can_book && BOOKING_MODE === "uthm") {
+                html += `
+                    <button class="btn btn-primary btn-sm w-100 mt-3"
+                            type="button"
+                            onclick="selectSlot('${dateStr}', '${slot.start}', '${slot.end}')">
+                        <i class="bi bi-calendar-plus me-1"></i>Book This Slot
+                    </button>
+                `;
+            } else if (slot.can_book && BOOKING_MODE !== "uthm") {
+                html += `
+                    <div class="alert alert-warning small mt-3 mb-0">
+                        <i class="bi bi-person-gear me-1"></i>
+                        Online booking is only available for UTHM users. Please contact the PIC.
+                    </div>
+                `;
+            }
+
+            html += `</div></div></div>`;
+        });
+
+        html += `</div>`;
+
+        const modal = document.createElement("div");
+        modal.className = "modal fade";
+        modal.innerHTML = `
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content shadow-lg" style="border-radius: 20px; border: none;">
+                    <div class="modal-header border-0 pb-0">
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body pt-0">${html}</div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        const bsModal = new bootstrap.Modal(modal);
+        window.currentSlotModal = { instance: bsModal, element: modal };
+        bsModal.show();
+
+        modal.addEventListener("hidden.bs.modal", () => {
+            if (window.currentSlotModal?.element === modal) {
+                window.currentSlotModal = null;
+            }
+            modal.remove();
+        });
+    }
+
+    function showLoadingPopup() {
+        const modal = document.createElement("div");
+        modal.className = "modal fade";
+        modal.innerHTML = `
+            <div class="modal-dialog modal-sm">
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-body text-center py-4">
+                        <div class="spinner-border text-primary mb-3" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mb-0">Loading timeslots...</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+        
+        // Auto remove after 3 seconds if still showing
+        setTimeout(() => {
+            if (document.body.contains(modal)) {
+                bsModal.hide();
+                modal.remove();
+            }
+        }, 3000);
+    }
+
+    function showAlert(message, type = "info") {
+        const alertClass = {
+            info: "alert-info",
+            warning: "alert-warning",
+            error: "alert-danger",
+            success: "alert-success"
+        }[type];
+
+        const alert = document.createElement("div");
+        alert.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+        alert.style.cssText = `
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            max-width: 400px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            border: none;
+        `;
+        alert.innerHTML = `
+            <div class="d-flex align-items-center">
+                <i class="bi ${type === 'warning' ? 'bi-exclamation-triangle' : type === 'error' ? 'bi-x-circle' : 'bi-info-circle'} me-2"></i>
+                <div class="flex-grow-1">${message}</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+
+        document.body.appendChild(alert);
+        
+        setTimeout(() => {
+            if (alert.parentNode) {
+                alert.remove();
+            }
+        }, 5000);
+    }
+
+    // -------------------------------------------------
+    // Global function used by popup "Book This Slot"
+    // -------------------------------------------------
+    window.selectSlot = function(dateStr, start, end) {
+        if (BOOKING_MODE !== "uthm") {
+            showAlert("Online booking is only available for UTHM users.", "warning");
+            return;
+        }
+
+        if (window.currentSlotModal?.instance) {
+            window.currentSlotModal.instance.hide();
+        }
+
+        const bookingModalEl = document.getElementById("bookingModal");
+        const dateField      = document.getElementById("selectedDate");
+        const startField     = document.getElementById("startTime");
+        const endField       = document.getElementById("endTime");
+
+        const assetsString = buildAssetSelectionString();
+        if (!assetsString) {
+            showAlert("Please select at least one available equipment item before booking.", "warning");
+            return;
+        }
+
+        if (hiddenAssetField) hiddenAssetField.value = assetsString;
+        if (hiddenLabIdInput) hiddenLabIdInput.value = LAB_ID;
+        syncAssetSelectionToModal();
+
+        if (dateField)  dateField.value  = dateStr;
+        if (startField) startField.value = start;
+        if (endField)   endField.value   = end;
+
+        if (window.resetBookingWizard) {
+            window.resetBookingWizard();
+        }
+
+        const modal = new bootstrap.Modal(bookingModalEl);
+        modal.show();
+    };
+
+    // -------------------------------------------------
+    // "Launch Booking Wizard" button behaviour
+    // -------------------------------------------------
+    if (openWizardBtn) {
+        openWizardBtn.addEventListener("click", () => {
+            // Non-UTHM: show simple PIC info modal
+            if (BOOKING_MODE !== "uthm") {
+                const modalEl = document.getElementById("bookingModal");
+                if (modalEl) {
+                    const modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+                } else {
+                    showAlert("For external bookings, please contact the Person in Charge shown above.", "info");
+                }
+                return;
+            }
+
+            // UTHM: normal booking wizard flow
+            const assetsString = buildAssetSelectionString();
+            if (!assetsString) {
+                showAlert("Please select at least one available equipment item before proceeding.", "warning");
+                return;
+            }
+
+            if (hiddenAssetField) hiddenAssetField.value = assetsString;
+            if (hiddenLabIdInput) hiddenLabIdInput.value = LAB_ID;
+            syncAssetSelectionToModal();
+
+            if (window.resetBookingWizard) {
+                window.resetBookingWizard();
+            }
+
+            const bookingModalEl = document.getElementById("bookingModal");
+            const modal = new bootstrap.Modal(bookingModalEl);
+            modal.show();
+        });
+    }
+
+    // Initial calendar load
+    refreshCalendar();
+    updateBookingButton();
+});
+</script>
+
+<?= $this->endSection() ?>

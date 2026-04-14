@@ -1,0 +1,548 @@
+<?php
+
+namespace App\Controllers\Public;
+
+use App\Controllers\BaseController;
+use App\Libraries\NotificationService;
+use App\Models\BookingModel;
+use App\Models\BookingApplicantModel;
+use App\Models\BookingAssetModel;
+use App\Models\AssetModel;
+use CodeIgniter\HTTP\ResponseInterface;
+use Config\Services;
+
+class BookingController extends BaseController
+{
+    /*
+    |--------------------------------------------------------------------------
+    | SLOT DEFINITIONS  (Will later be moved to settings table)
+    |--------------------------------------------------------------------------
+    */
+    protected function getSlotDefinitions(): array
+    {
+        $slotsJson = setting('system.booking_slots') ?? '';
+        $slots = [];
+
+        if ($slotsJson) {
+            $decoded = json_decode($slotsJson, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                foreach ($decoded as $slot) {
+                    $start = isset($slot['start']) ? $this->normalizeTime($slot['start']) : '';
+                    $end = isset($slot['end']) ? $this->normalizeTime($slot['end']) : '';
+                    if ($start && $end && $start < $end) {
+                        $label = $slot['label'] ?? ($start . ' - ' . $end);
+                        $slots[] = [
+                            'label' => $label,
+                            'start' => $start,
+                            'end' => $end,
+                        ];
+                    }
+                }
+            }
+        }
+
+        if (!empty($slots)) {
+            usort($slots, function ($a, $b) {
+                if ($a['start'] === $b['start']) {
+                    return strcmp($a['end'], $b['end']);
+                }
+                return strcmp($a['start'], $b['start']);
+            });
+            return $slots;
+        }
+
+        return [
+            ['label' => '08:00 - 10:00', 'start' => '08:00:00', 'end' => '10:00:00'],
+            ['label' => '10:00 - 12:00', 'start' => '10:00:00', 'end' => '12:00:00'],
+            ['label' => '13:00 - 15:00', 'start' => '13:00:00', 'end' => '15:00:00'],
+            ['label' => '15:00 - 17:00', 'start' => '15:00:00', 'end' => '17:00:00'],
+        ];
+    }
+
+    protected function normalizeTime(string $time): string
+    {
+        $time = trim($time);
+
+        if ($time === '') return $time;
+        if (preg_match('/^\d{2}:\d{2}:\d{2}$/', $time)) return $time;
+        if (preg_match('/^\d{2}:\d{2}$/', $time)) return $time . ':00';
+
+        return $time;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | ASSET STRING PARSER "1:2,5:1" => [1=>2,5=>1]
+    |--------------------------------------------------------------------------
+    */
+    protected function parseAssetsString(?string $raw): array
+    {
+        $result = [];
+        if (empty($raw)) return $result;
+
+        foreach (explode(',', $raw) as $pair) {
+            [$id, $qty] = array_pad(explode(':', trim($pair)), 2, null);
+            $id  = (int) $id;
+            $qty = (int) $qty;
+            if ($id > 0 && $qty > 0) {
+                $result[$id] = $qty;
+            }
+        }
+        return $result;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | ASSET AVAILABILITY ENGINE
+    |--------------------------------------------------------------------------
+    */
+    protected function computeRemainingForSlot(
+        int $labId,
+        string $date,
+        string $start,
+        string $end,
+        array $selectedAssets
+    ): array {
+
+        if (empty($selectedAssets)) return [];
+
+        $assetModel = new AssetModel();
+
+        // Base quantities
+        $assets = $assetModel->where('lab_id', $labId)
+                             ->whereIn('id', array_keys($selectedAssets))
+                             ->findAll();
+
+        $base = [];
+        foreach ($assets as $asset) {
+            $base[(int)$asset['id']] = (int)$asset['quantity'];
+        }
+
+        // Ensure all selected assets have base quantity
+        foreach ($selectedAssets as $id => $val) {
+            if (!isset($base[$id])) $base[$id] = 0;
+        }
+
+        $db = \Config\Database::connect();
+
+        $start = $this->normalizeTime($start);
+        $end   = $this->normalizeTime($end);
+
+        // Get used quantities for overlapping bookings
+        $rows = $db->table('booking_assets ba')
+            ->select('ba.asset_id, SUM(ba.quantity_used) AS used_qty')
+            ->join('bookings b', 'b.id = ba.booking_id')
+            ->where('b.lab_id', $labId)
+            ->where('b.date', $date)
+            ->whereIn('b.status', ['PENDING', 'APPROVED'])
+            ->where('b.start_time <', $end)   // overlap rules
+            ->where('b.end_time >', $start)
+            ->whereIn('ba.asset_id', array_keys($selectedAssets))
+            ->groupBy('ba.asset_id')
+            ->get()->getResultArray();
+
+        $used = [];
+        foreach ($rows as $r) {
+            $used[(int)$r['asset_id']] = (int)$r['used_qty'];
+        }
+
+        // Compute remaining
+        $remaining = [];
+        foreach ($selectedAssets as $assetId => $need) {
+            $remaining[$assetId] = max(($base[$assetId] ?? 0) - ($used[$assetId] ?? 0), 0);
+        }
+
+        return $remaining;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | MONTH VIEW â€“ FULLCALENDAR (ASSET-AWARE)
+    |--------------------------------------------------------------------------
+    */
+    public function calendarWithAssets(int $labId): ResponseInterface
+    {
+        $selected = $this->parseAssetsString($this->request->getGet('assets'));
+
+        return $this->response->setJSON([
+            'unavailableDates' => $this->calendarAssetsInternal($labId, $selected)
+        ]);
+    }
+
+    protected function calendarAssetsInternal(int $labId, array $selected): array
+    {
+        if (empty($selected)) return [];
+
+        $db = \Config\Database::connect();
+        $today = date('Y-m-d');
+        $slotDefs = $this->getSlotDefinitions();
+
+        $dates = $db->table('bookings')
+            ->select('DISTINCT date')
+            ->where('lab_id', $labId)
+            ->where('date >=', $today)
+            ->whereIn('status', ['PENDING', 'APPROVED'])
+            ->get()->getResultArray();
+
+        $dates = array_column($dates, 'date');
+        $unavailable = [];
+
+        foreach ($dates as $date) {
+
+            $hasValidSlot = false;
+
+            foreach ($slotDefs as $slot) {
+
+                $remaining = $this->computeRemainingForSlot(
+                    $labId, $date, $slot['start'], $slot['end'], $selected
+                );
+
+                $slotOK = true;
+
+                foreach ($selected as $id => $need) {
+                    if (($remaining[$id] ?? 0) < $need) {
+                        $slotOK = false;
+                        break;
+                    }
+                }
+
+                if ($slotOK) {
+                    $hasValidSlot = true;
+                    break;
+                }
+            }
+
+            if (! $hasValidSlot) {
+                $unavailable[] = $date;
+            }
+        }
+
+        return $unavailable;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | DAY VIEW â€“ TIMESLOT DETAIL (ASSET-AWARE)
+    |--------------------------------------------------------------------------
+    */
+    public function dayWithAssets(int $labId, string $date): ResponseInterface
+    {
+        $selected = $this->parseAssetsString($this->request->getGet('assets'));
+
+        return $this->response->setJSON([
+            'slots' => $this->dayAssetsInternal($labId, $date, $selected)
+        ]);
+    }
+
+    protected function dayAssetsInternal(int $labId, string $date, array $selected): array
+    {
+        if (empty($selected)) return [];
+
+        $slotDefs = $this->getSlotDefinitions();
+        $assetModel = new AssetModel();
+
+        $assets = $assetModel->where('lab_id', $labId)
+                             ->whereIn('id', array_keys($selected))
+                             ->findAll();
+
+        $assetNames = [];
+        foreach ($assets as $a) {
+            $assetNames[(int)$a['id']] = $a['name'];
+        }
+
+        $slots = [];
+        $today = date('Y-m-d');
+        $now   = date('H:i:s');
+        foreach ($slotDefs as $slot) {
+
+            $remaining = $this->computeRemainingForSlot(
+                $labId, $date, $slot['start'], $slot['end'], $selected
+            );
+
+            $assetsInfo = [];
+            $slotOK = true;
+
+            foreach ($selected as $assetId => $need) {
+                $rem = $remaining[$assetId] ?? 0;
+
+                $assetsInfo[] = [
+                    'id'        => $assetId,
+                    'name'      => $assetNames[$assetId] ?? "Asset #$assetId",
+                    'requested' => $need,
+                    'remaining' => $rem,
+                ];
+
+                if ($rem < $need) $slotOK = false;
+            }
+
+            if ($date < $today || ($date === $today && $slot['end'] <= $now)) {
+                $slotOK = false;
+            }
+
+            $slots[] = [
+                'label'    => $slot['label'],
+                'start'    => substr($slot['start'], 0, 5),
+                'end'      => substr($slot['end'], 0, 5),
+                'can_book' => $slotOK,
+                'assets'   => $assetsInfo,
+            ];
+        }
+
+        return $slots;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | AJAX CHECK SLOT
+    |--------------------------------------------------------------------------
+    */
+    public function checkSlot(): ResponseInterface
+    {
+        $labId     = (int) $this->request->getPost('lab_id');
+        $date      = $this->request->getPost('date');
+        $startTime = $this->request->getPost('start_time');
+        $endTime   = $this->request->getPost('end_time');
+        $assetsRaw = $this->request->getPost('asset_selection');
+
+        $selected = $this->parseAssetsString($assetsRaw);
+
+        if (!$labId || !$date || !$startTime || !$endTime || empty($selected)) {
+            return $this->response->setJSON([
+                'conflict' => true,
+                'reason' => 'Missing data or no assets selected.'
+            ]);
+        }
+
+        $start = $this->normalizeTime($startTime);
+        $end   = $this->normalizeTime($endTime);
+
+        $today = date('Y-m-d');
+        $now   = date('H:i:s');
+
+        if ($date < $today || ($date === $today && $end <= $now)) {
+            return $this->response->setJSON([
+                'conflict' => true,
+                'reason'   => 'Slot is already in the past.'
+            ]);
+        }
+
+        $remaining = $this->computeRemainingForSlot(
+            $labId, $date, $start, $end, $selected
+        );
+
+        foreach ($selected as $id => $need) {
+            if (($remaining[$id] ?? 0) < $need) {
+                return $this->response->setJSON(['conflict' => true]);
+            }
+        }
+
+        return $this->response->setJSON(['conflict' => false]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | BOOKING SUBMISSION (UTHM ONLY)
+    |--------------------------------------------------------------------------
+    */
+    public function submit(): ResponseInterface
+    {
+        $rules = [
+            'lab_id'     => 'required|integer',
+            'date'       => 'required|valid_date[Y-m-d]',
+            'start_time' => 'required',
+            'end_time'   => 'required',
+            'activity'   => 'required|string',
+            'pdf'        => 'uploaded[pdf]|mime_in[pdf,application/pdf]|max_size[pdf,8192]',
+        ];
+
+        if (! $this->validate($rules)) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Validation failed.',
+                'errors'  => $this->validator->getErrors(),
+            ]);
+        }
+
+        helper('auth');
+
+        if (! auth()->loggedIn()) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'You must log in to submit a booking.'
+            ]);
+        }
+
+        $user = auth()->user();
+
+        if ($user->inGroup('external')) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'External users must contact the PIC to submit bookings.'
+            ]);
+        }
+
+        $userType = 'UTHM';
+        $labId = (int) $this->request->getPost('lab_id');
+        $date = (string) $this->request->getPost('date');
+        $startTime = $this->normalizeTime((string) $this->request->getPost('start_time'));
+        $endTime = $this->normalizeTime((string) $this->request->getPost('end_time'));
+        $activity = trim((string) $this->request->getPost('activity'));
+        $supervisorName = trim((string) $this->request->getPost('supervisor_name'));
+        $supervisorEmail = trim((string) $this->request->getPost('supervisor_email'));
+        $supervisorPhone = trim((string) $this->request->getPost('supervisor_phone'));
+
+        if ($startTime >= $endTime) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'End time must be later than start time.'
+            ]);
+        }
+
+        $names = $this->request->getPost('applicant_name') ?? [];
+        $ids = $this->request->getPost('applicant_id') ?? [];
+        $emails = $this->request->getPost('applicant_email') ?? [];
+        $phones = $this->request->getPost('applicant_phone') ?? [];
+        $faculties = $this->request->getPost('applicant_faculty') ?? [];
+
+        $rowCount = max(count((array) $names), count((array) $ids), count((array) $emails), count((array) $phones), count((array) $faculties));
+        $applicants = [];
+
+        for ($i = 0; $i < $rowCount; $i++) {
+            $name = trim((string) ($names[$i] ?? ''));
+            $matricId = trim((string) ($ids[$i] ?? ''));
+            $email = trim((string) ($emails[$i] ?? ''));
+            $phone = trim((string) ($phones[$i] ?? ''));
+            $facultyValue = trim((string) ($faculties[$i] ?? ''));
+
+            if ($name === '' && $matricId === '' && $email === '' && $phone === '' && $facultyValue === '') {
+                continue;
+            }
+
+            if ($name === '' || $matricId === '' || $email === '' || $phone === '' || $facultyValue === '') {
+                return $this->response->setJSON([
+                    'status'  => 'error',
+                    'message' => 'Each applicant must include name, ID, email, phone, and faculty.'
+                ]);
+            }
+
+            if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                return $this->response->setJSON([
+                    'status'  => 'error',
+                    'message' => 'One or more applicant email addresses are invalid.'
+                ]);
+            }
+
+            $applicants[] = [
+                'name' => $name,
+                'matric_id' => $matricId,
+                'email' => $email,
+                'phone' => $phone,
+                'faculty' => $facultyValue,
+            ];
+        }
+
+        if ($applicants === []) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Please add at least one applicant before submitting.'
+            ]);
+        }
+
+        $facultyId = (int) $applicants[0]['faculty'];
+        if ($facultyId <= 0) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Please select a valid faculty for the primary applicant.'
+            ]);
+        }
+
+        $approvalFlow = ($facultyId === 3) ? 'FKMP_APPROVAL' : 'FACULTY_APPROVAL';
+        $selectedAssets = $this->parseAssetsString($this->request->getPost('asset_selection'));
+
+        if (empty($selectedAssets)) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Please select at least one asset before booking.'
+            ]);
+        }
+
+        $remaining = $this->computeRemainingForSlot($labId, $date, $startTime, $endTime, $selectedAssets);
+
+        foreach ($selectedAssets as $assetId => $qtyNeeded) {
+            if (($remaining[$assetId] ?? 0) < $qtyNeeded) {
+                return $this->response->setJSON([
+                    'status'  => 'error',
+                    'message' => 'Selected assets are not available for that slot.'
+                ]);
+            }
+        }
+
+        $pdfFile = $this->request->getFile('pdf');
+        $pdfPath = null;
+
+        if ($pdfFile && $pdfFile->isValid()) {
+            $newName = $pdfFile->getRandomName();
+            $pdfFile->move(WRITEPATH . 'uploads/pdfs', $newName);
+            $pdfPath = '/uploads/pdfs/' . $newName;
+        }
+
+        $bookingModel = new BookingModel();
+        $bookingApplicantModel = new BookingApplicantModel();
+        $bookingAssetModel = new BookingAssetModel();
+        $db = \Config\Database::connect();
+
+        $db->transStart();
+
+        try {
+            $bookingId = $bookingModel->insert([
+                'user_id'          => auth()->id(),
+                'lab_id'           => $labId,
+                'user_type'        => $userType,
+                'faculty_id'       => $facultyId,
+                'approval_flow'    => $approvalFlow,
+                'date'             => $date,
+                'start_time'       => $startTime,
+                'end_time'         => $endTime,
+                'activity'         => $activity,
+                'supervisor_name'  => $supervisorName ?: null,
+                'supervisor_email' => $supervisorEmail ?: null,
+                'supervisor_phone' => $supervisorPhone ?: null,
+                'pdf_path'         => $pdfPath,
+                'status'           => 'PENDING',
+            ], true);
+
+            foreach ($selectedAssets as $assetId => $qty) {
+                $bookingAssetModel->insert([
+                    'booking_id'    => $bookingId,
+                    'asset_id'      => $assetId,
+                    'quantity_used' => $qty,
+                ]);
+            }
+
+            $bookingApplicantModel->insertBatchApplicants($bookingId, $applicants);
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                throw new \RuntimeException('Unable to save booking data.');
+            }
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            log_message('error', 'Booking submission failed: ' . $e->getMessage());
+
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Failed to save booking. Please try again.'
+            ]);
+        }
+
+        (new NotificationService())->notifyBookingSubmitted($bookingModel->find($bookingId));
+
+        return $this->response->setJSON([
+            'status'  => 'success',
+            'message' => 'Booking submitted successfully and is pending approval.',
+        ]);
+    }
+}
+
+
