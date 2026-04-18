@@ -1,234 +1,6 @@
 <?= $this->extend('layouts/main_admin') ?>
 <?= $this->section('content') ?>
 
-<style>
-    .settings-page {
-        --card-radius: 16px;
-        --card-padding: 24px;
-        --transition-speed: 0.3s;
-    }
-
-    /* Glass Card Styling */
-    .glass-card {
-        background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.95),
-            rgba(255, 255, 255, 0.98)
-        );
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border-radius: var(--card-radius);
-        border: 1px solid rgba(59, 130, 246, 0.15);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-        transition: all var(--transition-speed) ease;
-        overflow: hidden;
-    }
-
-    /* Form group styling */
-    .form-group-glass {
-        margin-bottom: 1.5rem;
-    }
-
-    .form-group-glass label {
-        font-weight: 600;
-        color: #1e293b;
-        margin-bottom: 0.5rem;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .form-group-glass label i {
-        color: #3b82f6;
-    }
-
-    .form-control-glass {
-        background: rgba(255, 255, 255, 0.9);
-        border: 1px solid rgba(59, 130, 246, 0.2);
-        border-radius: 10px;
-        padding: 0.75rem 1rem;
-        transition: all 0.3s ease;
-        color: #1e293b;
-    }
-
-    .form-control-glass:focus {
-        background: white;
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-
-    .form-control-glass::placeholder {
-        color: #94a3b8;
-    }
-
-    /* Buttons */
-    .btn-glass {
-        padding: 10px 24px;
-        border-radius: 10px;
-        border: 1px solid rgba(59, 130, 246, 0.2);
-        background: rgba(59, 130, 246, 0.1);
-        color: #3b82f6;
-        font-weight: 500;
-        transition: all 0.3s ease;
-    }
-
-    .btn-glass:hover {
-        background: rgba(59, 130, 246, 0.2);
-        border-color: rgba(59, 130, 246, 0.4);
-        transform: translateY(-2px);
-    }
-
-    .btn-primary-glass {
-        background: linear-gradient(135deg, #3b82f6, #1e40af);
-        color: white;
-        border: none;
-    }
-
-    .btn-primary-glass:hover {
-        background: linear-gradient(135deg, #1e40af, #1e3a8a);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-    }
-
-    /* Dashboard header */
-    .dashboard-header {
-        margin-bottom: 2rem;
-    }
-
-    .dashboard-header h1 {
-        font-size: 1.75rem;
-        font-weight: 700;
-        color: #1e293b;
-        margin-bottom: 0.5rem;
-    }
-
-    .dashboard-header p {
-        color: #64748b;
-        font-size: 0.95rem;
-    }
-
-    /* Section titles */
-    .section-title {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: #1e293b;
-        padding-bottom: 0.5rem;
-        border-bottom: 2px solid rgba(59, 130, 246, 0.1);
-        margin-bottom: 1.5rem;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .section-title i {
-        color: #3b82f6;
-    }
-
-    /* Alerts */
-    .alert-glass {
-        background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.95),
-            rgba(255, 255, 255, 0.98)
-        );
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border-radius: 12px;
-        border: 1px solid;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-    }
-
-    .alert-glass.alert-success {
-        border-color: rgba(34, 197, 94, 0.2);
-        background: linear-gradient(135deg,
-            rgba(240, 253, 244, 0.95),
-            rgba(220, 252, 231, 0.98)
-        );
-    }
-
-    .alert-glass.alert-danger {
-        border-color: rgba(239, 68, 68, 0.2);
-        background: linear-gradient(135deg,
-            rgba(254, 242, 242, 0.95),
-            rgba(254, 226, 226, 0.98)
-        );
-    }
-
-    /* Table styling */
-    .table-glass {
-        background: rgba(255, 255, 255, 0.9);
-        border-radius: 12px;
-        overflow: hidden;
-        border: 1px solid rgba(59, 130, 246, 0.1);
-    }
-
-    .table-glass thead {
-        background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(30, 64, 175, 0.05));
-        border-bottom: 2px solid rgba(59, 130, 246, 0.1);
-    }
-
-    .table-glass th {
-        font-weight: 600;
-        color: #1e293b;
-        padding: 1rem;
-    }
-
-    .table-glass td {
-        padding: 1rem;
-        border-color: rgba(59, 130, 246, 0.1);
-    }
-
-    .table-glass tbody tr:hover {
-        background: rgba(59, 130, 246, 0.03);
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-        .glass-card {
-            padding: 1rem !important;
-        }
-    }
-
-    /* Form hints */
-    .form-hint {
-        font-size: 0.875rem;
-        color: #64748b;
-        margin-top: 0.25rem;
-    }
-
-    /* Settings card header */
-    .settings-card-header {
-        background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(30, 64, 175, 0.05));
-        border-bottom: 1px solid rgba(59, 130, 246, 0.1);
-        padding: 1.25rem 1.5rem;
-    }
-
-    .settings-card-header h5 {
-        margin: 0;
-        color: #1e293b;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .settings-card-header i {
-        color: #3b82f6;
-    }
-
-    /* Info box */
-    .info-box {
-        background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(30, 64, 175, 0.03));
-        border-radius: 12px;
-        padding: 1.5rem;
-        border: 1px solid rgba(59, 130, 246, 0.1);
-        margin-bottom: 1.5rem;
-    }
-
-    .info-box p {
-        margin: 0;
-        color: #475569;
-        font-size: 0.95rem;
-    }
-</style>
 
 <div class="settings-page">
     <!-- PAGE HEADER -->
@@ -250,6 +22,15 @@
             <div class="d-flex align-items-center">
                 <i class="bi bi-check-circle-fill fs-5 me-2"></i>
                 <div class="flex-grow-1"><?= session()->getFlashdata('message') ?></div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        </div>
+    <?php endif; ?>
+    <?php if (session()->getFlashdata('warning')): ?>
+        <div class="alert alert-warning alert-glass mb-4">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-exclamation-triangle-fill fs-5 me-2"></i>
+                <div class="flex-grow-1"><?= esc(session()->getFlashdata('warning')) ?></div>
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         </div>
@@ -352,6 +133,32 @@
                         <i class="bi bi-save me-2"></i> Save Settings
                     </button>
                 </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SCHEDULED TASK DEMO TRIGGER -->
+    <div class="glass-card mb-5">
+        <div class="settings-card-header">
+            <h5>
+                <i class="bi bi-bell-fill"></i>
+                Reminder Checks
+            </h5>
+        </div>
+
+        <div class="card-body p-4">
+            <div class="info-box">
+                <p class="d-flex align-items-center mb-0">
+                    <i class="bi bi-info-circle-fill me-2" style="color: #3b82f6;"></i>
+                    Run booking and maintenance reminder checks manually for demo. Production deployments should still use cron or Windows Task Scheduler.
+                </p>
+            </div>
+
+            <form action="/admin/settings/run-scheduled-tasks" method="post">
+                <?= csrf_field() ?>
+                <button type="submit" class="btn btn-glass">
+                    <i class="bi bi-play-circle me-2"></i> Run Reminder Checks Now
+                </button>
             </form>
         </div>
     </div>
@@ -462,23 +269,17 @@ document.addEventListener("DOMContentLoaded", () => {
     slotTable.addEventListener("click", (e) => {
         if (e.target.closest(".remove-slot")) {
             const row = e.target.closest("tr");
-            row.style.transition = 'all 0.3s ease';
-            row.style.opacity = '0';
-            row.style.transform = 'translateX(-20px)';
+            row.remove();
             
-            setTimeout(() => {
-                row.remove();
-                
-                // Add "no slots" message if table is empty
-                if (slotTable.children.length === 0) {
-                    const emptyRow = document.createElement("tr");
-                    emptyRow.innerHTML = `
-                        <td colspan="3" class="text-center text-muted py-4">
-                            <i class="bi bi-clock me-2"></i> No time slots configured
-                        </td>`;
-                    slotTable.appendChild(emptyRow);
-                }
-            }, 300);
+            // Add "no slots" message if table is empty
+            if (slotTable.children.length === 0) {
+                const emptyRow = document.createElement("tr");
+                emptyRow.innerHTML = `
+                    <td colspan="3" class="text-center text-muted py-4">
+                        <i class="bi bi-clock me-2"></i> No time slots configured
+                    </td>`;
+                slotTable.appendChild(emptyRow);
+            }
         }
     });
 
@@ -584,18 +385,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // Add some visual feedback for inputs
-    document.addEventListener('focusin', (e) => {
-        if (e.target.classList.contains('form-control-glass')) {
-            e.target.parentElement.style.transform = 'translateY(-2px)';
-        }
-    });
-
-    document.addEventListener('focusout', (e) => {
-        if (e.target.classList.contains('form-control-glass')) {
-            e.target.parentElement.style.transform = 'translateY(0)';
-        }
-    });
 });
 </script>
 

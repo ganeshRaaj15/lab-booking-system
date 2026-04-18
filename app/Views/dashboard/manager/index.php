@@ -9,10 +9,13 @@
     <a href="/dashboard/reports/pdf" class="btn btn-outline-primary btn-sm">
         <i class="bi bi-file-earmark-pdf me-1"></i> Download Report
     </a>
+    <a href="/dashboard/reports/csv" class="btn btn-outline-success btn-sm">
+        <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
+    </a>
 </div>
 
 <!-- QUICK STATS CARDS -->
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-3">
     <div class="col-md-3">
         <div class="card stats-card bg-white border-0 shadow-sm rounded-3">
             <div class="card-body">
@@ -76,6 +79,20 @@
     </div>
 </div>
 
+<?php $pendingPicTotal = max((int) ($stats['pending'] ?? 0) - (int) ($stats['pendingManager'] ?? 0), 0); ?>
+<div class="card border-0 shadow-sm rounded-3 mb-4">
+    <div class="card-body py-3">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="fw-semibold text-dark me-2">Booking Status Summary</span>
+            <span class="badge rounded-pill bg-dark-subtle text-dark border">Total: <?= esc($stats['total'] ?? 0) ?></span>
+            <span class="badge rounded-pill bg-warning-subtle text-warning border">Pending PIC: <?= esc($pendingPicTotal) ?></span>
+            <span class="badge rounded-pill bg-primary-subtle text-primary border">Pending Manager: <?= esc($stats['pendingManager'] ?? 0) ?></span>
+            <span class="badge rounded-pill bg-success-subtle text-success border">Approved: <?= esc($stats['approved'] ?? 0) ?></span>
+            <span class="badge rounded-pill bg-danger-subtle text-danger border">Rejected: <?= esc($stats['rejected'] ?? 0) ?></span>
+            <span class="badge rounded-pill bg-secondary-subtle text-secondary border">Cancelled: <?= esc($stats['cancelled'] ?? 0) ?></span>
+        </div>
+    </div>
+</div>
 
 <div class="row g-3 mb-4">
     <div class="col-md-4">
@@ -85,7 +102,7 @@
                     <div class="flex-grow-1">
                         <div class="text-muted small fw-semibold text-uppercase">Open Maintenance</div>
                         <div class="fs-3 fw-bold text-danger"><?= esc($stats['maintenanceOpen'] ?? 0) ?></div>
-                        <div class="small text-muted">Reported or scheduled cases</div>
+                        <div class="small text-muted">Reported, scheduled, repair, or testing cases</div>
                     </div>
                     <i class="bi bi-tools fs-2 text-danger opacity-75"></i>
                 </div>
@@ -200,9 +217,9 @@
                                 <h6 class="fw-bold text-dark mb-0">Pending Approval Requests</h6>
                                 <p class="text-muted small mb-0"><?= count($pendingMgr) ?> non-FKMP bookings awaiting review</p>
                             </div>
-                            <button class="btn btn-outline-primary btn-sm">
-                                <i class="bi bi-download me-1"></i>Export
-                            </button>
+                            <a href="/dashboard/reports/csv" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-download me-1"></i>Export CSV
+                            </a>
                         </div>
                         
                         <div class="table-responsive rounded-3 border">
@@ -245,7 +262,7 @@
                                                     <div class="d-flex flex-wrap gap-2">
                                                         <?php foreach ($b['assets'] as $asset): ?>
                                                             <span class="badge bg-light text-dark border py-2">
-                                                                <i class="bi bi-box me-1"></i><?= esc($asset['name']) ?> (×<?= $asset['quantity_used'] ?>)
+                                                                <i class="bi bi-box me-1"></i><?= esc($asset['name']) ?> (x<?= $asset['quantity_used'] ?>)
                                                             </span>
                                                         <?php endforeach; ?>
                                                     </div>
@@ -523,7 +540,11 @@
                                 </div>
                                 <div class="d-flex align-items-center">
                                     <div class="legend-dot bg-danger"></div>
-                                    <span class="small ms-1">Rejected</span>
+                                    <span class="small ms-1 me-3">Rejected</span>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <div class="legend-dot bg-secondary"></div>
+                                    <span class="small ms-1">Cancelled</span>
                                 </div>
                             </div>
                         </div>
@@ -555,6 +576,7 @@
                                                         <span class="badge bg-success bg-opacity-10 text-success border-0 py-2 px-3" data-bs-toggle="tooltip" title="Approved"><?= esc($lab['approved']) ?></span>
                                                         <span class="badge bg-warning bg-opacity-10 text-warning border-0 py-2 px-3" data-bs-toggle="tooltip" title="Pending"><?= esc($lab['pending']) ?></span>
                                                         <span class="badge bg-danger bg-opacity-10 text-danger border-0 py-2 px-3" data-bs-toggle="tooltip" title="Rejected"><?= esc($lab['rejected']) ?></span>
+                                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border-0 py-2 px-3" data-bs-toggle="tooltip" title="Cancelled"><?= esc($lab['cancelled'] ?? 0) ?></span>
                                                     </div>
                                                 </td>
                                                 <td class="text-center">
@@ -659,6 +681,8 @@
 <script>
 let currentBookingId = null;
 let trendChart = null;
+const csrfHeaderName = "X-CSRF-TOKEN";
+const csrfTokenValue = "<?= csrf_hash() ?>";
 
 // Initialize tooltips and charts
 document.addEventListener('DOMContentLoaded', function() {
@@ -1117,7 +1141,10 @@ function approveBooking(id) {
 
     fetch(`/booking/approve/${id}`, {
         method:"POST",
-        headers: {"X-Requested-With":"XMLHttpRequest"}
+        headers: {
+            "X-Requested-With":"XMLHttpRequest",
+            [csrfHeaderName]: csrfTokenValue
+        }
     })
     .then(r => r.json())
     .then(data => {
@@ -1161,7 +1188,10 @@ function rejectBooking(id) {
 
     fetch(`/booking/reject/${id}`, {
         method:"POST",
-        headers: {"X-Requested-With":"XMLHttpRequest"}
+        headers: {
+            "X-Requested-With":"XMLHttpRequest",
+            [csrfHeaderName]: csrfTokenValue
+        }
     })
     .then(r => r.json())
     .then(data => {
@@ -1201,250 +1231,6 @@ function rejectBooking(id) {
 }
 </script>
 
-<style>
-/* Enhanced UI Styles */
-.stats-card {
-    border-radius: 12px;
-    transition: all 0.3s ease;
-    border: 1px solid transparent !important;
-    overflow: hidden;
-}
-.stats-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
-    border-color: rgba(59, 130, 246, 0.2) !important;
-}
-
-/* Modern Tab Design */
-.nav-tabs-modern {
-    border-bottom: 2px solid #e9ecef;
-    padding-bottom: 0;
-    gap: 8px;
-}
-
-.nav-tabs-modern .nav-item {
-    margin-bottom: 0;
-}
-
-.nav-tabs-modern .nav-link {
-    border: 1px solid transparent;
-    border-bottom: none;
-    background: #f8f9fa;
-    color: #6c757d !important;
-    font-weight: 500;
-    position: relative;
-    transition: all 0.3s ease;
-    margin-right: 0;
-    border-radius: 12px 12px 0 0;
-    min-width: 220px;
-}
-
-.nav-tabs-modern .nav-link:hover {
-    background: #fff;
-    border-color: #dee2e6 #dee2e6 transparent;
-    color: #495057 !important;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-}
-
-.nav-tabs-modern .nav-link.active {
-    background: #fff !important;
-    border-color: #3b82f6 #dee2e6 transparent !important;
-    color: #3b82f6 !important;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
-    border-top-width: 3px;
-    border-top-color: #3b82f6 !important;
-}
-
-.nav-tabs-modern .nav-link.active .nav-icon-wrapper {
-    background: rgba(59, 130, 246, 0.1);
-    color: #3b82f6;
-}
-
-.nav-tabs-modern .nav-link .nav-icon-wrapper {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #f8f9fa;
-    transition: all 0.3s ease;
-}
-
-.nav-tabs-modern .nav-link:hover .nav-icon-wrapper {
-    background: rgba(59, 130, 246, 0.05);
-}
-
-.table th {
-    font-weight: 600;
-    font-size: 0.85rem;
-    color: #6c757d;
-    border-top: none;
-    padding: 1rem;
-}
-
-.table td {
-    padding: 1rem;
-    vertical-align: middle;
-}
-
-.card {
-    border: 1px solid #e9ecef;
-    border-radius: 12px;
-    overflow: hidden;
-}
-
-.card-header.bg-light {
-    background-color: #f8f9fa !important;
-    border-bottom: 1px solid #e9ecef;
-}
-
-.progress {
-    border-radius: 10px;
-}
-
-.modal-content {
-    border-radius: 16px;
-    overflow: hidden;
-}
-
-.badge {
-    font-weight: 500;
-    padding: 0.5em 0.8em;
-    border-radius: 8px;
-}
-
-/* Gradient backgrounds */
-.bg-gradient-primary { 
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important; 
-    border: none;
-}
-.bg-gradient-success { 
-    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%) !important; 
-    border: none;
-}
-.bg-gradient-info { 
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important; 
-    border: none;
-}
-.bg-gradient-warning { 
-    background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%) !important; 
-    border: none;
-}
-
-/* Card hover effects */
-.card {
-    border: 1px solid #e9ecef;
-    border-radius: 16px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.04);
-    transition: all 0.3s ease;
-    overflow: hidden;
-}
-
-.card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(0,0,0,0.08);
-}
-
-.btn-outline-primary {
-    border-width: 2px;
-    border-radius: 8px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-}
-
-.btn-outline-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
-}
-
-.table-hover tbody tr:hover {
-    background-color: rgba(59, 130, 246, 0.05);
-    transform: translateX(4px);
-    transition: all 0.2s ease;
-}
-
-/* Legend dots for charts */
-.legend-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    display: inline-block;
-}
-
-/* Trend indicators */
-.trend-indicator {
-    transition: all 0.3s ease;
-}
-
-.trend-indicator:hover {
-    transform: scale(1.1);
-}
-
-/* Enhanced badges */
-.badge {
-    font-weight: 500;
-    padding: 0.5em 0.8em;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-}
-
-.badge:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
-/* Empty state styling */
-.empty-state-icon {
-    width: 80px;
-    height: 80px;
-    background: rgba(25, 135, 84, 0.1);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 1.5rem;
-}
-
-/* Enhanced buttons */
-.btn-group .btn {
-    border-radius: 8px !important;
-}
-
-/* Improved spacing */
-.me-3 {
-    margin-right: 1rem !important;
-}
-
-/* Better table styling */
-.table > :not(caption) > * > * {
-    padding: 1rem 1.5rem;
-}
-
-/* Tab content animation */
-.tab-pane {
-    animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* Responsive improvements */
-@media (max-width: 768px) {
-    .nav-tabs-modern .nav-link {
-        min-width: auto;
-        padding: 0.75rem 1rem;
-    }
-    
-    .nav-tabs-modern .nav-link .nav-icon-wrapper {
-        width: 32px;
-        height: 32px;
-    }
-}
-</style>
 
 <?= $this->endSection() ?>
 

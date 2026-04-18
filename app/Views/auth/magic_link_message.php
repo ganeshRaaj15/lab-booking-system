@@ -12,7 +12,7 @@
             If the email exists in our system, you will receive a login link shortly.
         </p>
 
-        <i class="bi bi-envelope-check" class="auth-icon"></i>
+        <i class="bi bi-envelope-check auth-icon"></i>
 
         <p class="mt-4 small">
             <a href="<?= url_to('login') ?>">Back to login</a>

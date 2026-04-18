@@ -24,11 +24,14 @@
         <a href="/dashboard/reports/pdf" class="btn btn-outline-primary btn-sm px-3 shadow-sm">
             <i class="bi bi-file-earmark-pdf me-1"></i> Download Report
         </a>
+        <a href="/dashboard/reports/csv" class="btn btn-outline-success btn-sm px-3 shadow-sm">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
+        </a>
     </div>
 </div>
 
 <!-- DASHBOARD WIDGETS -->
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-3">
     <div class="col-md-3">
         <div class="card widget-card bg-gradient-primary text-white shadow-sm border-0">
             <div class="card-body d-flex align-items-center">
@@ -78,6 +81,19 @@
     </div>
 </div>
 
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-3">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="fw-semibold text-dark me-2">Booking Status Summary</span>
+            <span class="badge rounded-pill bg-dark-subtle text-dark border">Total: <?= esc($widget['total'] ?? 0) ?></span>
+            <span class="badge rounded-pill bg-warning-subtle text-warning border">Pending PIC: <?= esc($widget['pending'] ?? 0) ?></span>
+            <span class="badge rounded-pill bg-primary-subtle text-primary border">Pending Manager: <?= esc($widget['pending_mgr'] ?? 0) ?></span>
+            <span class="badge rounded-pill bg-success-subtle text-success border">Approved: <?= esc($widget['approved'] ?? 0) ?></span>
+            <span class="badge rounded-pill bg-danger-subtle text-danger border">Rejected: <?= esc($widget['rejected'] ?? 0) ?></span>
+            <span class="badge rounded-pill bg-secondary-subtle text-secondary border">Cancelled: <?= esc($widget['cancelled'] ?? 0) ?></span>
+        </div>
+    </div>
+</div>
 
 <div class="row g-3 mb-4">
     <div class="col-md-4">
@@ -85,7 +101,7 @@
             <div class="card-body">
                 <div class="text-muted small fw-semibold text-uppercase">Open Maintenance</div>
                 <div class="fs-3 fw-bold text-danger"><?= esc($maintenanceStats['open'] ?? 0) ?></div>
-                <div class="small text-muted">Reported or scheduled issues in your labs</div>
+                <div class="small text-muted">Reported, scheduled, repair, or testing cases in your labs</div>
             </div>
         </div>
     </div>
@@ -215,7 +231,7 @@
 
                                 <td>
                                     <div class="fw-semibold"><?= esc($b['date']) ?></div>
-                                    <small class="text-muted"><?= esc($b['start_time']) ?> â€“ <?= esc($b['end_time']) ?></small>
+                                    <small class="text-muted"><?= esc($b['start_time']) ?> to <?= esc($b['end_time']) ?></small>
                                 </td>
                                 
                                 <td>
@@ -238,7 +254,7 @@
                                         <div class="d-flex flex-wrap gap-1">
                                             <?php foreach ($b['assets'] as $asset): ?>
                                                 <span class="badge bg-light text-dark border">
-                                                    <?= esc($asset['name']) ?> (Ã—<?= $asset['quantity_used'] ?>)
+                                                    <?= esc($asset['name']) ?> (x<?= $asset['quantity_used'] ?>)
                                                 </span>
                                             <?php endforeach; ?>
                                         </div>
@@ -308,6 +324,8 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 let currentBookingId = null;
+const csrfHeaderName = "X-CSRF-TOKEN";
+const csrfTokenValue = "<?= csrf_hash() ?>";
 
 // Initialize tooltips
 document.addEventListener('DOMContentLoaded', function() {
@@ -476,7 +494,10 @@ function approveBooking(id) {
 
     fetch(`/booking/approve/${id}`, {
         method:"POST",
-        headers: {"X-Requested-With":"XMLHttpRequest"}
+        headers: {
+            "X-Requested-With":"XMLHttpRequest",
+            [csrfHeaderName]: csrfTokenValue
+        }
     })
     .then(r => r.json())
     .then(data => {
@@ -492,7 +513,10 @@ function rejectBooking(id) {
 
     fetch(`/booking/reject/${id}`, {
         method:"POST",
-        headers: {"X-Requested-With":"XMLHttpRequest"}
+        headers: {
+            "X-Requested-With":"XMLHttpRequest",
+            [csrfHeaderName]: csrfTokenValue
+        }
     })
     .then(r => r.json())
     .then(data => {
@@ -600,19 +624,6 @@ function initializeCharts() {
 }
 </script>
 
-<style>
-.widget-card { 
-    border-radius: 12px; 
-    transition: transform 0.2s;
-}
-.widget-card:hover {
-    transform: translateY(-3px);
-}
-.bg-gradient-primary { background: linear-gradient(135deg,#3b82f6,#1d4ed8); }
-.bg-gradient-warning { background: linear-gradient(135deg,#f59e0b,#d97706); }
-.bg-gradient-success { background: linear-gradient(135deg,#10b981,#047857); }
-.bg-gradient-danger  { background: linear-gradient(135deg,#ef4444,#b91c1c); }
-</style>
 
 <?= $this->endSection() ?>
 

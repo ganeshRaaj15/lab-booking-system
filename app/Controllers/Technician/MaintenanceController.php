@@ -4,6 +4,7 @@ namespace App\Controllers\Technician;
 
 use App\Controllers\BaseController;
 use App\Libraries\NotificationService;
+use App\Libraries\MaintenanceForecastService;
 use App\Models\AssetModel;
 use App\Models\MaintenanceLogModel;
 use App\Models\MaintenanceRecordModel;
@@ -52,12 +53,20 @@ class MaintenanceController extends BaseController
         $records = $recordsQuery->orderBy('maintenance_records.created_at', 'DESC')->findAll();
         $labels = $this->maintenanceModel->workflowLabels();
 
+        $forecastService = new MaintenanceForecastService();
+        $upcomingForecasts = $forecastService->getUpcomingForecasts(90);
+        if ($assetId > 0) {
+            $upcomingForecasts = array_values(array_filter($upcomingForecasts, fn(array $row): bool => (int) ($row['asset_id'] ?? 0) === $assetId));
+        }
+
+
         return view('technician/maintenance/index', [
             'title' => 'Maintenance Records | FKMP Smart Lab',
             'page' => 'Maintenance Records',
             'roleLabel' => 'Technician',
             'user' => $user,
             'records' => $records,
+            'upcomingForecasts' => $upcomingForecasts,
             'assets' => $this->assetOptions(),
             'filters' => ['status' => $status, 'asset_id' => $assetId, 'scope' => $scope],
             'statusOptions' => array_keys($labels),
@@ -70,6 +79,8 @@ class MaintenanceController extends BaseController
         if ($redirect = $this->ensureTechnician()) {
             return $redirect;
         }
+
+        $assetId = $assetId ?? (int) $this->request->getGet('asset_id');
 
         $record = [
             'asset_id' => $assetId,
@@ -88,6 +99,8 @@ class MaintenanceController extends BaseController
             'report_photo_path' => null,
             'completion_photo_path' => null,
         ];
+
+        $record = array_merge($record, $this->prefillMaintenance($assetId));
 
         return view('technician/maintenance/form', [
             'title' => 'Plan Maintenance | FKMP Smart Lab',
@@ -145,7 +158,7 @@ class MaintenanceController extends BaseController
             'status' => 'scheduled',
             'asset_status_before' => $asset['status'],
             'asset_status_after' => null,
-            'scheduled_for' => $input['scheduled_for'],
+            'scheduled_for' => $this->toSqlDateTime($input['scheduled_for']),
             'accepted_at' => date('Y-m-d H:i:s'),
             'diagnosis_notes' => $input['diagnosis_notes'],
             'started_at' => null,
@@ -176,7 +189,10 @@ class MaintenanceController extends BaseController
             return redirect()->back()->withInput()->with('error', 'Unable to create maintenance record at the moment.');
         }
 
-        (new NotificationService())->notifyMaintenanceScheduled((int) $maintenanceId);
+        NotificationService::dispatchSafely(
+            fn(NotificationService $notifications) => $notifications->notifyMaintenanceScheduled((int) $maintenanceId),
+            'maintenance scheduled'
+        );
 
         return redirect()->to('/technician/maintenance')->with('success', 'Maintenance case created and scheduled successfully.');
     }
@@ -200,7 +216,7 @@ class MaintenanceController extends BaseController
             ->findAll();
 
         $isLocked = in_array($record['status'], ['completed', 'cancelled'], true);
-        $stageMode = $record['status'] === 'reported' ? 'pre' : ($isLocked ? 'locked' : 'post');
+        $stageMode = $isLocked ? 'locked' : $record['status'];
 
         return view('technician/maintenance/form', [
             'title' => 'Update Maintenance | FKMP Smart Lab',
@@ -244,16 +260,18 @@ class MaintenanceController extends BaseController
             return redirect()->back()->withInput()->with('error', 'Selected asset was not found.');
         }
 
-        $stageMode = $record['status'] === 'reported' ? 'pre' : 'post';
-        $message = $stageMode === 'pre'
-            ? $this->validatePreMaintenanceInput($input, $asset, $record)
-            : $this->validatePostMaintenanceInput($input, $asset, $record);
+        $targetStatus = $this->targetStatus((string) $record['status']);
+        if (! in_array($targetStatus, $this->maintenanceModel->nextStatuses((string) $record['status']), true)) {
+            return redirect()->back()->withInput()->with('error', 'Invalid maintenance workflow transition.');
+        }
+
+        $message = $this->validateTransitionInput($targetStatus, $input, $asset, $record);
         if ($message) {
             return redirect()->back()->withInput()->with('error', $message);
         }
 
         $completionPhotoPath = $record['completion_photo_path'] ?? null;
-        if ($stageMode === 'post') {
+        if ($targetStatus === 'completed') {
             $completionPhotoPath = $this->handlePhotoUpload('completion_photo', $completionPhotoPath);
         }
 
@@ -268,25 +286,7 @@ class MaintenanceController extends BaseController
             'description' => $input['description'],
         ];
 
-        if ($stageMode === 'pre') {
-            $updateData = array_merge($updateData, [
-                'status' => 'scheduled',
-                'scheduled_for' => $input['scheduled_for'],
-                'accepted_at' => $record['accepted_at'] ?: date('Y-m-d H:i:s'),
-                'diagnosis_notes' => $input['diagnosis_notes'],
-            ]);
-        } else {
-            $updateData = array_merge($updateData, [
-                'status' => 'completed',
-                'work_notes' => $input['work_notes'],
-                'test_notes' => $input['test_notes'],
-                'resolution_notes' => $input['resolution_notes'],
-                'completion_photo_path' => $completionPhotoPath,
-                'started_at' => $record['started_at'] ?: date('Y-m-d H:i:s'),
-                'tested_at' => date('Y-m-d H:i:s'),
-                'completed_at' => date('Y-m-d H:i:s'),
-            ]);
-        }
+        $updateData = array_merge($updateData, $this->transitionPayload($targetStatus, $input, $record, $completionPhotoPath));
 
         $oldAssetId = (int) $record['asset_id'];
         $newAssetId = (int) $input['asset_id'];
@@ -298,10 +298,8 @@ class MaintenanceController extends BaseController
             'maintenance_id' => $id,
             'changed_by' => $user->id,
             'from_status' => $record['status'],
-            'to_status' => $stageMode === 'pre' ? 'scheduled' : 'completed',
-            'notes' => $stageMode === 'pre'
-                ? 'Technician accepted the case, added diagnosis, and scheduled the maintenance work.'
-                : 'Technician completed the repair, testing, and completion summary with evidence.',
+            'to_status' => $targetStatus,
+            'notes' => $this->transitionLogMessage((string) $record['status'], $targetStatus),
             'created_at' => date('Y-m-d H:i:s'),
         ]);
 
@@ -315,15 +313,20 @@ class MaintenanceController extends BaseController
             return redirect()->back()->withInput()->with('error', 'Unable to update maintenance record at the moment.');
         }
 
-        if ($stageMode === 'pre') {
-            (new NotificationService())->notifyMaintenanceScheduled($id);
-        } else {
-            (new NotificationService())->notifyMaintenanceCompleted($id);
+        if ($targetStatus === 'scheduled') {
+            NotificationService::dispatchSafely(
+                fn(NotificationService $notifications) => $notifications->notifyMaintenanceScheduled($id),
+                'maintenance rescheduled'
+            );
+        } elseif ($targetStatus === 'completed') {
+            NotificationService::dispatchSafely(
+                fn(NotificationService $notifications) => $notifications->notifyMaintenanceCompleted($id),
+                'maintenance completed'
+            );
         }
 
-        return redirect()->to('/technician/maintenance/edit/' . $id)->with('success', $stageMode === 'pre'
-            ? 'Pre-maintenance stage saved successfully.'
-            : 'Post-maintenance stage completed successfully.');
+        return redirect()->to('/technician/maintenance/edit/' . $id)
+            ->with('success', 'Maintenance case moved to ' . $this->maintenanceModel->statusLabel($targetStatus) . '.');
     }
 
     protected function ensureTechnician()
@@ -373,6 +376,172 @@ class MaintenanceController extends BaseController
             'test_notes' => trim((string) $this->request->getPost('test_notes')),
             'resolution_notes' => trim((string) $this->request->getPost('resolution_notes')),
         ];
+    }
+
+    protected function targetStatus(string $currentStatus): string
+    {
+        $requested = trim((string) $this->request->getPost('transition'));
+        if ($requested !== '') {
+            return $requested;
+        }
+
+        return match ($currentStatus) {
+            'reported' => 'scheduled',
+            'scheduled' => 'in_progress',
+            'in_progress' => 'testing',
+            'testing' => 'completed',
+            default => '',
+        };
+    }
+
+    protected function validateTransitionInput(string $targetStatus, array $input, array $asset, array $record): ?string
+    {
+        return match ($targetStatus) {
+            'scheduled' => $this->validatePreMaintenanceInput($input, $asset, $record),
+            'testing' => $input['work_notes'] === '' ? 'Please enter repair work notes before moving the case to testing.' : null,
+            'completed' => $this->validatePostMaintenanceInput($input, $asset, $record),
+            default => null,
+        };
+    }
+
+    protected function transitionPayload(string $targetStatus, array $input, array $record, ?string $completionPhotoPath): array
+    {
+        $now = date('Y-m-d H:i:s');
+
+        return match ($targetStatus) {
+            'scheduled' => [
+                'status' => 'scheduled',
+                'scheduled_for' => $this->toSqlDateTime($input['scheduled_for']),
+                'accepted_at' => $record['accepted_at'] ?: $now,
+                'diagnosis_notes' => $input['diagnosis_notes'],
+            ],
+            'in_progress' => [
+                'status' => 'in_progress',
+                'scheduled_for' => $this->toSqlDateTime($input['scheduled_for'] ?: (string) ($record['scheduled_for'] ?? '')),
+                'diagnosis_notes' => $input['diagnosis_notes'] !== '' ? $input['diagnosis_notes'] : ($record['diagnosis_notes'] ?? null),
+                'started_at' => $record['started_at'] ?: $now,
+            ],
+            'testing' => [
+                'status' => 'testing',
+                'scheduled_for' => $this->toSqlDateTime($input['scheduled_for'] ?: (string) ($record['scheduled_for'] ?? '')),
+                'diagnosis_notes' => $input['diagnosis_notes'] !== '' ? $input['diagnosis_notes'] : ($record['diagnosis_notes'] ?? null),
+                'work_notes' => $input['work_notes'],
+                'started_at' => $record['started_at'] ?: $now,
+                'tested_at' => $now,
+            ],
+            'completed' => [
+                'status' => 'completed',
+                'scheduled_for' => $this->toSqlDateTime($input['scheduled_for'] ?: (string) ($record['scheduled_for'] ?? '')),
+                'diagnosis_notes' => $input['diagnosis_notes'] !== '' ? $input['diagnosis_notes'] : ($record['diagnosis_notes'] ?? null),
+                'work_notes' => $input['work_notes'],
+                'test_notes' => $input['test_notes'],
+                'resolution_notes' => $input['resolution_notes'],
+                'completion_photo_path' => $completionPhotoPath,
+                'started_at' => $record['started_at'] ?: $now,
+                'tested_at' => $record['tested_at'] ?: $now,
+                'completed_at' => $now,
+                'asset_status_after' => 'available',
+            ],
+            'cancelled' => [
+                'status' => 'cancelled',
+                'resolution_notes' => $input['resolution_notes'] ?: ($record['resolution_notes'] ?? 'Maintenance case cancelled.'),
+            ],
+            default => [],
+        };
+    }
+
+    protected function transitionLogMessage(string $fromStatus, string $targetStatus): string
+    {
+        return match ($targetStatus) {
+            'scheduled' => 'Technician accepted the case, added diagnosis, and scheduled the maintenance work.',
+            'in_progress' => $fromStatus === 'testing'
+                ? 'Technician returned the case from testing to repair work.'
+                : 'Technician started the maintenance work.',
+            'testing' => 'Technician completed repair notes and moved the case to testing.',
+            'completed' => 'Technician completed testing, resolution notes, and final evidence.',
+            'cancelled' => 'Technician cancelled the maintenance case.',
+            default => 'Maintenance case updated.',
+        };
+    }
+
+    protected function toSqlDateTime(string $value): ?string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return null;
+        }
+
+        return str_replace('T', ' ', strlen($value) === 16 ? $value . ':00' : $value);
+    }
+
+    protected function prefillMaintenance(?int $assetId = null): array
+    {
+        $assetId = $assetId ?: 0;
+        $asset = $assetId > 0 ? $this->assetModel->find($assetId) : null;
+
+        $issueType = trim((string) $this->request->getGet('issue_type'));
+        $issueTypes = ['preventive', 'inspection', 'calibration', 'other'];
+        if (! in_array($issueType, $issueTypes, true)) {
+            $issueType = 'preventive';
+        }
+
+        $priority = trim((string) $this->request->getGet('priority'));
+        $priorities = ['low', 'medium', 'high', 'critical'];
+        if (! in_array($priority, $priorities, true)) {
+            $priority = 'medium';
+        }
+
+        $quantity = (int) $this->request->getGet('quantity_affected');
+        if ($quantity <= 0) {
+            $quantity = 1;
+        }
+
+        $title = trim((string) $this->request->getGet('title'));
+        if ($title === '' && $asset) {
+            $title = 'Preventive Maintenance - ' . $asset['name'];
+        }
+
+        $scheduledFor = $this->normalizeScheduledFor((string) $this->request->getGet('scheduled_for'));
+
+        $prefill = [
+            'quantity_affected' => $quantity,
+            'title' => $title,
+            'issue_type' => $issueType,
+            'priority' => $priority,
+        ];
+
+        if ($assetId > 0) {
+            $prefill['asset_id'] = $assetId;
+        }
+
+        if ($scheduledFor !== '') {
+            $prefill['scheduled_for'] = $scheduledFor;
+        }
+
+        return $prefill;
+    }
+
+    protected function normalizeScheduledFor(string $raw): string
+    {
+        $raw = trim($raw);
+        if ($raw === '') {
+            return '';
+        }
+
+        if (preg_match('/^\\d{4}-\\d{2}-\\d{2}$/', $raw) === 1) {
+            return $raw . 'T09:00';
+        }
+
+        if (preg_match('/^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}$/', $raw) === 1) {
+            return str_replace(' ', 'T', $raw);
+        }
+
+        if (preg_match('/^\\d{4}-\\d{2}-\\d{2}[ T]\\d{2}:\\d{2}:\\d{2}$/', $raw) === 1) {
+            $raw = str_replace(' ', 'T', $raw);
+            return substr($raw, 0, 16);
+        }
+
+        return $raw;
     }
 
     protected function assetOptions(): array
@@ -469,5 +638,4 @@ class MaintenanceController extends BaseController
         return $currentPath;
     }
 }
-
 

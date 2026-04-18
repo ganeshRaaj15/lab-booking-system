@@ -42,10 +42,16 @@
             <td><div class="kpi-label">Rejected</div><div class="kpi-value"><?= esc($kpis['rejected']) ?></div></td>
         </tr>
         <tr>
+            <td><div class="kpi-label">Cancelled</div><div class="kpi-value"><?= esc($kpis['cancelled'] ?? 0) ?></div></td>
             <td><div class="kpi-label">Open Maintenance</div><div class="kpi-value"><?= esc($kpis['maintenance_open']) ?></div></td>
             <td><div class="kpi-label">Completed Maintenance</div><div class="kpi-value"><?= esc($kpis['maintenance_completed']) ?></div></td>
             <td><div class="kpi-label">Total Labs</div><div class="kpi-value"><?= esc($kpis['total_labs']) ?></div></td>
+        </tr>
+        <tr>
             <td><div class="kpi-label">Total Assets</div><div class="kpi-value"><?= esc($kpis['total_assets']) ?></div></td>
+            <td><div class="kpi-label">Users</div><div class="kpi-value"><?= esc($kpis['users'] ?? '-') ?></div></td>
+            <td><div class="kpi-label">Maintenance Total</div><div class="kpi-value"><?= esc($kpis['maintenance_total'] ?? 0) ?></div></td>
+            <td><div class="kpi-label">Scope Labs</div><div class="kpi-value"><?= esc($kpis['total_labs']) ?></div></td>
         </tr>
     </table>
 
@@ -55,7 +61,7 @@
                 <h2>Booking Status Breakdown</h2>
                 <?php $totalStatus = max(1, array_sum($statusMap)); ?>
                 <?php foreach ($statusMap as $status => $count): ?>
-                    <?php $percent = round(($count / $totalStatus) * 100); $class = $status === 'APPROVED' ? 'success' : ($status === 'PENDING' ? 'warning' : 'danger'); ?>
+                    <?php $percent = round(($count / $totalStatus) * 100); $class = $status === 'APPROVED' ? 'success' : ($status === 'PENDING' ? 'warning' : ($status === 'CANCELLED' ? 'secondary' : 'danger')); ?>
                     <div class="chart-row"><div class="chart-label"><?= esc($status) ?> (<?= esc($count) ?>)</div><div class="chart-bar"><div class="chart-fill <?= esc($class) ?>" style="width: <?= esc($percent) ?>%;"></div></div></div>
                 <?php endforeach; ?>
             </td>

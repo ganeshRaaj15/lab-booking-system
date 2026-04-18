@@ -2,6 +2,8 @@
 
 <?= $this->section('content') ?>
 
+<?php $filters = $filters ?? ['q' => '', 'status' => '', 'date_from' => '', 'date_to' => '']; ?>
+
 <!-- ========================================================= -->
 <!-- PAGE HEADER -->
 <!-- ========================================================= -->
@@ -33,7 +35,7 @@
 <div class="row g-3 mb-4">
 
     <!-- Pending -->
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card widget-card shadow-sm border-0 bg-gradient-warning text-dark">
             <div class="card-body d-flex align-items-center">
                 <div class="flex-grow-1">
@@ -46,7 +48,7 @@
     </div>
 
     <!-- Approved -->
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card widget-card shadow-sm border-0 bg-gradient-success text-white">
             <div class="card-body d-flex align-items-center">
                 <div class="flex-grow-1">
@@ -59,7 +61,7 @@
     </div>
 
     <!-- Rejected -->
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card widget-card shadow-sm border-0 bg-gradient-danger text-white">
             <div class="card-body d-flex align-items-center">
                 <div class="flex-grow-1">
@@ -67,6 +69,18 @@
                     <div class="fs-3 fw-bold"><?= esc($stats['rejected']) ?></div>
                 </div>
                 <i class="bi bi-x-circle fs-1 opacity-75"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card widget-card shadow-sm border-0 bg-secondary text-white">
+            <div class="card-body d-flex align-items-center">
+                <div class="flex-grow-1">
+                    <div class="small fw-semibold text-uppercase opacity-75">Cancelled</div>
+                    <div class="fs-3 fw-bold"><?= esc($stats['cancelled'] ?? 0) ?></div>
+                </div>
+                <i class="bi bi-slash-circle fs-1 opacity-75"></i>
             </div>
         </div>
     </div>
@@ -98,6 +112,34 @@
     </div>
 
     <div class="card-body">
+        <form method="get" action="/dashboard/external" class="row g-3 align-items-end mb-4">
+            <div class="col-md-4">
+                <label class="form-label small text-muted">Search</label>
+                <input type="text" name="q" class="form-control form-control-sm" value="<?= esc($filters['q']) ?>" placeholder="Lab, room, or activity">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Status</label>
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    <option value="PENDING" <?= $filters['status'] === 'PENDING' ? 'selected' : '' ?>>Pending</option>
+                    <option value="APPROVED" <?= $filters['status'] === 'APPROVED' ? 'selected' : '' ?>>Approved</option>
+                    <option value="REJECTED" <?= $filters['status'] === 'REJECTED' ? 'selected' : '' ?>>Rejected</option>
+                    <option value="CANCELLED" <?= $filters['status'] === 'CANCELLED' ? 'selected' : '' ?>>Cancelled</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">From</label>
+                <input type="date" name="date_from" class="form-control form-control-sm" value="<?= esc($filters['date_from']) ?>">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">To</label>
+                <input type="date" name="date_to" class="form-control form-control-sm" value="<?= esc($filters['date_to']) ?>">
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary btn-sm flex-fill"><i class="bi bi-funnel me-1"></i>Filter</button>
+                <a href="/dashboard/external" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x-lg"></i></a>
+            </div>
+        </form>
 
         <?php if (empty($bookings)): ?>
 
@@ -131,7 +173,7 @@
                                 </td>
 
                                 <td><?= esc($b['date']) ?></td>
-                                <td><?= esc($b['start_time']) ?> – <?= esc($b['end_time']) ?></td>
+                                <td><?= esc($b['start_time']) ?> to <?= esc($b['end_time']) ?></td>
                                 <td><?= esc($b['activity']) ?></td>
 
                                 <td>
@@ -140,6 +182,7 @@
                                             'PENDING'  => 'warning text-dark',
                                             'APPROVED' => 'success',
                                             'REJECTED' => 'danger',
+                                            'CANCELLED' => 'secondary',
                                         ];
                                         $badge = $statusColors[$b['status']] ?? 'secondary';
                                     ?>
@@ -150,7 +193,7 @@
 
                                 <td class="text-end">
                                     <?php if ($b['pdf_path']): ?>
-                                        <a href="<?= base_url($b['pdf_path']) ?>" target="_blank"
+                                        <a href="<?= site_url('document/pdf/' . basename($b['pdf_path'])) ?>" target="_blank"
                                            class="btn btn-sm btn-outline-primary">
                                             <i class="bi bi-file-earmark-pdf"></i>
                                         </a>
@@ -200,12 +243,5 @@ new Chart(document.getElementById('externalTrendChart'), {
 <!-- ========================================================= -->
 <!-- STYLES -->
 <!-- ========================================================= -->
-<style>
-.widget-card { border-radius: 12px; }
-.bg-gradient-warning { background: linear-gradient(135deg, #fde047, #facc15); }
-.bg-gradient-primary  { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
-.bg-gradient-success  { background: linear-gradient(135deg, #10b981, #047857); }
-.bg-gradient-danger   { background: linear-gradient(135deg, #ef4444, #b91c1c); }
-</style>
 
 <?= $this->endSection() ?>

@@ -33,9 +33,11 @@ class ManagerDashboard extends BaseController
             return view('dashboard/manager/index', [
                 'user' => $user,
                 'labs' => [],
-                'stats' => [],
+                'stats' => $this->emptyStats(),
                 'pendingMgr' => [],
-                'analytics' => [],
+                'analytics' => $this->emptyAnalytics(),
+                'activeTab' => $this->request->getGet('tab') ?? 'approvals',
+                'insightPeriod' => $this->parseInsightWeeks($this->request->getGet('insight_period')),
             ]);
         }
 
@@ -117,6 +119,39 @@ class ManagerDashboard extends BaseController
         return $pendingMgr;
     }
 
+    private function emptyStats(): array
+    {
+        return [
+            'total' => 0,
+            'approved' => 0,
+            'pending' => 0,
+            'rejected' => 0,
+            'cancelled' => 0,
+            'fkmp' => 0,
+            'nonFkmp' => 0,
+            'currentWeek' => 0,
+            'lastWeek' => 0,
+            'weekGrowth' => 0,
+            'pendingManager' => 0,
+            'maintenanceOpen' => 0,
+            'maintenanceCompleted' => 0,
+            'upcomingApproved' => 0,
+        ];
+    }
+
+    private function emptyAnalytics(): array
+    {
+        return [
+            'weeklyUtilization' => [],
+            'peakHours' => ['timeSlots' => [], 'busyDays' => []],
+            'labPerformance' => [],
+            'monthlyTrends' => [],
+            'facultyDistribution' => [],
+            'assetUsage' => ['mostUsed' => []],
+            'demandInsights' => ['period_weeks' => 8, 'total_bookings' => 0, 'top_slots' => []],
+        ];
+    }
+
     /**
      * Get comprehensive statistics
      */
@@ -124,7 +159,7 @@ class ManagerDashboard extends BaseController
     {
         $db = \Config\Database::connect();
         
-        $statusFilter = ['PENDING', 'APPROVED', 'REJECTED'];
+        $statusFilter = BookingModel::CORE_STATUSES;
 
         // Approved bookings
         $approved = $db->table('bookings')
@@ -144,8 +179,13 @@ class ManagerDashboard extends BaseController
             ->where('status', 'REJECTED')
             ->countAllResults();
 
+        $cancelled = $db->table('bookings')
+            ->whereIn('lab_id', $labIds)
+            ->where('status', 'CANCELLED')
+            ->countAllResults();
+
         // Total bookings (only core statuses for consistency)
-        $total = $pending + $approved + $rejected;
+        $total = $pending + $approved + $rejected + $cancelled;
             
         // FKMP vs Non-FKMP
         $fkmp = $db->table('bookings b')
@@ -182,13 +222,14 @@ class ManagerDashboard extends BaseController
             'approved' => $approved,
             'pending' => $pending,
             'rejected' => $rejected,
+            'cancelled' => $cancelled,
             'fkmp' => $fkmp,
             'nonFkmp' => $nonFkmp,
             'currentWeek' => $currentWeek,
             'lastWeek' => $lastWeek,
             'weekGrowth' => round($weekGrowth, 1),
             'pendingManager' => $this->getPendingManagerCount($labIds),
-            'maintenanceOpen' => empty($labIds) ? 0 : (int) \Config\Database::connect()->table('maintenance_records mr')->join('assets a', 'a.id = mr.asset_id', 'inner')->whereIn('a.lab_id', $labIds)->whereIn('mr.status', ['reported', 'scheduled'])->countAllResults(),
+            'maintenanceOpen' => empty($labIds) ? 0 : (int) \Config\Database::connect()->table('maintenance_records mr')->join('assets a', 'a.id = mr.asset_id', 'inner')->whereIn('a.lab_id', $labIds)->whereIn('mr.status', ['reported', 'scheduled', 'in_progress', 'testing'])->countAllResults(),
             'maintenanceCompleted' => empty($labIds) ? 0 : (int) \Config\Database::connect()->table('maintenance_records mr')->join('assets a', 'a.id = mr.asset_id', 'inner')->whereIn('a.lab_id', $labIds)->where('mr.status', 'completed')->countAllResults(),
             'upcomingApproved' => empty($labIds) ? 0 : (int) \Config\Database::connect()->table('bookings')->whereIn('lab_id', $labIds)->where('status', 'APPROVED')->where('date >=', date('Y-m-d'))->where('date <=', date('Y-m-d', strtotime('+7 days')))->countAllResults(),
         ];
@@ -237,7 +278,7 @@ private function getWeeklyUtilization(array $labIds, int $weeks = 8): array
     // Process results and add calculated fields
     $processed = [];
     foreach ($result as $row) {
-        // Calculate average utilization: (bookings ÷ (labs × 20 slots)) × 100
+        // Calculate average utilization: (bookings / (labs * 20 slots)) * 100
         $avgUtilization = $row['labs_used'] > 0 
             ? round(($row['total_bookings'] / ($row['labs_used'] * 20)) * 100, 1)
             : 0;
@@ -333,10 +374,11 @@ private function getPeakHoursAnalysis(array $labIds): array
                     COUNT(*) as total,
                     SUM(CASE WHEN status = 'APPROVED' THEN 1 ELSE 0 END) as approved,
                     SUM(CASE WHEN status = 'PENDING' THEN 1 ELSE 0 END) as pending,
-                    SUM(CASE WHEN status = 'REJECTED' THEN 1 ELSE 0 END) as rejected
+                    SUM(CASE WHEN status = 'REJECTED' THEN 1 ELSE 0 END) as rejected,
+                    SUM(CASE WHEN status = 'CANCELLED' THEN 1 ELSE 0 END) as cancelled
                 ")
                 ->where('lab_id', $lab['id'])
-                ->whereIn('status', ['PENDING', 'APPROVED', 'REJECTED'])
+                ->whereIn('status', BookingModel::CORE_STATUSES)
                 ->where('created_at >=', date('Y-m-d', strtotime('-30 days')))
                 ->get()
                 ->getRowArray();
@@ -348,7 +390,7 @@ private function getPeakHoursAnalysis(array $labIds): array
                 ->where('date >=', date('Y-m-d', strtotime('-7 days')))
                 ->countAllResults();
                 
-            // Max possible: 5 weekdays × 4 slots = 20 slots/week
+            // Max possible: 5 weekdays * 4 slots = 20 slots/week
             $weeklyUtilization = $weeklyBookings > 0 ? min(100, ($weeklyBookings / 20) * 100) : 0;
             
             $labPerformance[] = [
@@ -360,6 +402,7 @@ private function getPeakHoursAnalysis(array $labIds): array
                 'approved' => (int)($stats['approved'] ?? 0),
                 'pending' => (int)($stats['pending'] ?? 0),
                 'rejected' => (int)($stats['rejected'] ?? 0),
+                'cancelled' => (int)($stats['cancelled'] ?? 0),
                 'weekly_utilization' => round($weeklyUtilization, 1),
             ];
         }
@@ -382,7 +425,7 @@ private function getPeakHoursAnalysis(array $labIds): array
         $result = $db->table('bookings')
             ->select("DATE_FORMAT(date, '%Y-%m') as month, COUNT(*) as total")
             ->whereIn('lab_id', $labIds)
-            ->whereIn('status', ['PENDING', 'APPROVED', 'REJECTED'])
+            ->whereIn('status', BookingModel::CORE_STATUSES)
             ->where('date >=', date('Y-m-01', strtotime("-$months months")))
             ->groupBy('month')
             ->orderBy('month', 'ASC')

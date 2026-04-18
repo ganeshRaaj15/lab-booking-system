@@ -88,11 +88,12 @@ class ProfileController extends BaseController
         }
 
         $db = \Config\Database::connect();
+        $email = strtolower(trim((string) $post['email']));
 
         // Email uniqueness check
         $existingEmail = $db->table('auth_identities')
             ->where('type', 'email_password')
-            ->where('secret', trim($post['email']))
+            ->where('LOWER(secret) =', $email)
             ->where('user_id !=', $user->id)
             ->countAllResults();
 
@@ -148,7 +149,7 @@ class ProfileController extends BaseController
         $db->table('auth_identities')
             ->where('user_id', $user->id)
             ->where('type', 'email_password')
-            ->set('secret', trim($post['email']))
+            ->set('secret', $email)
             ->set('updated_at', date('Y-m-d H:i:s'))
             ->update();
 

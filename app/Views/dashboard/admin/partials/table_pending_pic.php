@@ -27,12 +27,14 @@
 
             <td class="text-end">
                 <form action="/booking/approve/<?= $b['id'] ?>" method="post" class="d-inline">
+                    <?= csrf_field() ?>
                     <button class="btn btn-success btn-sm">
                         <i class="bi bi-check2"></i> Approve
                     </button>
                 </form>
 
                 <form action="/booking/reject/<?= $b['id'] ?>" method="post" class="d-inline">
+                    <?= csrf_field() ?>
                     <button class="btn btn-danger btn-sm">
                         <i class="bi bi-x-lg"></i> Reject
                     </button>

@@ -21,7 +21,7 @@ class PicDashboard extends BaseController
         }
 
         $user     = auth()->user();
-        $picEmail = trim($user->email);
+        $picEmail = strtolower(trim((string) $user->email));
 
         $labModel     = new LaboratoryModel();
         $bookingModel = new BookingModel();
@@ -32,7 +32,7 @@ class PicDashboard extends BaseController
         // 1. Labs owned by this PIC
         // -----------------------------------------------------
         $labs = $labModel
-            ->where("TRIM(pic_email) =", $picEmail)
+            ->where("LOWER(TRIM(pic_email)) =", $picEmail)
             ->findAll();
 
         $labIds = array_column($labs, 'id');
@@ -45,7 +45,7 @@ class PicDashboard extends BaseController
                 'pendingMgr'    => [],
                 'approved'      => [],
                 'rejected'      => [],
-                'widget'        => ['pending' => 0, 'approved' => 0, 'rejected' => 0, 'total' => 0],
+                'widget'        => ['pending' => 0, 'pending_mgr' => 0, 'approved' => 0, 'rejected' => 0, 'cancelled' => 0, 'total' => 0],
                 'monthlyCounts' => [],
                 'facultyCounts' => [],
                 'labCounts'     => [],
@@ -65,7 +65,7 @@ class PicDashboard extends BaseController
                      faculties.name_en AS faculty_name, faculties.is_fkmp')
             ->join('laboratories', 'laboratories.id = bookings.lab_id', 'left')
             ->join('faculties', 'faculties.id = bookings.faculty_id', 'left')
-            ->where("TRIM(laboratories.pic_email) =", $picEmail)
+            ->where("LOWER(TRIM(laboratories.pic_email)) =", $picEmail)
             ->where('bookings.status', 'PENDING')
             ->where('bookings.approved_by_pic', 0)
             ->orderBy('bookings.date', 'ASC')
@@ -85,7 +85,7 @@ class PicDashboard extends BaseController
         $pendingMgr = $bookingModel
             ->select('bookings.*, laboratories.name AS lab_name, laboratories.room AS lab_room')
             ->join('laboratories', 'laboratories.id = bookings.lab_id', 'left')
-            ->where("TRIM(laboratories.pic_email) =", trim($picEmail))
+            ->where("LOWER(TRIM(laboratories.pic_email)) =", $picEmail)
             ->where('bookings.status', 'PENDING')
             ->where('bookings.approved_by_pic', 1)
             ->where('bookings.approved_by_manager', 0)
@@ -98,7 +98,7 @@ class PicDashboard extends BaseController
         $approved = $bookingModel
             ->select('bookings.*, laboratories.name AS lab_name, laboratories.room AS lab_room')
             ->join('laboratories', 'laboratories.id = bookings.lab_id', 'left')
-            ->where("TRIM(laboratories.pic_email) =", trim($picEmail))
+            ->where("LOWER(TRIM(laboratories.pic_email)) =", $picEmail)
             ->where('bookings.status', 'APPROVED')
             ->orderBy('bookings.date', 'DESC')
             ->limit(10) // Show only recent ones
@@ -108,11 +108,29 @@ class PicDashboard extends BaseController
         $rejected = $bookingModel
             ->select('bookings.*, laboratories.name AS lab_name, laboratories.room AS lab_room')
             ->join('laboratories', 'laboratories.id = bookings.lab_id', 'left')
-            ->where("TRIM(laboratories.pic_email) =", trim($picEmail))
+            ->where("LOWER(TRIM(laboratories.pic_email)) =", $picEmail)
             ->where('bookings.status', 'REJECTED')
             ->orderBy('bookings.date', 'DESC')
             ->limit(5)
             ->findAll();
+
+        $approvedCount = $bookingModel
+            ->join('laboratories', 'laboratories.id = bookings.lab_id', 'left')
+            ->where("LOWER(TRIM(laboratories.pic_email)) =", $picEmail)
+            ->where('bookings.status', 'APPROVED')
+            ->countAllResults();
+
+        $rejectedCount = $bookingModel
+            ->join('laboratories', 'laboratories.id = bookings.lab_id', 'left')
+            ->where("LOWER(TRIM(laboratories.pic_email)) =", $picEmail)
+            ->where('bookings.status', 'REJECTED')
+            ->countAllResults();
+
+        $cancelledCount = $bookingModel
+            ->join('laboratories', 'laboratories.id = bookings.lab_id', 'left')
+            ->where("LOWER(TRIM(laboratories.pic_email)) =", $picEmail)
+            ->where('bookings.status', 'CANCELLED')
+            ->countAllResults();
 
         // -----------------------------------------------------
         // 3. Dashboard widget numbers
@@ -120,9 +138,10 @@ class PicDashboard extends BaseController
         $widget = [
             'pending'  => count($pendingPic),
             'pending_mgr' => count($pendingMgr),
-            'approved' => count($approved),
-            'rejected' => count($rejected),
-            'total'    => count($pendingPic) + count($pendingMgr) + count($approved) + count($rejected),
+            'approved' => $approvedCount,
+            'rejected' => $rejectedCount,
+            'cancelled' => $cancelledCount,
+            'total'    => count($pendingPic) + count($pendingMgr) + $approvedCount + $rejectedCount + $cancelledCount,
         ];
 
         // -----------------------------------------------------
@@ -167,7 +186,7 @@ private function getMonthlyBookingsForLabs(array $labIds, int $months = 6): arra
     $result = $db->table('bookings')
         ->select("DATE_FORMAT(date, '%Y-%m') as month, COUNT(*) as count")
         ->whereIn('lab_id', $labIds)
-        ->whereIn('status', ['PENDING', 'APPROVED', 'REJECTED'])
+        ->whereIn('status', BookingModel::CORE_STATUSES)
         ->where('date >=', date('Y-m-01', strtotime("-$months months")))
         ->groupBy('month')  // Group by the alias
         ->orderBy('month', 'ASC')
@@ -322,6 +341,14 @@ private function getUsageTrends(array $labIds): array
             'status' => 'error',
             'message' => 'Booking not found'
         ]);
+    }
+
+    $picEmail = strtolower(trim((string) auth()->user()->email));
+    if (strtolower(trim((string) ($booking['pic_email'] ?? ''))) !== $picEmail) {
+        return $this->response->setJSON([
+            'status' => 'error',
+            'message' => 'Unauthorized'
+        ])->setStatusCode(403);
     }
     
     // Get assets

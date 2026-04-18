@@ -1,6 +1,13 @@
 <?= $this->extend('layouts/main_user') ?>
 <?= $this->section('content') ?>
 
+<?php
+$homeStats = $stats ?? [];
+$labCount = (int) ($homeStats['lab_count'] ?? 0);
+$bookingCount = (int) ($homeStats['total_bookings'] ?? 0);
+$approvedCount = (int) ($homeStats['approved'] ?? 0);
+?>
+
 <!-- ============================================================
      HERO SECTION WITH AERIAL FOOTAGE
      ============================================================ -->
@@ -27,20 +34,26 @@
     <!-- Hero Content -->
     <div class="container">
         <div class="hero-content">
-            <h1>FKMP Smart Laboratory Management System</h1>
-            <p class="subtitle">
-                Experience UTHM's state-of-the-art facilities. Book laboratories, manage equipment,
-                and streamline lab usage efficiently - all in one place.
-            </p>
-            <div class="hero-buttons">
-                <a href="<?= site_url('/laboratories') ?>" class="hero-btn hero-btn-secondary">
-                    <i class="bi bi-building"></i>
-                    Explore Laboratories
-                </a>
-                <a href="<?= site_url('/login') ?>" class="hero-btn hero-btn-primary">
-                    <i class="bi bi-box-arrow-in-right"></i>
-                    Login to SLAMS
-                </a>
+            <div class="home-hero-panel">
+                <div class="hero-eyebrow">
+                    <i class="bi bi-stars"></i>
+                    FKMP UTHM Laboratory Access
+                </div>
+                <h1>Smart laboratory booking with clearer approval control.</h1>
+                <p class="subtitle">
+                    Discover FKMP laboratories, check available resources, submit booking requests,
+                    and track approvals through one coordinated SLAMS workspace.
+                </p>
+                <div class="hero-buttons">
+                    <a href="<?= site_url('/laboratories') ?>" class="hero-btn hero-btn-primary">
+                        <i class="bi bi-building"></i>
+                        Explore Laboratories
+                    </a>
+                    <a href="<?= site_url('/login') ?>" class="hero-btn hero-btn-secondary">
+                        <i class="bi bi-box-arrow-in-right"></i>
+                        Login to SLAMS
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -55,12 +68,39 @@
 
 <div class="container">
 
+    <section class="home-stats-section" aria-label="SLAMS public summary">
+        <div class="home-stat-grid">
+            <div class="home-stat">
+                <span class="home-stat-value"><?= esc($labCount) ?></span>
+                <span class="home-stat-label">Laboratories listed</span>
+            </div>
+            <div class="home-stat">
+                <span class="home-stat-value"><?= esc($bookingCount) ?></span>
+                <span class="home-stat-label">Booking records</span>
+            </div>
+            <div class="home-stat">
+                <span class="home-stat-value"><?= esc($approvedCount) ?></span>
+                <span class="home-stat-label">Approved requests</span>
+            </div>
+        </div>
+    </section>
+
     <!-- ============================================================
          FEATURE SECTION
          ============================================================ -->
-    <h3 class="feature-section-title">Why Use SLAMS?</h3>
+    <div class="home-section-header">
+        <div class="home-section-kicker">
+            <i class="bi bi-lightning-charge"></i>
+            Core Experience
+        </div>
+        <h3 class="feature-section-title">A cleaner way to manage lab access</h3>
+        <p class="text-muted">
+            SLAMS keeps requests, equipment availability, approval stages, and notifications connected
+            so each role can work from the same source of truth.
+        </p>
+    </div>
 
-    <div class="row g-4 mb-5">
+    <div class="row g-4 mb-5 home-feature-grid">
 
         <div class="col-md-4">
             <div class="feature-card">
@@ -100,19 +140,59 @@
 
     </div>
 
+    <!-- ============================================================
+         WORKFLOW SECTION
+         ============================================================ -->
+    <section class="home-flow-section">
+        <div class="home-section-header">
+            <div class="home-section-kicker">
+                <i class="bi bi-diagram-3"></i>
+                Booking Workflow
+            </div>
+            <h3>From discovery to approval</h3>
+            <p class="text-muted">
+                The public journey stays simple while PIC and manager checks remain structured behind the scenes.
+            </p>
+        </div>
+
+        <div class="home-flow-grid">
+            <div class="home-flow-card">
+                <div class="home-flow-step">1</div>
+                <h5>Choose a laboratory</h5>
+                <p class="small mb-0">Browse available FKMP facilities and review room, PIC, and equipment information.</p>
+            </div>
+            <div class="home-flow-card">
+                <div class="home-flow-step">2</div>
+                <h5>Select resources</h5>
+                <p class="small mb-0">Request the required assets and booking slot with built-in availability checks.</p>
+            </div>
+            <div class="home-flow-card">
+                <div class="home-flow-step">3</div>
+                <h5>Track the decision</h5>
+                <p class="small mb-0">Receive status updates as requests move through PIC and manager approval.</p>
+            </div>
+        </div>
+    </section>
 
     <!-- ============================================================
          CTA SECTION
          ============================================================ -->
     <section class="cta-section">
-        <h4 class="fw-bold mb-3">Ready to get started?</h4>
-        <p class="mb-4">
-            Log in to submit a booking request at UTHM.
-        </p>
-        <div class="cta-buttons">
-            <a href="<?= site_url('/login') ?>" class="btn btn-glow px-4 py-2">
-                <i class="bi bi-person-circle me-1"></i> Login Now
-            </a>
+        <div class="home-cta-content">
+            <div class="home-cta-copy">
+                <h4 class="fw-bold mb-2">Ready to submit a booking request?</h4>
+                <p class="mb-0">
+                    Log in to continue with your SLAMS dashboard, or browse laboratories first if you are still planning.
+                </p>
+            </div>
+            <div class="cta-buttons mt-0">
+                <a href="<?= site_url('/login') ?>" class="btn btn-glow px-4 py-2">
+                    <i class="bi bi-person-circle me-1"></i> Login Now
+                </a>
+                <a href="<?= site_url('/laboratories') ?>" class="btn btn-glass px-4 py-2">
+                    <i class="bi bi-search me-1"></i> Browse Labs
+                </a>
+            </div>
         </div>
     </section>
 
@@ -123,20 +203,21 @@
 document.addEventListener('DOMContentLoaded', function() {
     const video = document.getElementById('uthmVideo');
     const videoBtn = document.getElementById('videoPauseBtn');
-    const videoIcon = videoBtn.querySelector('i');
     let isPlaying = true;
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const isSmallScreen = window.matchMedia('(max-width: 768px)').matches;
+
+    function setVideoIcon(iconClass) {
+        const icon = videoBtn ? videoBtn.querySelector('i') : null;
+        if (icon) {
+            icon.className = iconClass;
+        }
+    }
     
     // Optimize video for night footage
-    if (video) {
-        // Adjust video settings for night footage
-        video.style.filter = 'brightness(0.8) contrast(1.2) saturate(1.1)';
-        
+    if (video && videoBtn) {
         // Ensure video plays
         video.play().catch(error => {
             console.log('Autoplay prevented, showing play button');
-            videoBtn.innerHTML = '<i class="bi bi-play-fill"></i>';
+            setVideoIcon('bi bi-play-fill');
             isPlaying = false;
         });
         
@@ -144,25 +225,16 @@ document.addEventListener('DOMContentLoaded', function() {
         videoBtn.addEventListener('click', function() {
             if (isPlaying) {
                 video.pause();
-                videoIcon.className = 'bi bi-play-fill';
+                setVideoIcon('bi bi-play-fill');
                 videoBtn.title = 'Play Video';
                 isPlaying = false;
             } else {
                 video.play();
-                videoIcon.className = 'bi bi-pause-fill';
+                setVideoIcon('bi bi-pause-fill');
                 videoBtn.title = 'Pause Video';
                 isPlaying = true;
             }
         });
-        
-        // Add subtle parallax effect on scroll (skip for small screens/reduced motion)
-        if (!prefersReducedMotion && !isSmallScreen) {
-            window.addEventListener('scroll', function() {
-                const scrolled = window.pageYOffset;
-                const rate = scrolled * 0.1;
-                video.style.transform = `translateY(${rate}px)`;
-            });
-        }
         
         // Handle video loading states
         video.addEventListener('waiting', function() {

@@ -10,7 +10,7 @@
 ?>
 
 <!-- KPI CARDS -->
-<div class="row g-3 mb-4">
+<div class="row g-2 mb-3">
 
     <!-- Total Bookings -->
     <div class="col-md-3">
@@ -72,6 +72,12 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const ctx = document.getElementById('trendChart');
+    if (!ctx || typeof Chart === 'undefined') {
+        return;
+    }
+
+    const styles = getComputedStyle(document.documentElement);
+    const primary = styles.getPropertyValue('--slams-primary').trim() || '#0f766e';
 
     const trendLabels = <?= json_encode(array_column($trends, 'month')) ?>;
     const trendData   = <?= json_encode(array_column($trends, 'total')) ?>;
@@ -86,23 +92,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 fill: true,
                 tension: 0.4,
                 borderWidth: 2,
-                borderColor: '#2563eb',   // blue
-                backgroundColor: 'rgba(37, 99, 235, 0.15)'
+                borderColor: primary,
+                backgroundColor: 'rgba(15, 118, 110, 0.14)'
             }]
         }
     });
 });
 </script>
-
-
-<style>
-.kpi-card-blue    { background: #e0f2ff; }
-.kpi-card-yellow  { background: #fff9db; }
-.kpi-card-green   { background: #e3ffe0; }
-.kpi-card-red     { background: #ffe0e0; }
-
-.kpi-card-blue h2    { color:#2563eb; }
-.kpi-card-yellow h2  { color:#ca8a04; }
-.kpi-card-green h2   { color:#16a34a; }
-.kpi-card-red h2     { color:#dc2626; }
-</style>

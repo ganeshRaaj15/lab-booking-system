@@ -1,6 +1,8 @@
 <?= $this->extend('layouts/main_admin') ?>
 <?= $this->section('content') ?>
 
+<?php $filters = $filters ?? ['q' => '', 'pic' => '']; ?>
+
 <div class="container-fluid">
     <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
         <div>
@@ -13,9 +15,36 @@
     <?php if (session()->getFlashdata('message')): ?>
         <div class="alert alert-success border-0 shadow-sm"><?= esc(session()->getFlashdata('message')) ?></div>
     <?php endif; ?>
+    <?php if (session()->getFlashdata('warning')): ?>
+        <div class="alert alert-warning border-0 shadow-sm"><?= esc(session()->getFlashdata('warning')) ?></div>
+    <?php endif; ?>
     <?php if (session()->getFlashdata('error')): ?>
         <div class="alert alert-danger border-0 shadow-sm"><?= esc(session()->getFlashdata('error')) ?></div>
     <?php endif; ?>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" action="/admin/labs" class="row g-3 align-items-end">
+                <div class="col-md-6">
+                    <label class="form-label small text-muted">Search</label>
+                    <input type="text" name="q" class="form-control" value="<?= esc($filters['q']) ?>" placeholder="Lab name, room, PIC name, or PIC email">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">PIC Assignment</label>
+                    <select name="pic" class="form-select">
+                        <option value="">All labs</option>
+                        <option value="assigned" <?= $filters['pic'] === 'assigned' ? 'selected' : '' ?>>Assigned PIC</option>
+                        <option value="unassigned" <?= $filters['pic'] === 'unassigned' ? 'selected' : '' ?>>Missing PIC email</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-fill"><i class="bi bi-funnel me-1"></i>Filter</button>
+                    <a href="/admin/labs" class="btn btn-outline-secondary"><i class="bi bi-x-lg"></i></a>
+                </div>
+            </form>
+            <div class="small text-muted mt-3">Showing <?= esc(count($labs)) ?> of <?= esc($totalLabs ?? count($labs)) ?> laboratory record(s).</div>
+        </div>
+    </div>
 
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
@@ -44,6 +73,11 @@
                                         <div><?= esc($lab['pic_name']) ?></div>
                                         <div class="small text-muted"><?= esc($lab['pic_email'] ?: '-') ?></div>
                                         <div class="small text-muted"><?= esc($lab['pic_phone'] ?: '-') ?></div>
+                                        <?php if (!empty($lab['pic_email']) && empty($lab['pic_account_linked'])): ?>
+                                            <div class="small text-danger mt-1">PIC email is not linked to a user account.</div>
+                                        <?php elseif (!empty($lab['pic_email']) && empty($lab['pic_account_has_role'])): ?>
+                                            <div class="small text-warning mt-1">Linked user does not have the PIC role.</div>
+                                        <?php endif; ?>
                                     </td>
                                     <td>
                                         <div>Capacity: <?= esc($lab['capacity'] ?: '-') ?></div>

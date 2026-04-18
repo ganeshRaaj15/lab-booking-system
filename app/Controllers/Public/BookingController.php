@@ -157,7 +157,7 @@ class BookingController extends BaseController
 
     /*
     |--------------------------------------------------------------------------
-    | MONTH VIEW â€“ FULLCALENDAR (ASSET-AWARE)
+    | MONTH VIEW - FULLCALENDAR (ASSET-AWARE)
     |--------------------------------------------------------------------------
     */
     public function calendarWithAssets(int $labId): ResponseInterface
@@ -174,6 +174,7 @@ class BookingController extends BaseController
         if (empty($selected)) return [];
 
         $db = \Config\Database::connect();
+        $bookingModel = new BookingModel();
         $today = date('Y-m-d');
         $slotDefs = $this->getSlotDefinitions();
 
@@ -192,6 +193,9 @@ class BookingController extends BaseController
             $hasValidSlot = false;
 
             foreach ($slotDefs as $slot) {
+                if ($bookingModel->hasLabConflict($labId, $date, $slot['start'], $slot['end'])) {
+                    continue;
+                }
 
                 $remaining = $this->computeRemainingForSlot(
                     $labId, $date, $slot['start'], $slot['end'], $selected
@@ -222,7 +226,7 @@ class BookingController extends BaseController
 
     /*
     |--------------------------------------------------------------------------
-    | DAY VIEW â€“ TIMESLOT DETAIL (ASSET-AWARE)
+    | DAY VIEW - TIMESLOT DETAIL (ASSET-AWARE)
     |--------------------------------------------------------------------------
     */
     public function dayWithAssets(int $labId, string $date): ResponseInterface
@@ -240,6 +244,7 @@ class BookingController extends BaseController
 
         $slotDefs = $this->getSlotDefinitions();
         $assetModel = new AssetModel();
+        $bookingModel = new BookingModel();
 
         $assets = $assetModel->where('lab_id', $labId)
                              ->whereIn('id', array_keys($selected))
@@ -261,6 +266,12 @@ class BookingController extends BaseController
 
             $assetsInfo = [];
             $slotOK = true;
+            $reason = null;
+
+            if ($bookingModel->hasLabConflict($labId, $date, $slot['start'], $slot['end'])) {
+                $slotOK = false;
+                $reason = 'Laboratory already booked for this slot.';
+            }
 
             foreach ($selected as $assetId => $need) {
                 $rem = $remaining[$assetId] ?? 0;
@@ -277,6 +288,7 @@ class BookingController extends BaseController
 
             if ($date < $today || ($date === $today && $slot['end'] <= $now)) {
                 $slotOK = false;
+                $reason = 'Slot is already in the past.';
             }
 
             $slots[] = [
@@ -284,6 +296,7 @@ class BookingController extends BaseController
                 'start'    => substr($slot['start'], 0, 5),
                 'end'      => substr($slot['end'], 0, 5),
                 'can_book' => $slotOK,
+                'reason'   => $reason,
                 'assets'   => $assetsInfo,
             ];
         }
@@ -315,6 +328,12 @@ class BookingController extends BaseController
 
         $start = $this->normalizeTime($startTime);
         $end   = $this->normalizeTime($endTime);
+        if ($start >= $end) {
+            return $this->response->setJSON([
+                'conflict' => true,
+                'reason'   => 'End time must be later than start time.'
+            ]);
+        }
 
         $today = date('Y-m-d');
         $now   = date('H:i:s');
@@ -323,6 +342,14 @@ class BookingController extends BaseController
             return $this->response->setJSON([
                 'conflict' => true,
                 'reason'   => 'Slot is already in the past.'
+            ]);
+        }
+
+        $bookingModel = new BookingModel();
+        if ($bookingModel->hasLabConflict($labId, $date, $start, $end)) {
+            return $this->response->setJSON([
+                'conflict' => true,
+                'reason'   => 'This laboratory already has an active booking for that time.'
             ]);
         }
 
@@ -466,6 +493,14 @@ class BookingController extends BaseController
             ]);
         }
 
+        $bookingModel = new BookingModel();
+        if ($bookingModel->hasLabConflict($labId, $date, $startTime, $endTime)) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'This laboratory is already booked for the selected date and time.'
+            ]);
+        }
+
         $remaining = $this->computeRemainingForSlot($labId, $date, $startTime, $endTime, $selectedAssets);
 
         foreach ($selectedAssets as $assetId => $qtyNeeded) {
@@ -479,21 +514,40 @@ class BookingController extends BaseController
 
         $pdfFile = $this->request->getFile('pdf');
         $pdfPath = null;
+        $storedPdfName = null;
 
-        if ($pdfFile && $pdfFile->isValid()) {
-            $newName = $pdfFile->getRandomName();
-            $pdfFile->move(WRITEPATH . 'uploads/pdfs', $newName);
-            $pdfPath = '/uploads/pdfs/' . $newName;
-        }
-
-        $bookingModel = new BookingModel();
         $bookingApplicantModel = new BookingApplicantModel();
         $bookingAssetModel = new BookingAssetModel();
         $db = \Config\Database::connect();
 
-        $db->transStart();
+        $db->transBegin();
 
         try {
+            $conflicts = $bookingModel->activeLabConflictsForUpdate($labId, $date, $startTime, $endTime);
+            if ($conflicts !== []) {
+                throw new \DomainException('This laboratory slot was just taken. Please choose another time.');
+            }
+
+            $remaining = $this->computeRemainingForSlot($labId, $date, $startTime, $endTime, $selectedAssets);
+            foreach ($selectedAssets as $assetId => $qtyNeeded) {
+                if (($remaining[$assetId] ?? 0) < $qtyNeeded) {
+                    throw new \DomainException('Selected assets are no longer available for that slot.');
+                }
+            }
+
+            if ($pdfFile && $pdfFile->isValid() && ! $pdfFile->hasMoved()) {
+                $uploadDir = WRITEPATH . 'uploads/pdfs';
+                if (! is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0755, true);
+                }
+
+                $storedPdfName = $pdfFile->getRandomName();
+                if (! $pdfFile->move($uploadDir, $storedPdfName)) {
+                    throw new \RuntimeException('Unable to store uploaded PDF.');
+                }
+                $pdfPath = '/uploads/pdfs/' . $storedPdfName;
+            }
+
             $bookingId = $bookingModel->insert([
                 'user_id'          => auth()->id(),
                 'lab_id'           => $labId,
@@ -521,22 +575,30 @@ class BookingController extends BaseController
 
             $bookingApplicantModel->insertBatchApplicants($bookingId, $applicants);
 
-            $db->transComplete();
-
             if ($db->transStatus() === false) {
                 throw new \RuntimeException('Unable to save booking data.');
             }
+
+            $db->transCommit();
         } catch (\Throwable $e) {
             $db->transRollback();
+            if ($storedPdfName && is_file(WRITEPATH . 'uploads/pdfs/' . $storedPdfName)) {
+                @unlink(WRITEPATH . 'uploads/pdfs/' . $storedPdfName);
+            }
             log_message('error', 'Booking submission failed: ' . $e->getMessage());
 
             return $this->response->setJSON([
                 'status'  => 'error',
-                'message' => 'Failed to save booking. Please try again.'
+                'message' => $e instanceof \DomainException
+                    ? $e->getMessage()
+                    : 'Failed to save booking. Please try again.'
             ]);
         }
 
-        (new NotificationService())->notifyBookingSubmitted($bookingModel->find($bookingId));
+        NotificationService::dispatchSafely(
+            fn(NotificationService $notifications) => $notifications->notifyBookingSubmitted($bookingModel->find($bookingId) ?: []),
+            'booking submitted'
+        );
 
         return $this->response->setJSON([
             'status'  => 'success',

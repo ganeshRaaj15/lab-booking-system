@@ -27,7 +27,7 @@ class BookingApprovalController extends BaseController
         }
 
         $user = auth()->user();
-        $userEmail = $user->email;
+        $userEmail = strtolower(trim((string) $user->email));
         $isPic = $user->inGroup('pic');
         $isManager = $user->inGroup('manager') || $user->inGroup('admin');
 
@@ -41,12 +41,16 @@ class BookingApprovalController extends BaseController
             return $this->respondNotFound('Associated laboratory not found.');
         }
 
+        if ($booking['status'] === 'CANCELLED') {
+            return $this->respondForbidden('Cannot approve a cancelled booking.');
+        }
+
         if ($message = $this->ensureAssetsStillAvailable($booking)) {
             return $this->respondForbidden($message);
         }
 
         if ($isPic) {
-            if (empty($lab['pic_email']) || trim($lab['pic_email']) !== trim($userEmail)) {
+            if (empty($lab['pic_email']) || strtolower(trim((string) $lab['pic_email'])) !== $userEmail) {
                 return $this->respondForbidden('You are not the PIC for this laboratory.');
             }
             if ($booking['status'] === 'REJECTED') {
@@ -67,7 +71,10 @@ class BookingApprovalController extends BaseController
                     $updates['status'] = 'APPROVED';
                     $bookingModel->update($id, $updates);
                     $updated = $bookingModel->find($id) ?: array_merge($booking, $updates);
-                    (new NotificationService())->notifyBookingApproved($updated);
+                    NotificationService::dispatchSafely(
+                        fn(NotificationService $notifications) => $notifications->notifyBookingApproved($updated),
+                        'booking approved by PIC'
+                    );
 
                     return $this->successResponse('Booking approved successfully (Final approval for FKMP).', 'APPROVED');
                 }
@@ -75,7 +82,10 @@ class BookingApprovalController extends BaseController
                 $updates['status'] = 'PENDING';
                 $bookingModel->update($id, $updates);
                 $updated = $bookingModel->find($id) ?: array_merge($booking, $updates);
-                (new NotificationService())->notifyBookingPendingManager($updated);
+                NotificationService::dispatchSafely(
+                    fn(NotificationService $notifications) => $notifications->notifyBookingPendingManager($updated),
+                    'booking pending manager'
+                );
 
                 return $this->successResponse('PIC approved. Booking now awaits Manager approval.', 'PENDING_MANAGER');
             }
@@ -103,7 +113,10 @@ class BookingApprovalController extends BaseController
                 'updated_at' => date('Y-m-d H:i:s'),
             ]);
             $updated = $bookingModel->find($id) ?: array_merge($booking, ['approved_by_manager' => 1, 'status' => 'APPROVED']);
-            (new NotificationService())->notifyBookingApproved($updated);
+            NotificationService::dispatchSafely(
+                fn(NotificationService $notifications) => $notifications->notifyBookingApproved($updated),
+                'booking approved by manager'
+            );
 
             return $this->successResponse('Booking fully approved by Manager.', 'APPROVED');
         }
@@ -128,7 +141,7 @@ class BookingApprovalController extends BaseController
         }
 
         $user = auth()->user();
-        $userEmail = $user->email;
+        $userEmail = strtolower(trim((string) $user->email));
         $isPic = $user->inGroup('pic');
         $isManager = $user->inGroup('manager') || $user->inGroup('admin');
 
@@ -138,12 +151,18 @@ class BookingApprovalController extends BaseController
         if ($booking['status'] === 'REJECTED') {
             return $this->successResponse('Booking already rejected.', 'REJECTED');
         }
+        if ($booking['status'] === 'CANCELLED') {
+            return $this->respondForbidden('This booking was cancelled by the applicant and cannot be rejected.');
+        }
 
         $isFkmpBooking = $booking['approval_flow'] === 'FKMP_APPROVAL';
         $lab = $labModel->find($booking['lab_id']);
+        if (! $lab) {
+            return $this->respondNotFound('Associated laboratory not found.');
+        }
 
         if ($isPic) {
-            if (empty($lab['pic_email']) || trim($lab['pic_email']) !== trim($userEmail)) {
+            if (empty($lab['pic_email']) || strtolower(trim((string) $lab['pic_email'])) !== $userEmail) {
                 return $this->respondForbidden('You are not the PIC for this laboratory.');
             }
 
@@ -155,7 +174,10 @@ class BookingApprovalController extends BaseController
             ];
             $bookingModel->update($id, $updates);
             $updated = $bookingModel->find($id) ?: array_merge($booking, $updates);
-            (new NotificationService())->notifyBookingRejected($updated, 'PIC');
+            NotificationService::dispatchSafely(
+                fn(NotificationService $notifications) => $notifications->notifyBookingRejected($updated, 'PIC'),
+                'booking rejected by PIC'
+            );
 
             return $this->successResponse('Booking rejected by PIC.', 'REJECTED');
         }
@@ -171,7 +193,10 @@ class BookingApprovalController extends BaseController
                 'updated_at' => date('Y-m-d H:i:s'),
             ]);
             $updated = $bookingModel->find($id) ?: array_merge($booking, ['status' => 'REJECTED', 'approved_by_manager' => 0]);
-            (new NotificationService())->notifyBookingRejected($updated, 'Lab Manager');
+            NotificationService::dispatchSafely(
+                fn(NotificationService $notifications) => $notifications->notifyBookingRejected($updated, 'Lab Manager'),
+                'booking rejected by manager'
+            );
 
             return $this->successResponse('Booking rejected by Manager.', 'REJECTED');
         }
@@ -182,6 +207,18 @@ class BookingApprovalController extends BaseController
     protected function ensureAssetsStillAvailable(array $booking): ?string
     {
         $db = Database::connect();
+        $bookingModel = new BookingModel();
+
+        if ($bookingModel->hasLabConflict(
+            (int) $booking['lab_id'],
+            (string) $booking['date'],
+            (string) $booking['start_time'],
+            (string) $booking['end_time'],
+            (int) $booking['id']
+        )) {
+            return 'This laboratory already has another active booking for the selected time slot.';
+        }
+
         $assetRows = $db->table('booking_assets')
             ->select('asset_id, quantity_used')
             ->where('booking_id', $booking['id'])

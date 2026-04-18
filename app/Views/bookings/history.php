@@ -1,9 +1,9 @@
-<?= $this->extend('layouts/main'); ?>
+<?= $this->extend('layouts/main_user'); ?>
 <?= $this->section('content'); ?>
 
 <div class="container py-4">
 
-    <h3 class="fw-bold mb-4" class="text-primary">
+    <h3 class="fw-bold mb-4 text-primary">
         <i class="bi bi-journal-bookmark-fill me-2"></i> My Booking History
     </h3>
 
@@ -34,10 +34,13 @@
                             <td><?= $b['lab_name'] ?></td>
 
                             <td>
-                                <?php if ($b['status'] === 'approved'): ?>
+                                <?php $status = strtoupper((string) ($b['status'] ?? 'PENDING')); ?>
+                                <?php if ($status === 'APPROVED'): ?>
                                     <span class="badge bg-success">Approved</span>
-                                <?php elseif ($b['status'] === 'rejected'): ?>
+                                <?php elseif ($status === 'REJECTED'): ?>
                                     <span class="badge bg-danger">Rejected</span>
+                                <?php elseif ($status === 'CANCELLED'): ?>
+                                    <span class="badge bg-secondary">Cancelled</span>
                                 <?php else: ?>
                                     <span class="badge bg-warning text-dark">Pending</span>
                                 <?php endif; ?>
@@ -45,7 +48,7 @@
 
                             <td>
                                 <?php if ($b['pdf_path']): ?>
-                                    <a href="/uploads/pdfs/<?= $b['pdf_path'] ?>" target="_blank"
+                                    <a href="<?= site_url('document/pdf/' . basename($b['pdf_path'])) ?>" target="_blank"
                                        class="btn btn-sm btn-outline-primary">
                                        <i class="bi bi-file-earmark-pdf"></i>
                                     </a>

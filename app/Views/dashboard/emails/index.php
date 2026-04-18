@@ -7,7 +7,7 @@
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
         <div>
             <h3 class="mb-1">Email Inbox</h3>
-            <p class="text-muted mb-0">Preview outgoing system emails sent to your account.</p>
+            <p class="text-muted mb-0">Preview outgoing system emails generated for your account.</p>
         </div>
         <a href="/dashboard/notifications" class="btn btn-outline-secondary">Back to Notifications</a>
     </div>
@@ -18,7 +18,7 @@
                 <div class="p-5 text-center text-muted">
                     <i class="bi bi-envelope fs-1 d-block mb-3"></i>
                     <div class="fw-semibold mb-1">No email previews yet</div>
-                    <div class="small">Email previews will appear here once the system sends notifications.</div>
+                    <div class="small">Email previews will appear here once the system generates notification emails.</div>
                 </div>
             <?php else: ?>
                 <div class="list-group list-group-flush">

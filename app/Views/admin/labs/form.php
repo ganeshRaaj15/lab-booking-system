@@ -22,6 +22,9 @@ $errors = session()->getFlashdata('errors') ?? [];
             <ul class="mb-0 ps-3"><?php foreach ($errors as $error): ?><li><?= esc($error) ?></li><?php endforeach; ?></ul>
         </div>
     <?php endif; ?>
+    <?php if (session()->getFlashdata('warning')): ?>
+        <div class="alert alert-warning border-0 shadow-sm"><?= esc(session()->getFlashdata('warning')) ?></div>
+    <?php endif; ?>
 
     <div class="row g-4">
         <div class="col-lg-8">
@@ -61,6 +64,7 @@ $errors = session()->getFlashdata('errors') ?? [];
                         <div class="col-md-4">
                             <label class="form-label">PIC Email</label>
                             <input type="email" name="pic_email" class="form-control" value="<?= esc(old('pic_email', $lab['pic_email'] ?? '')) ?>">
+                            <div class="form-text">Use the email address of an existing user with the PIC role so approvals and PIC dashboard scoping work correctly.</div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">PIC Phone</label>
@@ -95,6 +99,7 @@ $errors = session()->getFlashdata('errors') ?? [];
                 <div class="card-header bg-white"><h6 class="mb-1">Why This Matters</h6></div>
                 <div class="card-body small text-muted">
                     Laboratory metadata supports booking decisions, maintenance escalation, and clearer ownership whenever equipment faults are reported.
+                    PIC email is validated after save and should match a registered PIC user account.
                 </div>
             </div>
         </div>

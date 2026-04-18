@@ -33,15 +33,20 @@ class ApprovalsController extends BaseController
 
         $bookingModel = new BookingModel();
         $labModel     = new LaboratoryModel();
+        $filters = [
+            'q' => trim((string) $this->request->getGet('q')),
+            'date_from' => $this->validDate((string) $this->request->getGet('date_from')),
+            'date_to' => $this->validDate((string) $this->request->getGet('date_to')),
+        ];
 
-        $userEmail = $user->email;
+        $userEmail = strtolower(trim((string) $user->email));
 
         // ---------------------------------------------------------------------
         // 1. Labs relevant to this approver
         // ---------------------------------------------------------------------
         if ($role === 'pic') {
             // PIC: only labs they are PIC for
-             $labs = $labModel->where("TRIM(pic_email) =", trim($userEmail))->findAll();
+             $labs = $labModel->where("LOWER(TRIM(pic_email)) =", $userEmail)->findAll();
             $labIds = array_column($labs, 'id');
 
             if (empty($labIds)) {
@@ -49,6 +54,7 @@ class ApprovalsController extends BaseController
                     'bookings' => [],
                     'role'     => $role,
                     'focusBookingId' => (int) $this->request->getGet('focus_booking'),
+                    'filters' => $filters,
                 ]);
             }
         } else {
@@ -90,6 +96,21 @@ class ApprovalsController extends BaseController
                 ->where('bookings.approval_flow !=', 'FKMP_APPROVAL');
         }
 
+        if ($filters['q'] !== '') {
+            $builder->groupStart()
+                ->like('users.username', $filters['q'])
+                ->orLike('laboratories.name', $filters['q'])
+                ->orLike('laboratories.room', $filters['q'])
+                ->orLike('bookings.activity', $filters['q'])
+                ->groupEnd();
+        }
+        if ($filters['date_from'] !== '') {
+            $builder->where('bookings.date >=', $filters['date_from']);
+        }
+        if ($filters['date_to'] !== '') {
+            $builder->where('bookings.date <=', $filters['date_to']);
+        }
+
         // ---------------------------------------------------------------------
         // 4. Fetch results
         // ---------------------------------------------------------------------
@@ -105,7 +126,14 @@ class ApprovalsController extends BaseController
             'bookings' => $bookings,
             'role'     => $role,
             'focusBookingId' => (int) $this->request->getGet('focus_booking'),
+            'filters' => $filters,
         ]);
+    }
+
+    private function validDate(string $value): string
+    {
+        $value = trim($value);
+        return preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1 ? $value : '';
     }
 }
 

@@ -2,301 +2,20 @@
 
 <?= $this->section('content') ?>
 
-<style>
-    /* User Management Specific Styles */
-    .user-management {
-        --card-radius: 16px;
-        --card-padding: 24px;
-        --transition-speed: 0.3s;
-    }
+<?php
+$filters = $filters ?? ['q' => '', 'role' => '', 'status' => '', 'per_page' => 10, 'page' => 1];
+$pagination = $pagination ?? ['total' => count($users), 'page' => 1, 'per_page' => 10, 'page_count' => 1];
+$stats = $stats ?? ['total' => count($users), 'active' => count(array_filter($users, fn($u) => $u['active']))];
+$allRoles = $allRoles ?? [];
+$baseQuery = [
+    'q' => $filters['q'],
+    'role' => $filters['role'],
+    'status' => $filters['status'],
+    'per_page' => $filters['per_page'],
+];
+$exportQuery = array_filter($baseQuery, static fn($value) => $value !== '' && $value !== null);
+?>
 
-    /* Glass Card Styling */
-    .glass-card {
-        background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.95),
-            rgba(255, 255, 255, 0.98)
-        );
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border-radius: var(--card-radius);
-        border: 1px solid rgba(59, 130, 246, 0.15);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-        transition: all var(--transition-speed) ease;
-        overflow: hidden;
-    }
-
-    .glass-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
-        border-color: rgba(59, 130, 246, 0.25);
-    }
-
-    /* Glass Table */
-    .glass-table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-        border-radius: 12px;
-        overflow: hidden;
-        border: 1px solid rgba(59, 130, 246, 0.1);
-    }
-
-    .glass-table thead {
-        background: linear-gradient(135deg,
-            rgba(59, 130, 246, 0.1),
-            rgba(30, 64, 175, 0.05)
-        );
-        backdrop-filter: blur(10px);
-    }
-
-    .glass-table th {
-        border-bottom: 2px solid rgba(59, 130, 246, 0.15);
-        padding: 1rem 1.5rem;
-        font-weight: 600;
-        color: #1e293b;
-        white-space: nowrap;
-    }
-
-    .glass-table td {
-        padding: 1rem 1.5rem;
-        border-bottom: 1px solid rgba(59, 130, 246, 0.08);
-        vertical-align: middle;
-        color: #475569;
-    }
-
-    .glass-table tbody tr {
-        transition: all 0.2s ease;
-    }
-
-    .glass-table tbody tr:hover {
-        background: rgba(59, 130, 246, 0.04);
-    }
-
-    /* Status badges */
-    .status-badge {
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        backdrop-filter: blur(5px);
-    }
-
-    .badge-active {
-        background: linear-gradient(135deg, #10b981, #059669);
-        color: white;
-    }
-
-    .badge-inactive {
-        background: linear-gradient(135deg, #ef4444, #dc2626);
-        color: white;
-    }
-
-    /* Role badges */
-    .role-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 500;
-        border: 1px solid rgba(59, 130, 246, 0.2);
-        background: rgba(59, 130, 246, 0.1);
-        color: #1e40af;
-        margin: 2px;
-    }
-
-    .role-badge.admin {
-        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-        color: white;
-        border: none;
-    }
-
-    .role-badge.manager {
-        background: linear-gradient(135deg, #0ea5e9, #0284c7);
-        color: white;
-        border: none;
-    }
-
-    .role-badge.pic {
-        background: linear-gradient(135deg, #f59e0b, #d97706);
-        color: white;
-        border: none;
-    }
-
-    .role-badge.student {
-        background: linear-gradient(135deg, #10b981, #059669);
-        color: white;
-        border: none;
-    }
-
-    .role-badge.external {
-        background: linear-gradient(135deg, #6b7280, #4b5563);
-        color: white;
-        border: none;
-    }
-
-    /* Action buttons */
-    .btn-glass {
-        padding: 6px 16px;
-        border-radius: 10px;
-        border: 1px solid rgba(59, 130, 246, 0.2);
-        background: rgba(59, 130, 246, 0.08);
-        color: #3b82f6;
-        font-weight: 500;
-        transition: all 0.3s ease;
-    }
-
-    .btn-glass:hover {
-        background: rgba(59, 130, 246, 0.15);
-        border-color: rgba(59, 130, 246, 0.3);
-        transform: translateY(-2px);
-    }
-
-    .btn-action {
-        width: 36px;
-        height: 36px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 10px;
-        transition: all 0.3s ease;
-        border: 1px solid rgba(0, 0, 0, 0.1);
-    }
-
-    .btn-action.edit {
-        background: rgba(59, 130, 246, 0.1);
-        color: #3b82f6;
-        border-color: rgba(59, 130, 246, 0.2);
-    }
-
-    .btn-action.edit:hover {
-        background: rgba(59, 130, 246, 0.2);
-        transform: translateY(-2px);
-    }
-
-    .btn-action.delete {
-        background: rgba(239, 68, 68, 0.1);
-        color: #ef4444;
-        border-color: rgba(239, 68, 68, 0.2);
-    }
-
-    .btn-action.delete:hover {
-        background: rgba(239, 68, 68, 0.2);
-        transform: translateY(-2px);
-    }
-
-    /* Dashboard header */
-    .dashboard-header {
-        margin-bottom: 2rem;
-    }
-
-    .dashboard-header h1 {
-        font-size: 1.75rem;
-        font-weight: 700;
-        color: #1e293b;
-        margin-bottom: 0.5rem;
-    }
-
-    .dashboard-header p {
-        color: #64748b;
-        font-size: 0.95rem;
-    }
-
-    /* Search and filter bar */
-    .filter-bar {
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(59, 130, 246, 0.15);
-        border-radius: 12px;
-        padding: 1rem 1.5rem;
-        margin-bottom: 1.5rem;
-    }
-
-    /* Quick stats */
-    .quick-stat {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 12px 16px;
-        background: rgba(241, 245, 249, 0.8);
-        border-radius: 12px;
-        border: 1px solid rgba(59, 130, 246, 0.15);
-        min-width: 140px;
-    }
-
-    .quick-stat i {
-        font-size: 1.5rem;
-        color: #3b82f6;
-        opacity: 0.8;
-    }
-
-    .quick-stat > div {
-        flex: 1;
-    }
-
-    /* Empty state */
-    .empty-state {
-        padding: 3rem 1rem;
-        text-align: center;
-        color: #64748b;
-    }
-
-    .empty-state i {
-        font-size: 3rem;
-        margin-bottom: 1rem;
-        color: #cbd5e1;
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-        .glass-table th,
-        .glass-table td {
-            padding: 0.75rem 1rem;
-        }
-        
-        .filter-bar {
-            padding: 0.75rem 1rem;
-        }
-        
-        .quick-stat {
-            min-width: 120px;
-        }
-    }
-
-    /* Loading skeleton */
-    .skeleton {
-        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-        background-size: 200% 100%;
-        animation: loading 1.5s infinite;
-        border-radius: 4px;
-    }
-
-    @keyframes loading {
-        0% { background-position: 200% 0; }
-        100% { background-position: -200% 0; }
-    }
-
-    /* Custom scrollbar for tables */
-    .table-responsive {
-        border-radius: 12px;
-    }
-
-    .table-responsive::-webkit-scrollbar {
-        height: 6px;
-    }
-
-    .table-responsive::-webkit-scrollbar-track {
-        background: rgba(0, 0, 0, 0.05);
-        border-radius: 10px;
-    }
-
-    .table-responsive::-webkit-scrollbar-thumb {
-        background: rgba(59, 130, 246, 0.3);
-        border-radius: 10px;
-    }
-</style>
 
 <div class="user-management">
     <!-- PAGE HEADER -->
@@ -311,14 +30,14 @@
                     <i class="bi bi-people-fill"></i>
                     <div>
                         <div class="small text-muted">Total Users</div>
-                        <div class="fw-bold"><?= count($users) ?></div>
+                        <div class="fw-bold"><?= esc($stats['total']) ?></div>
                     </div>
                 </div>
                 <div class="quick-stat">
                     <i class="bi bi-person-check"></i>
                     <div>
                         <div class="small text-muted">Active</div>
-                        <div class="fw-bold"><?= count(array_filter($users, fn($u) => $u['active'])) ?></div>
+                        <div class="fw-bold"><?= esc($stats['active']) ?></div>
                     </div>
                 </div>
             </div>
@@ -327,24 +46,46 @@
 
     <!-- FILTER AND ACTION BAR -->
     <div class="filter-bar mb-4">
-        <div class="row g-3 align-items-center">
-            <div class="col-md-8">
-                <div class="input-group">
-                    <span class="input-group-text bg-transparent border-end-0">
-                        <i class="bi bi-search"></i>
-                    </span>
-                    <input type="text" class="form-control border-start-0" id="userSearch" placeholder="Search users by name, email, or role...">
-                    <button class="btn btn-outline-secondary" type="button" id="clearSearch">
-                        <i class="bi bi-x"></i>
-                    </button>
-                </div>
+        <form method="get" action="/admin/users" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small text-muted">Search</label>
+                <input type="text" name="q" class="form-control" value="<?= esc($filters['q']) ?>" placeholder="Name, username, email, or phone">
             </div>
-            <div class="col-md-4 text-md-end">
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Role</label>
+                <select name="role" class="form-select">
+                    <option value="">All roles</option>
+                    <?php foreach ($allRoles as $role): ?>
+                        <option value="<?= esc($role) ?>" <?= $filters['role'] === $role ? 'selected' : '' ?>><?= esc(ucfirst($role)) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Status</label>
+                <select name="status" class="form-select">
+                    <option value="">All statuses</option>
+                    <option value="active" <?= $filters['status'] === 'active' ? 'selected' : '' ?>>Active</option>
+                    <option value="inactive" <?= $filters['status'] === 'inactive' ? 'selected' : '' ?>>Inactive</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Rows</label>
+                <select name="per_page" class="form-select">
+                    <?php foreach ([10, 25, 50] as $perPage): ?>
+                        <option value="<?= esc($perPage) ?>" <?= (int) $filters['per_page'] === $perPage ? 'selected' : '' ?>><?= esc($perPage) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-fill"><i class="bi bi-funnel me-1"></i>Filter</button>
+                <a href="/admin/users" class="btn btn-outline-secondary"><i class="bi bi-x-lg"></i></a>
+            </div>
+            <div class="col-12 text-md-end">
                 <a href="/admin/users/create" class="btn btn-primary">
                     <i class="bi bi-person-plus me-1"></i> Add New User
                 </a>
             </div>
-        </div>
+        </form>
     </div>
 
     <!-- FLASH MESSAGES -->
@@ -487,13 +228,25 @@
             <div class="d-flex justify-content-between align-items-center">
                 <div class="text-muted small">
                     <i class="bi bi-people me-1"></i>
-                    Showing <span class="fw-semibold text-primary"><?= count($users) ?></span> users
+                    Showing <span class="fw-semibold text-primary"><?= count($users) ?></span> of <?= esc($pagination['total']) ?> matching user(s)
                 </div>
-                <div>
-                    <button class="btn btn-outline-primary btn-sm" id="exportUsers">
-                        <i class="bi bi-download me-1"></i> Export List
-                    </button>
-                    <button class="btn btn-outline-secondary btn-sm ms-2" id="refreshUsers">
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <?php if (($pagination['page_count'] ?? 1) > 1): ?>
+                        <nav aria-label="User pagination">
+                            <ul class="pagination pagination-sm mb-0">
+                                <?php for ($pageNum = 1; $pageNum <= (int) $pagination['page_count']; $pageNum++): ?>
+                                    <?php $pageQuery = array_filter(array_merge($baseQuery, ['page' => $pageNum]), static fn($value) => $value !== '' && $value !== null); ?>
+                                    <li class="page-item <?= (int) $pagination['page'] === $pageNum ? 'active' : '' ?>">
+                                        <a class="page-link" href="/admin/users?<?= esc(http_build_query($pageQuery)) ?>"><?= esc($pageNum) ?></a>
+                                    </li>
+                                <?php endfor; ?>
+                            </ul>
+                        </nav>
+                    <?php endif; ?>
+                    <a class="btn btn-outline-primary btn-sm" href="/admin/users/export?<?= esc(http_build_query($exportQuery)) ?>">
+                        <i class="bi bi-download me-1"></i> Export CSV
+                    </a>
+                    <button class="btn btn-outline-secondary btn-sm" id="refreshUsers">
                         <i class="bi bi-arrow-clockwise me-1"></i> Refresh
                     </button>
                 </div>
@@ -505,38 +258,32 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Search functionality
     const searchInput = document.getElementById('userSearch');
     const clearSearchBtn = document.getElementById('clearSearch');
     const userRows = document.querySelectorAll('.user-row');
-    
-    searchInput.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase().trim();
-        
-        userRows.forEach(row => {
-            const username = row.dataset.username;
-            const email = row.dataset.email;
-            const roles = row.dataset.roles;
-            
-            const matches = username.includes(searchTerm) || 
-                           email.includes(searchTerm) || 
-                           roles.includes(searchTerm);
-            
-            row.style.display = matches ? '' : 'none';
+
+    if (searchInput && clearSearchBtn) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+
+            userRows.forEach(row => {
+                const username = row.dataset.username;
+                const email = row.dataset.email;
+                const roles = row.dataset.roles;
+
+                const matches = username.includes(searchTerm) ||
+                               email.includes(searchTerm) ||
+                               roles.includes(searchTerm);
+
+                row.style.display = matches ? '' : 'none';
+            });
         });
-    });
-    
-    clearSearchBtn.addEventListener('click', function() {
-        searchInput.value = '';
-        searchInput.dispatchEvent(new Event('input'));
-    });
-    
-    // Export functionality (basic)
-    document.getElementById('exportUsers')?.addEventListener('click', function() {
-        alert('Export functionality would generate a CSV file of all users.');
-        // In a real implementation, you would make an AJAX call to generate a CSV
-        // window.location.href = '/admin/users/export';
-    });
+
+        clearSearchBtn.addEventListener('click', function() {
+            searchInput.value = '';
+            searchInput.dispatchEvent(new Event('input'));
+        });
+    }
     
     // Confirmation for delete actions
     const deleteForms = document.querySelectorAll('form[action*="delete"]');

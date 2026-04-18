@@ -52,7 +52,7 @@
                                             <button type="submit" class="btn btn-outline-primary btn-sm">Open</button>
                                         </form>
                                     <?php elseif (! empty($notification['link'])): ?>
-                                        <a href="/dashboard/emails" class="btn btn-outline-secondary btn-sm">View Email</a>
+                                        <a href="<?= esc($notification['link']) ?>" class="btn btn-outline-secondary btn-sm">Open</a>
                                     <?php endif; ?>
                                 </div>
                             </div>

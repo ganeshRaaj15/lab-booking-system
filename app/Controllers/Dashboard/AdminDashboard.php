@@ -53,6 +53,7 @@ class AdminDashboard extends BaseController
             'pending_mgr'  => 0,
             'approved'     => 0,
             'rejected'     => 0,
+            'cancelled'    => 0,
         ], $stats);
 
         // Add pending manager KPI (was missing before)
@@ -62,7 +63,7 @@ class AdminDashboard extends BaseController
             ->where('approved_by_manager', 0)
             ->countAllResults();
 
-        $stats['total'] = $stats['pending'] + $stats['pending_mgr'] + $stats['approved'] + $stats['rejected'];
+        $stats['total'] = $stats['pending'] + $stats['pending_mgr'] + $stats['approved'] + $stats['rejected'] + $stats['cancelled'];
 
         // ------------------------------------------------------------
         // 2. MONTHLY TRENDS (chart)

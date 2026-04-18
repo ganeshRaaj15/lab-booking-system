@@ -15,6 +15,7 @@ use App\Controllers\Public\BookingController;
 use App\Controllers\Public\AssetBrowseController;
 use App\Controllers\Public\DocumentController;
 use App\Controllers\Public\ChatbotController;
+use App\Controllers\Public\QrController;
 
 // ---------------------------------------------------------
 // DASHBOARD CONTROLLERS
@@ -60,7 +61,6 @@ $routes->get('/laboratories', [LaboratoryController::class, 'index']);
 $routes->get('/laboratories/(:num)', [LaboratoryController::class, 'show/$1']);
 
 // Booking APIs
-$routes->get('/api/calendar/(:num)', [BookingController::class, 'calendar/$1']);
 $routes->get('/api/calendar-with-assets/(:num)', [BookingController::class, 'calendarWithAssets/$1']);
 $routes->get('/api/bookings/day-with-assets/(:num)/(:segment)', [BookingController::class, 'dayWithAssets/$1/$2']);
 
@@ -72,6 +72,7 @@ $routes->post('/api/chat', [ChatbotController::class, 'respond']);
 
 // Assets browsing
 $routes->get('assets', [AssetBrowseController::class, 'index']);
+$routes->get('qr/asset/(:segment)', [QrController::class, 'asset/$1']);
 
 // PDF Document viewing (with authentication)
 $routes->get('document/pdf/(:segment)', [DocumentController::class, 'viewPdf/$1'], ['filter' => 'session']);
@@ -80,21 +81,15 @@ $routes->get('document/pdf/(:segment)', [DocumentController::class, 'viewPdf/$1'
 // FILE ACCESS ROUTES (FOR UPLOADED FILES)
 // ====================================================================
 
-// Route to serve uploaded PDF files
-$routes->get('uploads/pdfs/(:any)', function($filename) {
-    $filepath = WRITEPATH . 'uploads/pdfs/' . $filename;
-    
-    if (!file_exists($filepath)) {
-        throw new \CodeIgniter\Exceptions\PageNotFoundException('File not found');
+// Backward-compatible PDF route. Actual authorization and file serving happen in DocumentController.
+$routes->get('uploads/pdfs/(:segment)', function($filename) {
+    $filename = basename((string) $filename);
+    if (! preg_match('/^[A-Za-z0-9._-]+\.pdf$/i', $filename)) {
+        throw new \CodeIgniter\Exceptions\PageNotFoundException('Invalid filename');
     }
-    
-    $mime = mime_content_type($filepath);
-    header("Content-Type: $mime");
-    header("Content-Length: " . filesize($filepath));
-    
-    readfile($filepath);
-    exit();
-});
+
+    return redirect()->to('/document/pdf/' . $filename);
+}, ['filter' => 'session']);
 
 // ====================================================================
 // NEW IMAGE ROUTES (for images stored in public/images directory)
@@ -219,120 +214,90 @@ $routes->get('images/assets/(:any)', function($filename) {
 // OLD IMAGE ROUTES (keep for backward compatibility during transition)
 // ====================================================================
 
-// Route to serve uploaded lab images (OLD location - for backward compatibility)
-$routes->get('uploads/labs/(:any)', function($filename) {
-    $filepath = WRITEPATH . 'uploads/labs/' . $filename;
-    
-    if (!file_exists($filepath)) {
-        // If file doesn't exist in old location, check new location
-        $newPath = FCPATH . 'images/labs/' . $filename;
-        if (file_exists($newPath)) {
-            $filepath = $newPath;
-        } else {
-            // Serve a placeholder
-            $placeholderPath = FCPATH . 'images/labs/placeholder_lab.jpg';
-            if (file_exists($placeholderPath)) {
-                $filepath = $placeholderPath;
-            } else {
-                header("Content-Type: image/svg+xml");
-                echo '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
-                        <rect width="400" height="300" fill="#e0f2fe"/>
-                        <text x="200" y="150" font-family="Arial" font-size="24" fill="#3b82f6" text-anchor="middle" dy=".3em">Lab Image</text>
-                      </svg>';
-                exit();
-            }
+$safeUploadedImage = static function (
+    string $filename,
+    string $oldDirectory,
+    string $newDirectory = '',
+    ?string $placeholderPath = null,
+    string $placeholderSvg = ''
+): void {
+    $filename = basename($filename);
+    if ($filename === '' || ! preg_match('/^[A-Za-z0-9._-]+$/', $filename)) {
+        throw new \CodeIgniter\Exceptions\PageNotFoundException('Invalid filename');
+    }
+
+    $candidates = [];
+    $oldBase = realpath(WRITEPATH . trim($oldDirectory, '/'));
+    if ($oldBase) {
+        $candidates[] = [$oldBase, realpath($oldBase . DIRECTORY_SEPARATOR . $filename)];
+    }
+
+    if ($newDirectory !== '') {
+        $newBase = realpath(FCPATH . trim($newDirectory, '/'));
+        if ($newBase) {
+            $candidates[] = [$newBase, realpath($newBase . DIRECTORY_SEPARATOR . $filename)];
         }
     }
-    
-    $mime = mime_content_type($filepath);
+
+    $filepath = null;
+    foreach ($candidates as [$base, $candidate]) {
+        if (
+            $candidate
+            && is_file($candidate)
+            && str_starts_with($candidate, rtrim($base, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR)
+        ) {
+            $filepath = $candidate;
+            break;
+        }
+    }
+
+    if (! $filepath && $placeholderPath && is_file($placeholderPath)) {
+        $filepath = $placeholderPath;
+    }
+
+    if (! $filepath) {
+        if ($placeholderSvg !== '') {
+            header('Content-Type: image/svg+xml');
+            echo $placeholderSvg;
+            exit();
+        }
+        throw new \CodeIgniter\Exceptions\PageNotFoundException('File not found');
+    }
+
+    $mime = mime_content_type($filepath) ?: '';
+    if (strpos($mime, 'image/') !== 0) {
+        throw new \CodeIgniter\Exceptions\PageNotFoundException('Invalid file type');
+    }
+
     header("Content-Type: $mime");
-    header("Content-Length: " . filesize($filepath));
-    
+    header('Content-Length: ' . filesize($filepath));
+    header('Cache-Control: public, max-age=86400');
+
     readfile($filepath);
     exit();
+};
+
+// Route to serve uploaded lab images (OLD location - for backward compatibility)
+$routes->get('uploads/labs/(:any)', function($filename) use ($safeUploadedImage) {
+    $placeholderSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="400" height="300" fill="#e0f2fe"/><text x="200" y="150" font-family="Arial" font-size="24" fill="#3b82f6" text-anchor="middle" dy=".3em">Lab Image</text></svg>';
+    $safeUploadedImage($filename, 'uploads/labs', 'images/labs', FCPATH . 'images/labs/placeholder_lab.jpg', $placeholderSvg);
 });
 
 // Route to serve uploaded PIC images (OLD location - for backward compatibility)
-$routes->get('uploads/pic/(:any)', function($filename) {
-    $filepath = WRITEPATH . 'uploads/pic/' . $filename;
-    
-    if (!file_exists($filepath)) {
-        // If file doesn't exist in old location, check new location
-        $newPath = FCPATH . 'images/pic/' . $filename;
-        if (file_exists($newPath)) {
-            $filepath = $newPath;
-        } else {
-            // Serve a placeholder
-            $placeholderPath = FCPATH . 'images/pic/placeholder_pic.png';
-            if (file_exists($placeholderPath)) {
-                $filepath = $placeholderPath;
-            } else {
-                header("Content-Type: image/svg+xml");
-                echo '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
-                        <circle cx="100" cy="100" r="80" fill="#3b82f6"/>
-                        <circle cx="100" cy="80" r="40" fill="#ffffff"/>
-                        <ellipse cx="100" cy="140" rx="50" ry="40" fill="#ffffff"/>
-                      </svg>';
-                exit();
-            }
-        }
-    }
-    
-    $mime = mime_content_type($filepath);
-    header("Content-Type: $mime");
-    header("Content-Length: " . filesize($filepath));
-    
-    readfile($filepath);
-    exit();
+$routes->get('uploads/pic/(:any)', function($filename) use ($safeUploadedImage) {
+    $placeholderSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><circle cx="100" cy="100" r="80" fill="#3b82f6"/><circle cx="100" cy="80" r="40" fill="#ffffff"/><ellipse cx="100" cy="140" rx="50" ry="40" fill="#ffffff"/></svg>';
+    $safeUploadedImage($filename, 'uploads/pic', 'images/pic', FCPATH . 'images/pic/placeholder_pic.png', $placeholderSvg);
 });
 
 // Route to serve uploaded asset images (OLD location - for backward compatibility)
-$routes->get('uploads/assets/(:any)', function($filename) {
-    $filepath = WRITEPATH . 'uploads/assets/' . $filename;
-    
-    if (!file_exists($filepath)) {
-        // If file doesn't exist in old location, check new location
-        $newPath = FCPATH . 'images/assets/' . $filename;
-        if (file_exists($newPath)) {
-            $filepath = $newPath;
-        } else {
-            // Serve a placeholder
-            $placeholderPath = FCPATH . 'images/assets/placeholder_asset.png';
-            if (file_exists($placeholderPath)) {
-                $filepath = $placeholderPath;
-            } else {
-                header("Content-Type: image/svg+xml");
-                echo '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
-                        <rect width="400" height="300" fill="#f0f9ff"/>
-                        <text x="200" y="150" font-family="Arial" font-size="24" fill="#1e40af" text-anchor="middle" dy=".3em">Equipment Image</text>
-                      </svg>';
-                exit();
-            }
-        }
-    }
-    
-    $mime = mime_content_type($filepath);
-    header("Content-Type: $mime");
-    header("Content-Length: " . filesize($filepath));
-    
-    readfile($filepath);
-    exit();
+$routes->get('uploads/assets/(:any)', function($filename) use ($safeUploadedImage) {
+    $placeholderSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="400" height="300" fill="#f0f9ff"/><text x="200" y="150" font-family="Arial" font-size="24" fill="#1e40af" text-anchor="middle" dy=".3em">Equipment Image</text></svg>';
+    $safeUploadedImage($filename, 'uploads/assets', 'images/assets', FCPATH . 'images/assets/placeholder_asset.png', $placeholderSvg);
 });
 
 // Optional: Generic route for other uploaded images
-$routes->get('uploads/images/(:any)', function($filename) {
-    $filepath = WRITEPATH . 'uploads/images/' . $filename;
-    
-    if (!file_exists($filepath)) {
-        throw new \CodeIgniter\Exceptions\PageNotFoundException('File not found');
-    }
-    
-    $mime = mime_content_type($filepath);
-    header("Content-Type: $mime");
-    header("Content-Length: " . filesize($filepath));
-    
-    readfile($filepath);
-    exit();
+$routes->get('uploads/images/(:any)', function($filename) use ($safeUploadedImage) {
+    $safeUploadedImage($filename, 'uploads/images');
 });
 
 // ====================================================================
@@ -350,6 +315,7 @@ $routes->group('dashboard', ['filter' => 'session'], function ($routes) {
     $routes->get('profile', [ProfileController::class, 'index']);
     $routes->post('profile/update', [ProfileController::class, 'update']);
     $routes->get('reports/pdf', [ReportController::class, 'download'], ['filter' => 'group:pic,manager,admin']);
+    $routes->get('reports/csv', [ReportController::class, 'downloadCsv'], ['filter' => 'group:pic,manager,admin']);
     $routes->get('notifications', [NotificationController::class, 'index']);
     $routes->post('notifications/read/(:num)', [NotificationController::class, 'markRead/$1']);
     $routes->post('notifications/mark-all-read', [NotificationController::class, 'markAllRead']);
@@ -357,9 +323,9 @@ $routes->group('dashboard', ['filter' => 'session'], function ($routes) {
     $routes->get('emails/(:num)', [EmailInboxController::class, 'show/$1']);
 
     // STUDENT DASHBOARD
-    $routes->get('student', [StudentDashboard::class, 'index'], ['filter' => 'group:student']);
-    $routes->get('student/booking-details/(:num)', [StudentDashboard::class, 'bookingDetails/$1'], ['filter' => 'group:student']);
-    $routes->post('student/cancel-booking/(:num)', [StudentDashboard::class, 'cancelBooking/$1'], ['filter' => 'group:student']);
+    $routes->get('student', [StudentDashboard::class, 'index'], ['filter' => 'group:student,staff']);
+    $routes->get('student/booking-details/(:num)', [StudentDashboard::class, 'bookingDetails/$1'], ['filter' => 'group:student,staff']);
+    $routes->post('student/cancel-booking/(:num)', [StudentDashboard::class, 'cancelBooking/$1'], ['filter' => 'group:student,staff']);
 
     // EXTERNAL DASHBOARD
     $routes->get('external', [ExternalDashboard::class, 'index'], ['filter' => 'group:external']);
@@ -379,11 +345,11 @@ $routes->group('dashboard', ['filter' => 'session'], function ($routes) {
     $routes->get('technician', [TechnicianDashboard::class, 'index'], ['filter' => 'group:technician']);
 
     // STUDENT/PIC ISSUE REPORTING
-    $routes->get('report-issue', [IssueReportController::class, 'create'], ['filter' => 'group:student,pic']);
-    $routes->post('report-issue/store', [IssueReportController::class, 'store'], ['filter' => 'group:student,pic']);
+    $routes->get('report-issue', [IssueReportController::class, 'create'], ['filter' => 'group:student,staff,pic']);
+    $routes->post('report-issue/store', [IssueReportController::class, 'store'], ['filter' => 'group:student,staff,pic']);
 
     // APPROVAL UI PAGE (accessible to PIC/MANAGER/ADMIN)
-    $routes->get('approvals', [ApprovalsController::class, 'index']);
+    $routes->get('approvals', [ApprovalsController::class, 'index'], ['filter' => 'group:pic,manager,admin']);
 });
 
 
@@ -413,6 +379,7 @@ $routes->group('admin', ['filter' => 'group:admin'], function ($routes) {
     $routes->get('settings', [SettingsController::class, 'index']);
     $routes->post('settings/update', [SettingsController::class, 'update']);
     $routes->post('settings/save-slots', [SettingsController::class, 'saveSlots']);
+    $routes->post('settings/run-scheduled-tasks', [SettingsController::class, 'runScheduledTasks']);
 
     // Laboratories CRUD
     $routes->get('labs', [LaboratoryAdminController::class, 'index']);
@@ -428,10 +395,12 @@ $routes->group('admin', ['filter' => 'group:admin'], function ($routes) {
     $routes->get('assets/edit/(:num)', [AssetController::class, 'edit/$1']);
     $routes->post('assets/update/(:num)', [AssetController::class, 'update/$1']);
     $routes->post('assets/delete/(:num)', [AssetController::class, 'delete/$1']);
+    $routes->get('assets/qr-labels', [AssetController::class, 'qrLabels']);
     $routes->get('assets', [AssetController::class, 'index']); // This should be LAST
 
     // User Management
     $routes->get('users', [UserManagementController::class, 'index']);
+    $routes->get('users/export', [UserManagementController::class, 'exportCsv']);
     $routes->get('users/create', [UserManagementController::class, 'create']);
     $routes->post('users/store', [UserManagementController::class, 'store']);
     $routes->get('users/edit/(:num)', [UserManagementController::class, 'edit/$1']);
@@ -455,87 +424,6 @@ $routes->group('technician', ['filter' => 'group:technician'], function ($routes
 
 
 // ====================================================================
-// TEST & DEBUG ROUTES (OPTIONAL - REMOVE IN PRODUCTION)
-// ====================================================================
-
-// Debug route to test approval workflow
-$routes->get('test/approve-workflow/(:num)', function($bookingId) {
-    helper('auth');
-    
-    if (!auth()->loggedIn()) {
-        return "Not logged in";
-    }
-    
-    $user = auth()->user();
-    echo "<h3>User Info:</h3>";
-    echo "ID: " . $user->id . "<br>";
-    echo "Email: " . $user->email . "<br>";
-    echo "Groups: " . json_encode($user->getGroups()) . "<br>";
-    echo "Is Manager: " . ($user->inGroup('manager') ? 'YES' : 'NO') . "<br>";
-    echo "Is Admin: " . ($user->inGroup('admin') ? 'YES' : 'NO') . "<br><hr>";
-    
-    $db = \Config\Database::connect();
-    
-    // Check booking
-    $booking = $db->table('bookings b')
-        ->select('b.*, f.name_en, f.is_fkmp')
-        ->join('faculties f', 'f.id = b.faculty_id', 'left')
-        ->where('b.id', $bookingId)
-        ->get()
-        ->getRowArray();
-    
-    if (!$booking) {
-        return "Booking not found";
-    }
-    
-    echo "<h3>Booking Info:</h3>";
-    foreach ($booking as $key => $value) {
-        echo "$key: $value<br>";
-    }
-    echo "<hr>";
-    
-    // Test update
-    echo "<h3>Test Update:</h3>";
-    $testData = [
-        'approved_by_manager' => 1,
-        'status' => 'APPROVED',
-        'updated_at' => date('Y-m-d H:i:s')
-    ];
-    
-    $db->table('bookings')->where('id', $bookingId)->update($testData);
-    
-    echo "Update attempted<br>";
-    
-    // Check result
-    $updated = $db->table('bookings')->where('id', $bookingId)->get()->getRowArray();
-    echo "Approved by Manager: " . ($updated->approved_by_manager ?? 'N/A') . "<br>";
-    echo "Status: " . ($updated->status ?? 'N/A') . "<br>";
-    
-    return "<hr><a href='/dashboard/manager'>Back to Manager Dashboard</a>";
-});
-
-// Quick route to check if user is manager
-$routes->get('debug/manager', function() {
-    helper('auth');
-    
-    if (!auth()->loggedIn()) {
-        return json_encode(['error' => 'Not logged in']);
-    }
-    
-    $user = auth()->user();
-    
-    return json_encode([
-        'logged_in' => auth()->loggedIn(),
-        'user_id' => auth()->id(),
-        'email' => $user->email,
-        'groups' => $user->getGroups(),
-        'in_group_manager' => $user->inGroup('manager'),
-        'in_group_admin' => $user->inGroup('admin'),
-        'in_group_pic' => $user->inGroup('pic')
-    ]);
-});
-
-// ====================================================================
 // SHIELD AUTH ROUTES (MUST BE LAST)
 // ====================================================================
 
@@ -543,5 +431,4 @@ service('auth')->routes($routes);
 
 // Logout
 $routes->post('logout', '\CodeIgniter\Shield\Controllers\LoginController::logoutAction', ['as' => 'logout']);
-
 

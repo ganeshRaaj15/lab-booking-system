@@ -2,6 +2,7 @@
 
 namespace App\Libraries;
 
+use App\Models\EmailLogModel;
 use App\Models\NotificationModel;
 use Config\Database;
 use DateInterval;
@@ -14,6 +15,15 @@ class NotificationService
     protected NotificationModel $notificationModel;
     protected EmailLogModel $emailLogModel;
     protected DateTimeZone $timezone;
+
+    public static function dispatchSafely(callable $callback, string $context = 'notification'): void
+    {
+        try {
+            $callback(new self());
+        } catch (\Throwable $e) {
+            log_message('error', 'Notification dispatch failed [' . $context . ']: ' . $e->getMessage());
+        }
+    }
 
     public function __construct()
     {
@@ -193,8 +203,12 @@ class NotificationService
                 continue;
             }
 
-            $this->notifyUpcomingBookingReminder($booking);
-            $sent++;
+            try {
+                $this->notifyUpcomingBookingReminder($booking);
+                $sent++;
+            } catch (\Throwable $e) {
+                log_message('error', 'Booking reminder notification failed for booking #' . (int) $booking['id'] . ': ' . $e->getMessage());
+            }
         }
 
         return $sent;
@@ -270,6 +284,74 @@ class NotificationService
         $this->sendEmail([$context['reporter_email'] ?? null, $context['pic_email'] ?? null], 'FKMP Smart Lab: Maintenance Completed', $this->emailTemplate('Maintenance Completed', [$message]), null, ['entity_type' => 'maintenance', 'entity_id' => (int) $maintenanceId, 'notification_type' => 'maintenance']);
     }
 
+    public function notifyMaintenanceDue(array $context): void
+    {
+        $assetId = (int) ($context['asset_id'] ?? 0);
+        if ($assetId <= 0) {
+            return;
+        }
+
+        $assetName = $context['name'] ?? $context['asset_name'] ?? 'Equipment';
+        $labName = $context['lab_name'] ?? $context['laboratory_name'] ?? '';
+        $lastCompleted = $context['last_completed_at'] ?? null;
+        $nextDue = $context['next_due_at'] ?? null;
+        $intervalDays = (int) ($context['interval_days'] ?? 0);
+        $basis = $context['basis'] ?? '';
+
+        $dueText = '';
+        if ($nextDue instanceof \DateTimeImmutable) {
+            $dueText = $nextDue->format('d M Y');
+        } elseif (is_string($nextDue) && $nextDue !== '') {
+            $dueText = date('d M Y', strtotime($nextDue));
+        }
+
+        $message = 'Preventive maintenance is due soon for ' . $assetName;
+        if ($labName !== '') {
+            $message .= ' in ' . $labName;
+        }
+        if ($dueText !== '') {
+            $message .= '. Due by ' . $dueText . '.';
+        } else {
+            $message .= '.';
+        }
+
+        if ($lastCompleted instanceof \DateTimeImmutable) {
+            $message .= ' Last completed on ' . $lastCompleted->format('d M Y') . '.';
+        } elseif (is_string($lastCompleted) && $lastCompleted !== '') {
+            $message .= ' Last completed on ' . date('d M Y', strtotime($lastCompleted)) . '.';
+        }
+
+        if ($intervalDays > 0) {
+            $months = max((int) round($intervalDays / 30), 1);
+            $message .= ' Estimated cycle: ~' . $months . ' month(s) (' . ($basis === 'average' ? 'average' : 'default') . ').';
+        }
+
+        $link = '/technician/maintenance?asset_id=' . $assetId;
+        $this->createUserNotifications(
+            $this->groupUserIds('technician'),
+            'maintenance_due',
+            'Maintenance Due Soon',
+            $message,
+            $link,
+            'asset',
+            $assetId
+        );
+
+        $emails = $this->emailsForUserIds($this->groupUserIds('technician'));
+        if ($emails !== []) {
+            $this->sendEmail(
+                $emails,
+                'FKMP Smart Lab: Preventive Maintenance Due Soon',
+                $this->emailTemplate('Maintenance Due Soon', [
+                    $message,
+                    'Open the maintenance queue to plan the visit.',
+                ], site_url($link), 'Open Maintenance Queue'),
+                null,
+                ['entity_type' => 'asset', 'entity_id' => $assetId, 'notification_type' => 'maintenance_due']
+            );
+        }
+    }
+
     protected function reminderAlreadySent(int $bookingId): bool
     {
         return $this->notificationModel
@@ -281,14 +363,14 @@ class NotificationService
 
     protected function pendingPicCountForEmail(string $picEmail): int
     {
-        $picEmail = trim($picEmail);
+        $picEmail = strtolower(trim($picEmail));
         if ($picEmail === '') {
             return 0;
         }
 
         return $this->db->table('bookings b')
             ->join('laboratories l', 'l.id = b.lab_id', 'inner')
-            ->where('TRIM(l.pic_email) =', $picEmail)
+            ->where('LOWER(TRIM(l.pic_email)) =', $picEmail)
             ->where('b.status', 'PENDING')
             ->where('b.approved_by_pic', 0)
             ->countAllResults();
@@ -386,13 +468,17 @@ class NotificationService
         }
 
         if ($rows !== []) {
-            $this->notificationModel->insertBatch($rows);
+            try {
+                $this->notificationModel->insertBatch($rows);
+            } catch (\Throwable $e) {
+                log_message('error', 'Notification insert error: ' . $e->getMessage());
+            }
         }
     }
 
     protected function sendEmail(array $emails, string $subject, string $message, ?array $attachment = null, ?array $context = null): void
     {
-        $recipients = array_values(array_unique(array_filter(array_map(static fn($email) => is_string($email) ? trim($email) : '', $emails))));
+        $recipients = array_values(array_unique(array_filter(array_map(static fn($email) => is_string($email) ? strtolower(trim($email)) : '', $emails))));
         if ($recipients === []) {
             return;
         }
@@ -411,10 +497,91 @@ class NotificationService
                     $attachment['mime'] ?? 'text/calendar'
                 );
             }
-            $email->send();
+            if (! $email->send()) {
+                $debug = $this->emailDebugSummary($email);
+                log_message(
+                    'error',
+                    'Notification email send failed to ' . implode(', ', $recipients) . ' for subject "' . $subject . '". ' . $debug
+                );
+                $this->logEmail($recipients, $subject, $this->emailFailurePreview($message, $debug), $attachment, $context);
+                return;
+            }
+
             $this->logEmail($recipients, $subject, $message, $attachment, $context);
         } catch (\Throwable $e) {
             log_message('error', 'Notification email error: ' . $e->getMessage());
+            $this->logEmail($recipients, $subject, $this->emailFailurePreview($message, $e->getMessage()), $attachment, $context);
+        }
+    }
+
+    protected function emailDebugSummary($email): string
+    {
+        try {
+            $debug = strip_tags((string) $email->printDebugger(['headers']));
+            $debug = preg_replace('/\s+/', ' ', $debug) ?: '';
+            $debug = trim($debug);
+            if ($debug !== '') {
+                return strlen($debug) > 500 ? substr($debug, 0, 500) . '...' : $debug;
+            }
+        } catch (\Throwable $e) {
+            return 'Email service returned false and debugger was unavailable: ' . $e->getMessage();
+        }
+
+        return 'Email service returned false. Check Email configuration if physical email delivery is required.';
+    }
+
+    protected function emailFailurePreview(string $message, string $reason): string
+    {
+        $reason = trim($reason);
+        if (strlen($reason) > 240) {
+            $reason = substr($reason, 0, 240) . '...';
+        }
+
+        $note = '<div style="font-family:Arial,sans-serif;font-size:13px;line-height:1.5;color:#92400e;background:#fffbeb;border:1px solid #f59e0b;border-radius:8px;padding:10px 12px;margin:0 0 14px">';
+        $note .= '<strong>Delivery not confirmed.</strong> The in-app notification was still created. Configure SMTP/mail settings only when real email delivery is required.';
+        if ($reason !== '') {
+            $note .= '<br><span>Reason: ' . htmlspecialchars($reason, ENT_QUOTES, 'UTF-8') . '</span>';
+        }
+        $note .= '</div>';
+
+        return $note . $message;
+    }
+
+    protected function logEmail(array $recipients, string $subject, string $message, ?array $attachment = null, ?array $context = null): void
+    {
+        $rows = [];
+        $now = date('Y-m-d H:i:s');
+
+        foreach ($recipients as $recipient) {
+            $recipient = strtolower(trim((string) $recipient));
+            if ($recipient === '') {
+                continue;
+            }
+
+            $userId = $this->findUserIdByEmail($recipient);
+            $rows[] = [
+                'user_id' => $userId > 0 ? $userId : null,
+                'to_email' => $recipient,
+                'subject' => $subject,
+                'body' => $message,
+                'notification_type' => $context['notification_type'] ?? null,
+                'entity_type' => $context['entity_type'] ?? null,
+                'entity_id' => isset($context['entity_id']) ? (int) $context['entity_id'] : null,
+                'has_attachment' => $attachment ? 1 : 0,
+                'attachment_name' => $attachment['filename'] ?? null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        if ($rows === []) {
+            return;
+        }
+
+        try {
+            $this->emailLogModel->insertBatch($rows);
+        } catch (\Throwable $e) {
+            log_message('error', 'Notification email log error: ' . $e->getMessage());
         }
     }
 
@@ -555,14 +722,32 @@ class NotificationService
 
     protected function groupUserIds(string $groupName): array
     {
-        $rows = $this->db->table('auth_groups_users agu')
-            ->select('agu.user_id')
-            ->join('auth_groups ag', 'ag.id = agu.group_id', 'inner')
-            ->where('ag.name', $groupName)
-            ->get()
-            ->getResultArray();
+        try {
+            if ($this->db->fieldExists('group', 'auth_groups_users')) {
+                $rows = $this->db->table('auth_groups_users')
+                    ->select('user_id')
+                    ->where('group', $groupName)
+                    ->get()
+                    ->getResultArray();
 
-        return array_map(static fn(array $row): int => (int) $row['user_id'], $rows);
+                return array_map(static fn(array $row): int => (int) $row['user_id'], $rows);
+            }
+
+            if ($this->db->fieldExists('group_id', 'auth_groups_users') && $this->db->tableExists('auth_groups')) {
+                $rows = $this->db->table('auth_groups_users agu')
+                    ->select('agu.user_id')
+                    ->join('auth_groups ag', 'ag.id = agu.group_id', 'inner')
+                    ->where('ag.name', $groupName)
+                    ->get()
+                    ->getResultArray();
+
+                return array_map(static fn(array $row): int => (int) $row['user_id'], $rows);
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'Notification group lookup error for ' . $groupName . ': ' . $e->getMessage());
+        }
+
+        return [];
     }
 
     protected function emailsForUserIds(array $userIds): array
@@ -589,19 +774,19 @@ class NotificationService
             ->get()
             ->getRowArray();
 
-        return $row['secret'] ?? null;
+        return isset($row['secret']) ? strtolower(trim((string) $row['secret'])) : null;
     }
 
     protected function findUserIdByEmail(string $email): int
     {
-        $email = trim($email);
+        $email = strtolower(trim($email));
         if ($email === '') {
             return 0;
         }
         $row = $this->db->table('auth_identities')
             ->select('user_id')
             ->where('type', 'email_password')
-            ->where('secret', $email)
+            ->where('LOWER(secret) =', $email)
             ->get()
             ->getRowArray();
 

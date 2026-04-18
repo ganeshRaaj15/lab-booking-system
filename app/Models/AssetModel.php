@@ -44,7 +44,7 @@ class AssetModel extends Model
         $builder = $this->db->table('maintenance_records')
             ->selectSum('quantity_affected')
             ->where('asset_id', $assetId)
-            ->whereIn('status', ['reported', 'scheduled', 'in_progress']);
+            ->whereIn('status', ['reported', 'scheduled', 'in_progress', 'testing']);
 
         if ($ignoreRecordId > 0) {
             $builder->where('id !=', $ignoreRecordId);

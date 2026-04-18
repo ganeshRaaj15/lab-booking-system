@@ -3,6 +3,8 @@
 namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
+use App\Libraries\MaintenanceForecastService;
+use App\Libraries\NotificationService;
 use App\Models\SettingsModel;
 
 class SettingsController extends BaseController
@@ -206,5 +208,35 @@ class SettingsController extends BaseController
             'message' => 'Booking slots updated successfully.',
             'slots'   => $slots
         ]);
+    }
+
+    public function runScheduledTasks()
+    {
+        $bookingSent = 0;
+        $maintenanceSent = 0;
+        $errors = [];
+
+        try {
+            $bookingSent = (new NotificationService())->sendUpcomingBookingReminders(24);
+        } catch (\Throwable $e) {
+            $errors[] = 'booking reminders';
+            log_message('error', 'Manual scheduled task failed [booking reminders]: ' . $e->getMessage());
+        }
+
+        try {
+            $maintenanceSent = (new MaintenanceForecastService())->sendUpcomingDueReminders(30);
+        } catch (\Throwable $e) {
+            $errors[] = 'maintenance due reminders';
+            log_message('error', 'Manual scheduled task failed [maintenance due reminders]: ' . $e->getMessage());
+        }
+
+        $message = 'Scheduled tasks completed. Booking reminders: ' . $bookingSent . '. Maintenance due reminders: ' . $maintenanceSent . '.';
+        $redirect = redirect()->to('/admin/settings')->with('message', $message);
+
+        if ($errors !== []) {
+            return $redirect->with('warning', 'Some scheduled task checks failed: ' . implode(', ', $errors) . '. The app is still usable; check writable/logs for details.');
+        }
+
+        return $redirect;
     }
 }

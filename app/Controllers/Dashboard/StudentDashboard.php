@@ -13,14 +13,16 @@ class StudentDashboard extends BaseController
     {
         helper('auth');
 
-        if (!auth()->loggedIn() || !auth()->user()->inGroup('student')) {
+        if (!auth()->loggedIn() || (! auth()->user()->inGroup('student') && ! auth()->user()->inGroup('staff'))) {
             return redirect()->to('/dashboard')->with('error', 'Access denied.');
         }
 
         $user   = auth()->user();
         $userId = $user->id;
+        $dashboardLabel = $user->inGroup('staff') ? 'Staff Dashboard' : 'Student Dashboard';
 
         $bookingModel = new BookingModel();
+        $filters = $this->bookingFilters();
 
         $baseSelect = "
             bookings.*,
@@ -29,11 +31,13 @@ class StudentDashboard extends BaseController
         ";
 
         // All bookings
-        $bookings = $bookingModel
+        $bookingsQuery = $bookingModel
             ->select($baseSelect)
             ->join('laboratories', 'laboratories.id = bookings.lab_id', 'left')
             ->where('bookings.user_id', $userId)
-            ->whereIn('bookings.status', ['PENDING', 'APPROVED', 'REJECTED'])
+            ->whereIn('bookings.status', BookingModel::CORE_STATUSES);
+
+        $bookings = $this->applyBookingFilters($bookingsQuery, $filters)
             ->orderBy('bookings.date', 'DESC')
             ->orderBy('bookings.start_time', 'ASC')
             ->findAll();
@@ -43,8 +47,9 @@ class StudentDashboard extends BaseController
             'pending'  => (new BookingModel())->where('user_id', $userId)->where('status', 'PENDING')->countAllResults(),
             'approved' => (new BookingModel())->where('user_id', $userId)->where('status', 'APPROVED')->countAllResults(),
             'rejected' => (new BookingModel())->where('user_id', $userId)->where('status', 'REJECTED')->countAllResults(),
+            'cancelled' => (new BookingModel())->where('user_id', $userId)->where('status', 'CANCELLED')->countAllResults(),
         ];
-        $stats['total'] = $stats['pending'] + $stats['approved'] + $stats['rejected'];
+        $stats['total'] = $stats['pending'] + $stats['approved'] + $stats['rejected'] + $stats['cancelled'];
 
         // Upcoming bookings
         $today = date('Y-m-d');
@@ -52,7 +57,7 @@ class StudentDashboard extends BaseController
             ->select($baseSelect)
             ->join('laboratories', 'laboratories.id = bookings.lab_id', 'left')
             ->where('bookings.user_id', $userId)
-            ->whereIn('bookings.status', ['PENDING', 'APPROVED', 'REJECTED'])
+            ->whereIn('bookings.status', BookingModel::ACTIVE_STATUSES)
             ->where('bookings.date >=', $today)
             ->orderBy('bookings.date', 'ASC')
             ->orderBy('bookings.start_time', 'ASC')
@@ -66,7 +71,7 @@ class StudentDashboard extends BaseController
         $monthlyRows = $db->table('bookings')
             ->select("DATE_FORMAT(date, '%b %Y') AS month, COUNT(*) AS count", false)
             ->where('user_id', $userId)
-            ->whereIn('status', ['PENDING', 'APPROVED', 'REJECTED'])
+            ->whereIn('status', BookingModel::CORE_STATUSES)
             ->groupBy("DATE_FORMAT(date, '%b %Y')", false)
             ->orderBy("MIN(date)", "DESC", false)
             ->limit(6)
@@ -123,7 +128,52 @@ class StudentDashboard extends BaseController
             'nextBooking'      => $nextBooking,
             'monthlyCounts'    => $monthlyCounts,
             'personalizedHints'=> $personalizedHints,
+            'dashboardLabel'   => $dashboardLabel,
+            'filters'          => $filters,
         ]);
+    }
+
+    private function bookingFilters(): array
+    {
+        $status = trim((string) $this->request->getGet('status'));
+        if (! in_array($status, BookingModel::CORE_STATUSES, true)) {
+            $status = '';
+        }
+
+        return [
+            'q' => trim((string) $this->request->getGet('q')),
+            'status' => $status,
+            'date_from' => $this->validDate((string) $this->request->getGet('date_from')),
+            'date_to' => $this->validDate((string) $this->request->getGet('date_to')),
+        ];
+    }
+
+    private function applyBookingFilters($query, array $filters)
+    {
+        if ($filters['q'] !== '') {
+            $query->groupStart()
+                ->like('laboratories.name', $filters['q'])
+                ->orLike('laboratories.room', $filters['q'])
+                ->orLike('bookings.activity', $filters['q'])
+                ->groupEnd();
+        }
+        if ($filters['status'] !== '') {
+            $query->where('bookings.status', $filters['status']);
+        }
+        if ($filters['date_from'] !== '') {
+            $query->where('bookings.date >=', $filters['date_from']);
+        }
+        if ($filters['date_to'] !== '') {
+            $query->where('bookings.date <=', $filters['date_to']);
+        }
+
+        return $query;
+    }
+
+    private function validDate(string $value): string
+    {
+        $value = trim($value);
+        return preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1 ? $value : '';
     }
 
     private function mapTimeToSlot(string $startTime): ?string
@@ -197,7 +247,12 @@ class StudentDashboard extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Only pending bookings can be cancelled.']);
         }
 
-        $bookingModel->update($id, ['status' => 'CANCELLED']);
+        $bookingModel->update($id, [
+            'status' => 'CANCELLED',
+            'approved_by_pic' => 0,
+            'approved_by_manager' => 0,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
 
         return $this->response->setJSON([
             'success' => true,

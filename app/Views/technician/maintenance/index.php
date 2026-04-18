@@ -15,6 +15,75 @@
         </div>
     </div>
 
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <div>
+                <h6 class="mb-1">Upcoming Preventive Maintenance</h6>
+                <small class="text-muted">Forecasts based on completed preventive, inspection, and calibration history (next 90 days).</small>
+            </div>
+            <span class="badge text-bg-light border">Next 90 days</span>
+        </div>
+        <div class="card-body p-0">
+            <?php if (empty($upcomingForecasts)): ?>
+                <div class="p-4 text-muted">No upcoming preventive maintenance is due in the next 90 days.</div>
+            <?php else: ?>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Asset</th>
+                                <th>Due Date</th>
+                                <th>Last Completed</th>
+                                <th>Cycle</th>
+                                <th>Status</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($upcomingForecasts as $forecast): ?>
+                                <?php
+                                    $nextDueRaw = $forecast['next_due_at'] ?? '';
+                                    $nextDueLabel = $nextDueRaw ? date('d M Y', strtotime($nextDueRaw)) : '-';
+                                    $lastCompletedRaw = $forecast['last_completed_at'] ?? '';
+                                    $lastCompletedLabel = $lastCompletedRaw ? date('d M Y', strtotime($lastCompletedRaw)) : '-';
+                                    $intervalDays = (int) ($forecast['interval_days'] ?? 0);
+                                    $months = $intervalDays > 0 ? max((int) round($intervalDays / 30), 1) : 0;
+                                    $cycleLabel = $intervalDays > 0
+                                        ? ($forecast['basis'] === 'average' ? 'Avg ' : 'Default ') . '~' . $months . ' mo'
+                                        : '-';
+                                    $daysUntil = (int) ($forecast['days_until'] ?? 0);
+                                    $statusText = $daysUntil < 0
+                                        ? 'Overdue by ' . abs($daysUntil) . ' day(s)'
+                                        : 'Due in ' . $daysUntil . ' day(s)';
+                                    $statusClass = $daysUntil < 0 ? 'text-bg-danger' : 'text-bg-warning';
+                                    $scheduledFor = $nextDueRaw ? date('Y-m-d\\T09:00', strtotime($nextDueRaw)) : '';
+                                    $planQuery = http_build_query([
+                                        'asset_id' => $forecast['asset_id'] ?? '',
+                                        'scheduled_for' => $scheduledFor,
+                                        'issue_type' => 'preventive',
+                                        'title' => 'Preventive Maintenance - ' . ($forecast['name'] ?? 'Equipment'),
+                                        'priority' => 'medium',
+                                        'quantity_affected' => 1,
+                                    ], '', '&', PHP_QUERY_RFC3986);
+                                ?>
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold"><?= esc($forecast['name'] ?? '-') ?></div>
+                                        <small class="text-muted"><?= esc($forecast['lab_name'] ?? '-') ?></small>
+                                    </td>
+                                    <td><?= esc($nextDueLabel) ?></td>
+                                    <td><?= esc($lastCompletedLabel) ?></td>
+                                    <td><?= esc($cycleLabel) ?></td>
+                                    <td><span class="badge <?= esc($statusClass) ?>"><?= esc($statusText) ?></span></td>
+                                    <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="/technician/maintenance/create?<?= esc($planQuery) ?>">Plan</a></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white d-flex justify-content-between align-items-center">
             <div><h5 class="mb-1">Maintenance Workflow</h5><small class="text-muted">User-reported faults should move through schedule, repair, testing, and completion with clear evidence.</small></div>

@@ -255,16 +255,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Animate visible cards
     function animateVisibleCards() {
-        const visibleCards = document.querySelectorAll('.lab-item:not(.lab-hidden)');
-        visibleCards.forEach((card, index) => {
-            card.style.opacity = '0';
-            card.style.transform = 'translateY(30px)';
-            
-            setTimeout(() => {
-                card.style.transition = 'all 0.6s ease';
-                card.style.opacity = '1';
-                card.style.transform = 'translateY(0)';
-            }, index * 50);
+        document.querySelectorAll('.lab-item').forEach(card => {
+            card.style.opacity = '';
+            card.style.transition = '';
         });
     }
     
@@ -335,26 +328,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault();
                 const viewBtn = firstVisibleLab.querySelector('.view-btn');
                 if (viewBtn) {
-                    // Add visual feedback
-                    firstVisibleLab.style.transform = 'scale(0.95)';
-                    setTimeout(() => {
-                        firstVisibleLab.style.transform = '';
-                        window.location.href = viewBtn.href;
-                    }, 150);
+                    window.location.href = viewBtn.href;
                 }
             }
         }
-    });
-    
-    // Add search input focus effect
-    searchInput.addEventListener('focus', function() {
-        this.parentElement.parentElement.style.transform = 'translateY(-4px)';
-        this.parentElement.parentElement.style.boxShadow = '0 20px 50px rgba(0, 0, 0, 0.3)';
-    });
-    
-    searchInput.addEventListener('blur', function() {
-        this.parentElement.parentElement.style.transform = 'translateY(-2px)';
-        this.parentElement.parentElement.style.boxShadow = '0 15px 40px rgba(0, 0, 0, 0.25)';
     });
     
     // Add click effect to lab cards
@@ -365,18 +342,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Optional: Add visual feedback
-            this.style.transform = 'translateY(-12px) scale(1.02)';
-            setTimeout(() => {
-                this.style.transform = 'translateY(-10px)';
-            }, 150);
-            
             // Navigate to lab detail page
             const link = this.querySelector('.view-btn');
             if (link) {
-                setTimeout(() => {
-                    window.location.href = link.href;
-                }, 300);
+                window.location.href = link.href;
             }
         });
     });

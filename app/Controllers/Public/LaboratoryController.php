@@ -44,7 +44,7 @@ class LaboratoryController extends BaseController
         $picEmails = [];
         foreach ($labs as $lab) {
             if (!empty($lab['pic_email'])) {
-                $picEmails[] = trim($lab['pic_email']);
+                $picEmails[] = strtolower(trim($lab['pic_email']));
             }
         }
         $picEmails = array_values(array_unique($picEmails));
@@ -54,13 +54,13 @@ class LaboratoryController extends BaseController
             $identityRows = $db->table('auth_identities')
                 ->select('user_id, secret')
                 ->where('type', 'email_password')
-                ->whereIn('secret', $picEmails)
+                ->whereIn('LOWER(secret)', $picEmails)
                 ->get()
                 ->getResultArray();
 
             $emailToUserId = [];
             foreach ($identityRows as $row) {
-                $emailToUserId[$row['secret']] = (int)$row['user_id'];
+                $emailToUserId[strtolower(trim((string) $row['secret']))] = (int)$row['user_id'];
             }
 
             $userIds = array_values(array_unique(array_values($emailToUserId)));
@@ -78,7 +78,7 @@ class LaboratoryController extends BaseController
             }
 
             foreach ($labs as &$lab) {
-                $email = trim((string)($lab['pic_email'] ?? ''));
+                $email = strtolower(trim((string)($lab['pic_email'] ?? '')));
                 if ($email === '' || !isset($emailToUserId[$email])) {
                     continue;
                 }
@@ -123,9 +123,9 @@ class LaboratoryController extends BaseController
         $userProfile = null;
 
         // Determine booking mode:
-        //  - 'uthm'    → logged-in, NOT in 'external' group (students/staff)
-        //  - 'external'→ logged-in external user
-        //  - 'guest'   → not logged in
+        //  - 'uthm'     logged-in, NOT in 'external' group (students/staff)
+        //  - 'external' logged-in external user
+        //  - 'guest'    not logged in
         $bookingMode = 'guest';
 
         if (function_exists('auth') && auth()->loggedIn()) {
@@ -147,9 +147,10 @@ class LaboratoryController extends BaseController
 
         if (!empty($lab['pic_email'])) {
             $db = \Config\Database::connect();
+            $picEmail = strtolower(trim((string) $lab['pic_email']));
             $picIdentity = $db->table('auth_identities')
                 ->where('type', 'email_password')
-                ->where('secret', $lab['pic_email'])
+                ->where('LOWER(secret) =', $picEmail)
                 ->get()
                 ->getRowArray();
 

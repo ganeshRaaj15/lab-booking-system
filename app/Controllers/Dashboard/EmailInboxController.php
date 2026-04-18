@@ -22,10 +22,11 @@ class EmailInboxController extends BaseController
         }
 
         $user = auth()->user();
+        $userEmail = strtolower(trim((string) $user->email));
         $query = $this->emailLogModel
             ->groupStart()
             ->where('user_id', $user->id)
-            ->orWhere('to_email', $user->email)
+            ->orWhere('LOWER(to_email) =', $userEmail)
             ->groupEnd()
             ->orderBy('created_at', 'DESC');
 
@@ -48,11 +49,12 @@ class EmailInboxController extends BaseController
         }
 
         $user = auth()->user();
+        $userEmail = strtolower(trim((string) $user->email));
         $email = $this->emailLogModel
             ->where('id', $id)
             ->groupStart()
             ->where('user_id', $user->id)
-            ->orWhere('to_email', $user->email)
+            ->orWhere('LOWER(to_email) =', $userEmail)
             ->groupEnd()
             ->first();
 

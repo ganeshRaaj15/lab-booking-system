@@ -235,29 +235,23 @@ if ($picPhone === '') {
                             </table>
                             
                             <!-- Equipment availability summary -->
-                            <div class="mt-4 pt-4 border-top">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="d-flex align-items-center gap-2 mb-2">
-                                            <div class="status-available p-2 rounded"></div>
-                                            <span class="small">Available for booking</span>
-                                            <span class="badge bg-primary ms-auto"><?= $availableCount ?></span>
-                                        </div>
-                                        <div class="d-flex align-items-center gap-2 mb-2">
-                                            <div class="status-maintenance p-2 rounded"></div>
-                                            <span class="small">Under maintenance</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="d-flex align-items-center gap-2 mb-2">
-                                            <div class="status-faulty p-2 rounded"></div>
-                                            <span class="small">Faulty/Not working</span>
-                                        </div>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <div class="status-unavailable p-2 rounded"></div>
-                                            <span class="small">Other status</span>
-                                        </div>
-                                    </div>
+                            <div class="equipment-legend" aria-label="Equipment availability legend">
+                                <div class="equipment-legend-item">
+                                    <span class="equipment-legend-dot status-available" aria-hidden="true"></span>
+                                    <span>Available for booking</span>
+                                    <span class="badge bg-primary equipment-legend-count"><?= $availableCount ?></span>
+                                </div>
+                                <div class="equipment-legend-item">
+                                    <span class="equipment-legend-dot status-maintenance" aria-hidden="true"></span>
+                                    <span>Under maintenance</span>
+                                </div>
+                                <div class="equipment-legend-item">
+                                    <span class="equipment-legend-dot status-faulty" aria-hidden="true"></span>
+                                    <span>Faulty/Not working</span>
+                                </div>
+                                <div class="equipment-legend-item">
+                                    <span class="equipment-legend-dot status-unavailable" aria-hidden="true"></span>
+                                    <span>Other status</span>
                                 </div>
                             </div>
                         </div>
@@ -293,22 +287,24 @@ if ($picPhone === '') {
                 <p>Availability is calculated based on your selected equipment and may vary between timeslots.</p>
             </div>
             
-            <?php if ($bookingMode === 'uthm'): ?>
-                <button id="openBookingWizardBtn"
-                        class="btn booking-btn"
-                        data-lab-id="<?= esc($lab['id']) ?>"
-                        disabled>
-                    <i class="bi bi-magic me-1"></i>
-                    Launch Booking Wizard (Select Equipment First)
-                </button>
-            <?php else: ?>
-                <button id="openBookingWizardBtn"
-                        class="btn booking-btn booking-btn-outline"
-                        type="button">
-                    <i class="bi bi-person-gear me-1"></i>
-                    Contact PIC for Booking
-                </button>
-            <?php endif; ?>
+            <div class="booking-actions">
+                <?php if ($bookingMode === 'uthm'): ?>
+                    <button id="openBookingWizardBtn"
+                            class="btn booking-btn"
+                            data-lab-id="<?= esc($lab['id']) ?>"
+                            disabled>
+                        <i class="bi bi-magic me-1"></i>
+                        Launch Booking Wizard (Select Equipment First)
+                    </button>
+                <?php else: ?>
+                    <button id="openBookingWizardBtn"
+                            class="btn booking-btn booking-btn-outline"
+                            type="button">
+                        <i class="bi bi-person-gear me-1"></i>
+                        Contact PIC for Booking
+                    </button>
+                <?php endif; ?>
+            </div>
         </div>
 
         <!-- Calendar Section -->
@@ -444,28 +440,19 @@ document.addEventListener("DOMContentLoaded", function () {
             
             if (!qtyInput || !row) return;
 
-            // Add visual feedback
             if (cb.checked && isEquipmentAvailable(id)) {
-                row.style.transform = 'translateY(-2px)';
-                row.style.boxShadow = '0 4px 15px rgba(59, 130, 246, 0.1)';
                 qtyInput.disabled = false;
                 qtyInput.style.borderColor = '#3b82f6';
                 if (!qtyInput.value || parseInt(qtyInput.value, 10) < 1) {
                     qtyInput.value = 1;
                 }
             } else {
-                row.style.transform = '';
-                row.style.boxShadow = '';
                 qtyInput.disabled = true;
                 qtyInput.style.borderColor = '#e2e8f0';
                 if (!isEquipmentAvailable(id)) {
                     qtyInput.value = 0;
                 }
             }
-
-            setTimeout(() => {
-                row.style.transition = 'all 0.3s ease';
-            }, 10);
 
             updateBookingButton();
             refreshCalendar();
@@ -487,13 +474,6 @@ document.addEventListener("DOMContentLoaded", function () {
             if (parseInt(input.value, 10) < 1) input.value = 1;
             const max = parseInt(input.max, 10);
             if (parseInt(input.value, 10) > max) input.value = max;
-            
-            // Visual feedback
-            input.style.transform = 'scale(1.05)';
-            setTimeout(() => {
-                input.style.transform = '';
-                input.style.transition = 'transform 0.2s ease';
-            }, 200);
             
             refreshCalendar();
             syncAssetSelectionToModal();
@@ -799,6 +779,21 @@ document.addEventListener("DOMContentLoaded", function () {
         }, 5000);
     }
 
+    function showBookingModal() {
+        const modalEl = document.getElementById("bookingModal");
+        if (!modalEl || typeof bootstrap === "undefined") {
+            return false;
+        }
+
+        if (modalEl.parentElement !== document.body) {
+            document.body.appendChild(modalEl);
+        }
+
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+        return true;
+    }
+
     // -------------------------------------------------
     // Global function used by popup "Book This Slot"
     // -------------------------------------------------
@@ -835,8 +830,7 @@ document.addEventListener("DOMContentLoaded", function () {
             window.resetBookingWizard();
         }
 
-        const modal = new bootstrap.Modal(bookingModalEl);
-        modal.show();
+        showBookingModal();
     };
 
     // -------------------------------------------------
@@ -848,8 +842,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (BOOKING_MODE !== "uthm") {
                 const modalEl = document.getElementById("bookingModal");
                 if (modalEl) {
-                    const modal = new bootstrap.Modal(modalEl);
-                    modal.show();
+                    showBookingModal();
                 } else {
                     showAlert("For external bookings, please contact the Person in Charge shown above.", "info");
                 }
@@ -871,15 +864,77 @@ document.addEventListener("DOMContentLoaded", function () {
                 window.resetBookingWizard();
             }
 
-            const bookingModalEl = document.getElementById("bookingModal");
-            const modal = new bootstrap.Modal(bookingModalEl);
-            modal.show();
+            showBookingModal();
         });
     }
 
+    function applyQrSelectionFromQuery() {
+        const params = new URLSearchParams(window.location.search);
+        const assetParam = params.get("asset");
+        if (!assetParam) return false;
+
+        const assetId = assetParam.replace(/[^0-9]/g, "");
+        if (!assetId) return false;
+
+        const checkbox = document.querySelector(`.asset-checkbox[data-asset-id="${assetId}"]`);
+        const qtyInput = document.querySelector(`.asset-qty[data-asset-id="${assetId}"]`);
+
+        if (!checkbox) {
+            showAlert("Selected equipment is not listed in this laboratory.", "warning");
+            return false;
+        }
+
+        if (!isEquipmentAvailable(assetId)) {
+            showAlert("Selected equipment is not available for booking right now.", "warning");
+            return false;
+        }
+
+        checkbox.checked = true;
+
+        if (qtyInput) {
+            const maxRaw = parseInt(qtyInput.max || "1", 10);
+            const requestedRaw = parseInt(params.get("qty") || "1", 10);
+            const max = Number.isNaN(maxRaw) ? 1 : maxRaw;
+            const requested = Number.isNaN(requestedRaw) ? 1 : requestedRaw;
+            const safeQty = Math.min(Math.max(requested, 1), max);
+
+            qtyInput.disabled = false;
+            qtyInput.value = safeQty;
+        }
+
+        updateBookingButton();
+        refreshCalendar();
+        syncAssetSelectionToModal();
+
+        const openWizard = params.get("open") === "1";
+        if (!openWizard) return true;
+
+        if (BOOKING_MODE !== "uthm") {
+            if (!showBookingModal()) {
+                showAlert("Online booking is only available for UTHM users. Please contact the PIC.", "warning");
+            }
+            return true;
+        }
+
+        const assetsString = buildAssetSelectionString();
+        if (hiddenAssetField) hiddenAssetField.value = assetsString;
+        if (hiddenLabIdInput) hiddenLabIdInput.value = LAB_ID;
+
+        if (window.resetBookingWizard) {
+            window.resetBookingWizard();
+        }
+
+        showBookingModal();
+
+        return true;
+    }
+
+    const qrApplied = applyQrSelectionFromQuery();
     // Initial calendar load
-    refreshCalendar();
-    updateBookingButton();
+    if (!qrApplied) {
+        refreshCalendar();
+        updateBookingButton();
+    }
 });
 </script>
 

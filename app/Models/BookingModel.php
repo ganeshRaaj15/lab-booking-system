@@ -6,6 +6,9 @@ use CodeIgniter\Model;
 
 class BookingModel extends Model
 {
+    public const ACTIVE_STATUSES = ['PENDING', 'APPROVED'];
+    public const CORE_STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'];
+
     protected $table            = 'bookings';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
@@ -51,15 +54,65 @@ class BookingModel extends Model
                     ->findAll();
     }
 
-    public function slotTaken($labId, $date, $start, $end)
+    public function slotTaken($labId, $date, $start, $end, ?int $ignoreBookingId = null)
     {
-        return $this->where('lab_id', $labId)
-                    ->where('date', $date)
-                    ->groupStart()
-                        ->where("start_time <", $end)
-                        ->where("end_time >", $start)
-                    ->groupEnd()
-                    ->countAllResults() > 0;
+        return $this->hasLabConflict((int) $labId, (string) $date, (string) $start, (string) $end, $ignoreBookingId);
+    }
+
+    public function hasLabConflict(int $labId, string $date, string $start, string $end, ?int $ignoreBookingId = null): bool
+    {
+        return $this->labConflictBuilder($labId, $date, $start, $end, $ignoreBookingId)
+            ->countAllResults() > 0;
+    }
+
+    public function findLabConflicts(int $labId, string $date, string $start, string $end, ?int $ignoreBookingId = null): array
+    {
+        return $this->labConflictBuilder($labId, $date, $start, $end, $ignoreBookingId)
+            ->orderBy('start_time', 'ASC')
+            ->get()
+            ->getResultArray();
+    }
+
+    public function activeLabConflictsForUpdate(int $labId, string $date, string $start, string $end, ?int $ignoreBookingId = null): array
+    {
+        $params = [$labId, $date, $end, $start];
+        $ignoreSql = '';
+
+        if ($ignoreBookingId !== null && $ignoreBookingId > 0) {
+            $ignoreSql = ' AND id != ?';
+            $params[] = $ignoreBookingId;
+        }
+
+        $sql = "
+            SELECT id, lab_id, date, start_time, end_time, status
+            FROM bookings
+            WHERE lab_id = ?
+              AND date = ?
+              AND status IN ('PENDING', 'APPROVED')
+              AND start_time < ?
+              AND end_time > ?
+              {$ignoreSql}
+            FOR UPDATE
+        ";
+
+        return $this->db->query($sql, $params)->getResultArray();
+    }
+
+    protected function labConflictBuilder(int $labId, string $date, string $start, string $end, ?int $ignoreBookingId = null)
+    {
+        $builder = $this->db->table($this->table)
+            ->select('id, lab_id, date, start_time, end_time, status')
+            ->where('lab_id', $labId)
+            ->where('date', $date)
+            ->whereIn('status', self::ACTIVE_STATUSES)
+            ->where('start_time <', $end)
+            ->where('end_time >', $start);
+
+        if ($ignoreBookingId !== null && $ignoreBookingId > 0) {
+            $builder->where('id !=', $ignoreBookingId);
+        }
+
+        return $builder;
     }
 
     /**
@@ -91,6 +144,10 @@ class BookingModel extends Model
             'rejected' => $db->table('bookings')
                 ->where('status', 'REJECTED')
                 ->countAllResults(),
+
+            'cancelled' => $db->table('bookings')
+                ->where('status', 'CANCELLED')
+                ->countAllResults(),
         ];
     }
 
@@ -110,7 +167,7 @@ class BookingModel extends Model
     public function monthlyTrend(): array
     {
         return $this->select("DATE_FORMAT(date, '%Y-%m') AS month, COUNT(*) AS total")
-                    ->whereIn('status', ['PENDING', 'APPROVED', 'REJECTED'])
+                    ->whereIn('status', self::CORE_STATUSES)
                     ->groupBy("DATE_FORMAT(date, '%Y-%m')")
                     ->orderBy("month", "ASC")
                     ->findAll();
@@ -125,7 +182,7 @@ class BookingModel extends Model
             SELECT DATE_FORMAT(date, '%Y-%m') AS month, COUNT(*) AS count
             FROM bookings
             WHERE date >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
-              AND status IN ('PENDING', 'APPROVED', 'REJECTED')
+              AND status IN ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED')
             GROUP BY DATE_FORMAT(date, '%Y-%m')
             ORDER BY month ASC
         ";

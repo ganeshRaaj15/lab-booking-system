@@ -3,15 +3,52 @@
 namespace App\Controllers\Dashboard;
 
 use App\Controllers\BaseController;
+use App\Models\BookingModel;
 use Dompdf\Dompdf;
 
 class ReportController extends BaseController
 {
     public function download()
     {
+        $data = $this->buildReportData();
+        if (! is_array($data)) {
+            return $data;
+        }
+
+        $dompdf = new Dompdf(['isRemoteEnabled' => true]);
+        $html = view('reports/summary_pdf', $data);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        $filename = 'slams-report-' . $data['role'] . '-' . date('Ymd_His') . '.pdf';
+
+        return $this->response
+            ->setHeader('Content-Type', 'application/pdf')
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->setBody($dompdf->output());
+    }
+
+    public function downloadCsv()
+    {
+        $data = $this->buildReportData();
+        if (! is_array($data)) {
+            return $data;
+        }
+
+        $filename = 'slams-report-' . $data['role'] . '-' . date('Ymd_His') . '.csv';
+
+        return $this->response
+            ->setHeader('Content-Type', 'text/csv; charset=UTF-8')
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->setBody($this->buildCsv($data));
+    }
+
+    private function buildReportData()
+    {
         helper('auth');
 
-        if (!auth()->loggedIn()) {
+        if (! auth()->loggedIn()) {
             return redirect()->to('/login');
         }
 
@@ -25,22 +62,22 @@ class ReportController extends BaseController
             $role = 'pic';
         }
 
-        if (!in_array($role, ['admin', 'manager', 'pic'], true)) {
+        if (! in_array($role, ['admin', 'manager', 'pic'], true)) {
             return redirect()->back()->with('error', 'You do not have access to reports.');
         }
 
         $db = \Config\Database::connect();
-        $email = $db->table('auth_identities')
+        $email = strtolower(trim((string) ($db->table('auth_identities')
             ->where('user_id', $user->id)
             ->where('type', 'email_password')
             ->get()
-            ->getRow('secret') ?? '';
+            ->getRow('secret') ?? '')));
 
         $labIds = [];
         if ($role === 'pic') {
             $labIds = $db->table('laboratories')
                 ->select('id')
-                ->where('pic_email', $email)
+                ->where('LOWER(TRIM(pic_email)) =', $email)
                 ->get()
                 ->getResultArray();
             $labIds = array_map(static fn($row) => (int) $row['id'], $labIds);
@@ -54,6 +91,7 @@ class ReportController extends BaseController
                     $builder->whereIn($column, $labIds);
                 }
             }
+
             return $builder;
         };
 
@@ -67,38 +105,36 @@ class ReportController extends BaseController
         }
         $labs = $labsQuery->get()->getResultArray();
 
-        $assetsStatus = $applyLabScope($db->table('assets')->select('status, COUNT(*) AS total')->groupBy('status'))
-            ->get()
-            ->getResultArray();
-
-        $statusFilter = ['PENDING', 'APPROVED', 'REJECTED'];
+        $bookingStatuses = BookingModel::CORE_STATUSES;
+        $statusMap = array_fill_keys($bookingStatuses, 0);
         $statusCounts = $applyLabScope(
             $db->table('bookings')
                 ->select('status, COUNT(*) AS total')
-                ->whereIn('status', $statusFilter)
+                ->whereIn('status', $bookingStatuses)
                 ->groupBy('status')
         )->get()->getResultArray();
 
-        $statusMap = ['APPROVED' => 0, 'PENDING' => 0, 'REJECTED' => 0];
         foreach ($statusCounts as $row) {
-            $statusMap[$row['status']] = (int) $row['total'];
+            if (array_key_exists($row['status'], $statusMap)) {
+                $statusMap[$row['status']] = (int) $row['total'];
+            }
         }
 
-        $totalBookings = array_sum($statusMap);
-        $totalLabs = count($labs);
+        $assetsStatus = $applyLabScope($db->table('assets')->select('status, COUNT(*) AS total')->groupBy('status'))
+            ->get()
+            ->getResultArray();
 
         $assetTotals = ['available' => 0, 'maintenance' => 0, 'faulty' => 0];
         foreach ($assetsStatus as $row) {
             $assetTotals[$row['status']] = (int) $row['total'];
         }
-        $assetsTotal = array_sum($assetTotals);
 
         $monthlyCutoff = date('Y-m-d', strtotime('-6 months'));
         $monthlyTrend = $applyLabScope(
             $db->table('bookings')
                 ->select("DATE_FORMAT(date, '%Y-%m') AS month, COUNT(*) AS total")
                 ->where('date >=', $monthlyCutoff)
-                ->whereIn('status', $statusFilter)
+                ->whereIn('status', $bookingStatuses)
                 ->groupBy("DATE_FORMAT(date, '%Y-%m')")
                 ->orderBy('month', 'ASC')
         )->get()->getResultArray();
@@ -106,6 +142,7 @@ class ReportController extends BaseController
         $topLabsBuilder = $db->table('bookings b')
             ->select('l.name AS lab_name, COUNT(*) AS total')
             ->join('laboratories l', 'l.id = b.lab_id', 'left')
+            ->whereIn('b.status', $bookingStatuses)
             ->groupBy('l.name')
             ->orderBy('total', 'DESC')
             ->limit(5);
@@ -124,6 +161,7 @@ class ReportController extends BaseController
         $facultyBuilder = $db->table('bookings b')
             ->select('f.name_en AS faculty_name, COUNT(*) AS total')
             ->join('faculties f', 'f.id = b.faculty_id', 'left')
+            ->whereIn('b.status', $bookingStatuses)
             ->groupBy('f.name_en')
             ->orderBy('total', 'DESC')
             ->limit(6);
@@ -145,9 +183,19 @@ class ReportController extends BaseController
             ->groupBy('mr.status');
         $maintenanceQuery = $applyLabScope($maintenanceQuery, 'a.lab_id');
         $maintenanceRows = $maintenanceQuery->get()->getResultArray();
-        $maintenanceStatus = ['reported' => 0, 'scheduled' => 0, 'completed' => 0, 'cancelled' => 0];
+
+        $maintenanceStatus = [
+            'reported' => 0,
+            'scheduled' => 0,
+            'in_progress' => 0,
+            'testing' => 0,
+            'completed' => 0,
+            'cancelled' => 0,
+        ];
         foreach ($maintenanceRows as $row) {
-            $maintenanceStatus[$row['status']] = (int) $row['total'];
+            if (array_key_exists($row['status'], $maintenanceStatus)) {
+                $maintenanceStatus[$row['status']] = (int) $row['total'];
+            }
         }
 
         $maintenanceTrendQuery = $db->table('maintenance_records mr')
@@ -172,7 +220,7 @@ class ReportController extends BaseController
             ->select('l.name AS lab_name, b.date, b.start_time, b.end_time, b.status, b.approval_flow')
             ->join('laboratories l', 'l.id = b.lab_id', 'left')
             ->where('b.date >=', date('Y-m-d'))
-            ->whereIn('b.status', ['PENDING', 'APPROVED'])
+            ->whereIn('b.status', BookingModel::ACTIVE_STATUSES)
             ->orderBy('b.date', 'ASC')
             ->orderBy('b.start_time', 'ASC')
             ->limit(8);
@@ -180,21 +228,23 @@ class ReportController extends BaseController
         $upcomingBookings = $upcomingApprovalsQuery->get()->getResultArray();
 
         $userCount = $role === 'admin' ? $db->table('users')->countAllResults() : null;
+        $maintenanceOpen = $maintenanceStatus['reported'] + $maintenanceStatus['scheduled'] + $maintenanceStatus['in_progress'] + $maintenanceStatus['testing'];
 
-        $data = [
+        return [
             'reportTitle' => strtoupper($role) . ' Analytics Report',
             'scopeLabel' => $role === 'pic' ? 'PIC Scope (Assigned Labs)' : 'System-wide Scope',
             'generatedAt' => date('Y-m-d H:i'),
             'kpis' => [
-                'total_bookings' => $totalBookings,
+                'total_bookings' => array_sum($statusMap),
                 'approved' => $statusMap['APPROVED'],
                 'pending' => $statusMap['PENDING'],
                 'rejected' => $statusMap['REJECTED'],
-                'total_labs' => $totalLabs,
-                'total_assets' => $assetsTotal,
+                'cancelled' => $statusMap['CANCELLED'],
+                'total_labs' => count($labs),
+                'total_assets' => array_sum($assetTotals),
                 'users' => $userCount,
                 'maintenance_total' => array_sum($maintenanceStatus),
-                'maintenance_open' => $maintenanceStatus['reported'] + $maintenanceStatus['scheduled'],
+                'maintenance_open' => $maintenanceOpen,
                 'maintenance_completed' => $maintenanceStatus['completed'],
             ],
             'assetTotals' => $assetTotals,
@@ -209,18 +259,91 @@ class ReportController extends BaseController
             'upcomingBookings' => $upcomingBookings,
             'role' => $role,
         ];
+    }
 
-        $dompdf = new Dompdf(['isRemoteEnabled' => true]);
-        $html = view('reports/summary_pdf', $data);
-        $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4', 'portrait');
-        $dompdf->render();
+    private function buildCsv(array $data): string
+    {
+        $rows = [
+            ['SLAMS Report', $data['reportTitle']],
+            ['Scope', $data['scopeLabel']],
+            ['Generated', $data['generatedAt']],
+            [],
+            ['KPI', 'Value'],
+        ];
 
-        $filename = 'slams-report-' . $role . '-' . date('Ymd_His') . '.pdf';
+        foreach ($data['kpis'] as $label => $value) {
+            if ($value !== null) {
+                $rows[] = [ucwords(str_replace('_', ' ', $label)), $value];
+            }
+        }
 
-        return $this->response
-            ->setHeader('Content-Type', 'application/pdf')
-            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
-            ->setBody($dompdf->output());
+        $rows[] = [];
+        $rows[] = ['Booking Status', 'Total'];
+        foreach ($data['statusMap'] as $status => $total) {
+            $rows[] = [$status, $total];
+        }
+
+        $rows[] = [];
+        $rows[] = ['Maintenance Status', 'Total'];
+        foreach ($data['maintenanceStatus'] as $status => $total) {
+            $rows[] = [ucwords(str_replace('_', ' ', $status)), $total];
+        }
+
+        $rows[] = [];
+        $rows[] = ['Asset Status', 'Total'];
+        foreach ($data['assetTotals'] as $status => $total) {
+            $rows[] = [ucwords($status), $total];
+        }
+
+        $rows[] = [];
+        $rows[] = ['Top Labs By Bookings', 'Total'];
+        foreach ($data['topLabs'] as $lab) {
+            $rows[] = [$lab['lab_name'] ?? 'Unknown Lab', $lab['total'] ?? 0];
+        }
+
+        $rows[] = [];
+        $rows[] = ['Monthly Booking Trend', 'Total'];
+        foreach ($data['monthlyTrend'] as $month) {
+            $rows[] = [$month['month'] ?? '-', $month['total'] ?? 0];
+        }
+
+        $rows[] = [];
+        $rows[] = ['Monthly Maintenance Trend', 'Total'];
+        foreach ($data['maintenanceTrend'] as $month) {
+            $rows[] = [$month['month'] ?? '-', $month['total'] ?? 0];
+        }
+
+        $rows[] = [];
+        $rows[] = ['Upcoming Booking Activity', 'Date', 'Time', 'Status', 'Flow'];
+        foreach ($data['upcomingBookings'] as $booking) {
+            $rows[] = [
+                $booking['lab_name'] ?? '-',
+                $booking['date'] ?? '-',
+                trim(($booking['start_time'] ?? '-') . ' - ' . ($booking['end_time'] ?? '-')),
+                $booking['status'] ?? '-',
+                $booking['approval_flow'] ?? '-',
+            ];
+        }
+
+        $rows[] = [];
+        $rows[] = ['Lab Name', 'Room', 'PIC', 'PIC Email'];
+        foreach ($data['labs'] as $lab) {
+            $rows[] = [
+                $lab['name'] ?? '-',
+                $lab['room'] ?? '-',
+                $lab['pic_name'] ?? '-',
+                $lab['pic_email'] ?? '-',
+            ];
+        }
+
+        $handle = fopen('php://temp', 'r+');
+        foreach ($rows as $row) {
+            fputcsv($handle, $row);
+        }
+        rewind($handle);
+        $csv = stream_get_contents($handle);
+        fclose($handle);
+
+        return $csv ?: '';
     }
 }

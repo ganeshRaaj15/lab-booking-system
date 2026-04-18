@@ -34,16 +34,45 @@ class AssetController extends BaseController
 
     public function index()
     {
-        $assets = $this->assetModel
+        $filters = [
+            'q' => trim((string) $this->request->getGet('q')),
+            'lab_id' => (int) $this->request->getGet('lab_id'),
+            'status' => trim((string) $this->request->getGet('status')),
+        ];
+        if (! in_array($filters['status'], ['available', 'maintenance', 'faulty'], true)) {
+            $filters['status'] = '';
+        }
+
+        $builder = $this->assetModel
             ->select('assets.*, laboratories.name AS lab_name, laboratories.room AS lab_room')
-            ->join('laboratories', 'laboratories.id = assets.lab_id', 'left')
+            ->join('laboratories', 'laboratories.id = assets.lab_id', 'left');
+
+        if ($filters['q'] !== '') {
+            $builder = $builder->groupStart()
+                ->like('assets.name', $filters['q'])
+                ->orLike('assets.asset_code', $filters['q'])
+                ->orLike('assets.category', $filters['q'])
+                ->orLike('assets.brand', $filters['q'])
+                ->orLike('assets.model', $filters['q'])
+                ->orLike('assets.serial_number', $filters['q'])
+                ->orLike('laboratories.name', $filters['q'])
+                ->groupEnd();
+        }
+        if ($filters['lab_id'] > 0) {
+            $builder = $builder->where('assets.lab_id', $filters['lab_id']);
+        }
+        if ($filters['status'] !== '') {
+            $builder = $builder->where('assets.status', $filters['status']);
+        }
+
+        $assets = $builder
             ->orderBy('laboratories.name', 'ASC')
             ->orderBy('assets.name', 'ASC')
             ->findAll();
 
         $maintenanceStats = [];
         $statsRows = $this->maintenanceModel
-            ->select("asset_id, COUNT(*) AS total_records, SUM(CASE WHEN status IN ('reported','scheduled','in_progress') THEN 1 ELSE 0 END) AS open_records, MAX(completed_at) AS last_completed_at, MAX(created_at) AS last_reported_at")
+            ->select("asset_id, COUNT(*) AS total_records, SUM(CASE WHEN status IN ('reported','scheduled','in_progress','testing') THEN 1 ELSE 0 END) AS open_records, MAX(completed_at) AS last_completed_at, MAX(created_at) AS last_reported_at")
             ->groupBy('asset_id')
             ->findAll();
 
@@ -64,9 +93,43 @@ class AssetController extends BaseController
 
         return view('admin/assets/index', [
             'assets' => $assets,
+            'labs' => $this->labModel->orderBy('name', 'ASC')->findAll(),
+            'filters' => $filters,
+            'statusOptions' => ['available', 'maintenance', 'faulty'],
         ]);
     }
 
+    public function qrLabels()
+    {
+        $search = trim((string) $this->request->getGet('q'));
+
+        $builder = $this->assetModel
+            ->select('assets.*, laboratories.name AS lab_name, laboratories.room AS lab_room')
+            ->join('laboratories', 'laboratories.id = assets.lab_id', 'left');
+
+        if ($search !== '') {
+            $builder->groupStart()
+                ->like('assets.name', $search)
+                ->orLike('assets.asset_code', $search)
+                ->orLike('laboratories.name', $search)
+                ->groupEnd();
+        }
+
+        $assets = $builder
+            ->orderBy('laboratories.name', 'ASC')
+            ->orderBy('assets.name', 'ASC')
+            ->findAll();
+
+        foreach ($assets as &$asset) {
+            $asset = $this->applyLegacyDefaults($asset);
+        }
+        unset($asset);
+
+        return view('admin/assets/qr_labels', [
+            'assets' => $assets,
+            'search' => $search,
+        ]);
+    }
     public function create()
     {
         return view('admin/assets/form', [

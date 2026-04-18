@@ -2,373 +2,6 @@
 
 <?= $this->section('content') ?>
 
-<style>
-    .admin-dashboard {
-        --card-radius: 16px;
-        --card-padding: 24px;
-        --transition-speed: 0.3s;
-    }
-
-    /* Glass Card Styling */
-    .glass-card {
-        background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.95),
-            rgba(255, 255, 255, 0.98)
-        );
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border-radius: var(--card-radius);
-        border: 1px solid rgba(59, 130, 246, 0.15);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-        transition: all var(--transition-speed) ease;
-        overflow: hidden;
-    }
-
-    .glass-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
-        border-color: rgba(59, 130, 246, 0.25);
-    }
-
-    /* KPI Cards */
-    .kpi-glass-card {
-        padding: var(--card-padding);
-        border-radius: var(--card-radius);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        transition: all var(--transition-speed) ease;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .kpi-glass-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-    }
-
-    .kpi-glass-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
-    }
-
-    /* Status badges */
-    .status-badge {
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(5px);
-    }
-
-    /* Card headers */
-    .glass-card-header {
-        background: linear-gradient(135deg,
-            rgba(59, 130, 246, 0.05),
-            rgba(30, 64, 175, 0.03)
-        );
-        border-bottom: 1px solid rgba(59, 130, 246, 0.1);
-        padding: 1.25rem 1.5rem;
-    }
-
-    /* Tab styling */
-    .nav-tabs {
-        border-bottom: 1px solid rgba(59, 130, 246, 0.15);
-        gap: 4px;
-    }
-
-    .nav-tabs .nav-link {
-        border: 1px solid transparent;
-        border-radius: 12px 12px 0 0;
-        padding: 12px 24px;
-        color: #64748b;
-        font-weight: 500;
-        transition: all 0.3s ease;
-        background: rgba(241, 245, 249, 0.5);
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .nav-tabs .nav-link:hover {
-        border-color: rgba(59, 130, 246, 0.2);
-        color: #3b82f6;
-        background: rgba(59, 130, 246, 0.05);
-    }
-
-    .nav-tabs .nav-link.active {
-        background: white;
-        border-color: rgba(59, 130, 246, 0.2);
-        border-bottom-color: transparent;
-        color: #1e40af;
-        font-weight: 600;
-        box-shadow: 0 -2px 10px rgba(59, 130, 246, 0.1);
-    }
-
-    .nav-tabs .badge {
-        font-size: 0.7rem;
-        padding: 4px 8px;
-        border-radius: 12px;
-    }
-
-    /* Table styling */
-    .glass-table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-        border-radius: 12px;
-        overflow: hidden;
-        border: 1px solid rgba(59, 130, 246, 0.1);
-    }
-
-    .glass-table thead {
-        background: linear-gradient(135deg,
-            rgba(59, 130, 246, 0.1),
-            rgba(30, 64, 175, 0.05)
-        );
-        backdrop-filter: blur(10px);
-    }
-
-    .glass-table th {
-        border-bottom: 2px solid rgba(59, 130, 246, 0.15);
-        padding: 1rem 1.5rem;
-        font-weight: 600;
-        color: #1e293b;
-        white-space: nowrap;
-    }
-
-    .glass-table td {
-        padding: 1rem 1.5rem;
-        border-bottom: 1px solid rgba(59, 130, 246, 0.08);
-        vertical-align: middle;
-        color: #475569;
-    }
-
-    .glass-table tbody tr {
-        transition: all 0.2s ease;
-    }
-
-    .glass-table tbody tr:hover {
-        background: rgba(59, 130, 246, 0.04);
-    }
-
-    /* Gradient backgrounds */
-    .gradient-pending {
-        background: linear-gradient(135deg, #f59e0b, #d97706);
-    }
-
-    .gradient-pending-mgr {
-        background: linear-gradient(135deg, #3b82f6, #1e40af);
-    }
-
-    .gradient-approved {
-        background: linear-gradient(135deg, #10b981, #059669);
-    }
-
-    .gradient-rejected {
-        background: linear-gradient(135deg, #ef4444, #dc2626);
-    }
-
-    /* Action buttons */
-    .btn-glass {
-        padding: 6px 16px;
-        border-radius: 10px;
-        border: 1px solid rgba(59, 130, 246, 0.2);
-        background: rgba(59, 130, 246, 0.08);
-        color: #3b82f6;
-        font-weight: 500;
-        transition: all 0.3s ease;
-    }
-
-    .btn-glass:hover {
-        background: rgba(59, 130, 246, 0.15);
-        border-color: rgba(59, 130, 246, 0.3);
-        transform: translateY(-2px);
-    }
-
-    /* Section titles */
-    .section-title {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: #1e293b;
-        padding-bottom: 12px;
-        border-bottom: 2px solid rgba(59, 130, 246, 0.15);
-        margin-bottom: 1.5rem;
-    }
-
-    /* Statistics badges */
-    .stat-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 14px;
-        border-radius: 20px;
-        background: rgba(59, 130, 246, 0.1);
-        color: #1e40af;
-        font-size: 0.875rem;
-        font-weight: 500;
-        border: 1px solid rgba(59, 130, 246, 0.2);
-    }
-
-    /* Quick stats */
-    .quick-stat {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 12px 16px;
-        background: rgba(241, 245, 249, 0.8);
-        border-radius: 12px;
-        border: 1px solid rgba(59, 130, 246, 0.15);
-        min-width: 140px;
-    }
-
-    .quick-stat i {
-        font-size: 1.5rem;
-        color: #3b82f6;
-        opacity: 0.8;
-    }
-
-    .quick-stat > div {
-        flex: 1;
-    }
-
-    /* Chart containers */
-    .chart-container-wrapper {
-        position: relative;
-        height: 200px;
-        width: 100%;
-        margin-bottom: 1rem;
-    }
-
-    .chart-container {
-        position: relative;
-        height: 100%;
-        width: 100%;
-    }
-
-    /* Legend fix */
-    .chart-legend-container {
-        max-height: 120px;
-        overflow-y: auto;
-        padding-right: 8px;
-    }
-
-    .chart-legend-container::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .chart-legend-container::-webkit-scrollbar-track {
-        background: rgba(0, 0, 0, 0.05);
-        border-radius: 10px;
-    }
-
-    .chart-legend-container::-webkit-scrollbar-thumb {
-        background: rgba(59, 130, 246, 0.3);
-        border-radius: 10px;
-    }
-
-    /* Custom scrollbar for tables */
-    .table-responsive {
-        border-radius: 12px;
-    }
-
-    .table-responsive::-webkit-scrollbar {
-        height: 6px;
-    }
-
-    .table-responsive::-webkit-scrollbar-track {
-        background: rgba(0, 0, 0, 0.05);
-        border-radius: 10px;
-    }
-
-    .table-responsive::-webkit-scrollbar-thumb {
-        background: rgba(59, 130, 246, 0.3);
-        border-radius: 10px;
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 992px) {
-        .quick-stat {
-            min-width: 120px;
-        }
-        
-        .nav-tabs .nav-link {
-            padding: 10px 16px;
-            font-size: 0.875rem;
-        }
-    }
-
-    @media (max-width: 768px) {
-        :root {
-            --card-padding: 16px;
-        }
-        
-        .glass-table th,
-        .glass-table td {
-            padding: 0.75rem 1rem;
-        }
-        
-        .nav-tabs {
-            flex-wrap: nowrap;
-            overflow-x: auto;
-            padding-bottom: 4px;
-        }
-        
-        .nav-tabs .nav-link {
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-        
-        .chart-container-wrapper {
-            height: 180px;
-        }
-    }
-
-    /* KPI numbers */
-    .kpi-number {
-        font-size: 2.5rem;
-        font-weight: 700;
-        line-height: 1;
-        margin: 8px 0;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    /* Icon containers */
-    .icon-container {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(255, 255, 255, 0.2);
-        flex-shrink: 0;
-    }
-
-    /* Dashboard header */
-    .dashboard-header {
-        margin-bottom: 2rem;
-    }
-
-    .dashboard-header h1 {
-        font-size: 1.75rem;
-        font-weight: 700;
-        color: #1e293b;
-        margin-bottom: 0.5rem;
-    }
-
-    .dashboard-header p {
-        color: #64748b;
-        font-size: 0.95rem;
-    }
-</style>
 
 <div class="admin-dashboard">
     <!-- PAGE HEADER -->
@@ -381,6 +14,9 @@
             <div class="d-flex gap-3 flex-wrap align-items-center">
                 <a href="/dashboard/reports/pdf" class="btn btn-glass">
                     <i class="bi bi-file-earmark-pdf me-1"></i> Download Report
+                </a>
+                <a href="/dashboard/reports/csv" class="btn btn-glass">
+                    <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
                 </a>
                 <div class="quick-stat">
                     <i class="bi bi-calendar-week"></i>
@@ -401,7 +37,7 @@
     </div>
 
     <!-- KPI WIDGETS -->
-    <div class="row g-4 mb-5">
+    <div class="row g-4 mb-3">
         <!-- Pending PIC -->
         <div class="col-xl-3 col-md-6">
             <div class="kpi-glass-card gradient-pending text-white">
@@ -446,7 +82,7 @@
                 <div class="d-flex justify-content-between align-items-start mb-3">
                     <div class="flex-grow-1">
                         <div class="d-flex align-items-center gap-2 mb-2">
-                            <div class="status-badge">Completed</div>
+                            <div class="status-badge">Approved</div>
                         </div>
                         <h6 class="mb-2 opacity-90 fw-medium">Approved Bookings</h6>
                         <div class="kpi-number"><?= esc($stats['approved']) ?></div>
@@ -475,6 +111,20 @@
                     </div>
                 </div>
                 <div class="small opacity-90">Bookings that were declined</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-5">
+        <div class="card-body py-3">
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <span class="fw-semibold text-dark me-2">Booking Status Summary</span>
+                <span class="badge rounded-pill bg-dark-subtle text-dark border">Total: <?= esc($stats['total'] ?? 0) ?></span>
+                <span class="badge rounded-pill bg-warning-subtle text-warning border">Pending PIC: <?= esc($stats['pending'] ?? 0) ?></span>
+                <span class="badge rounded-pill bg-primary-subtle text-primary border">Pending Manager: <?= esc($stats['pending_mgr'] ?? 0) ?></span>
+                <span class="badge rounded-pill bg-success-subtle text-success border">Approved: <?= esc($stats['approved'] ?? 0) ?></span>
+                <span class="badge rounded-pill bg-danger-subtle text-danger border">Rejected: <?= esc($stats['rejected'] ?? 0) ?></span>
+                <span class="badge rounded-pill bg-secondary-subtle text-secondary border">Cancelled: <?= esc($stats['cancelled'] ?? 0) ?></span>
             </div>
         </div>
     </div>

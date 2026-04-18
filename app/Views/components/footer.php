@@ -2,7 +2,6 @@
     <small>
         FKMP Smart Lab Booking System<br>
         Developed by Ganesh Raaj A/L Arumugam (2026)<br>
-        © <?= date('Y') ?> Universiti Tun Hussein Onn Malaysia
+        &copy; <?= date('Y') ?> Universiti Tun Hussein Onn Malaysia
     </small>
 </footer>
-

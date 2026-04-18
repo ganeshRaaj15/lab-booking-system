@@ -122,7 +122,7 @@ if ($picPhone === '') {
                         <div id="wizardProgress" class="progress-bar bg-primary" style="width: 33%;"></div>
                     </div>
                     <div id="wizardStepLabel" class="text-center mt-2 small fw-semibold text-primary">
-                        Step 1 of 3 — Applicant Details
+                        Step 1 of 3 - Applicant Details
                     </div>
                 </div>
 
@@ -131,6 +131,7 @@ if ($picPhone === '') {
 
                 <!-- FORM -->
                 <form id="bookingForm">
+                    <?= csrf_field() ?>
 
                     <!-- Hidden Inputs -->
                     <input type="hidden" name="asset_selection" id="asset_selection_modal">
@@ -184,7 +185,7 @@ if ($picPhone === '') {
                                             <option value="">Select Faculty</option>
                                             <?php foreach ($faculties as $f): ?>
                                                 <option value="<?= esc($f['id']) ?>" <?= ($defaultFacultyId && (int)$defaultFacultyId === (int)$f['id']) ? 'selected' : '' ?>>
-                                                    <?= esc($f['code']) ?> — <?= esc($f['name_en']) ?>
+                                                    <?= esc($f['code']) ?> - <?= esc($f['name_en']) ?>
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>
@@ -311,11 +312,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const recommendEl = document.getElementById("recommendedSlots");
 
     const defaultFacultyId = "<?= esc($defaultFacultyId ?? '') ?>";
+    const csrfTokenName = "<?= csrf_token() ?>";
+    const csrfTokenValue = "<?= csrf_hash() ?>";
 
     const labels = {
-        1: "Step 1 of 3 — Applicant Details",
-        2: "Step 2 of 3 — Date & Time",
-        3: "Step 3 of 3 — Activity & Supervisor"
+        1: "Step 1 of 3 - Applicant Details",
+        2: "Step 2 of 3 - Date & Time",
+        3: "Step 3 of 3 - Activity & Supervisor"
     };
 
     const widths = {1:33, 2:66, 3:100};
@@ -388,10 +391,12 @@ document.addEventListener("DOMContentLoaded", () => {
         fd.append("start_time", startField.value);
         fd.append("end_time", endField.value);
         fd.append("asset_selection", assetString);
+        fd.append(csrfTokenName, csrfTokenValue);
 
         try {
             const res = await fetch("/api/bookings/check-slot", {
                 method: "POST",
+                headers: {"X-Requested-With": "XMLHttpRequest"},
                 body: fd
             });
             const data = await res.json();
@@ -595,7 +600,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function validateStep(step) {
         clearError();
 
-        // Step 1 – Applicant details
+        // Step 1 - Applicant details
         if (step === 1) {
             let ok = true;
             document.querySelectorAll(".uthm-only").forEach(field => {
@@ -608,7 +613,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
 
-        // Step 2 – Date & time
+        // Step 2 - Date and time
         if (step === 2) {
             if (!dateField.value || !startField.value || !endField.value) {
                 showError("Please complete date and time.");
@@ -624,7 +629,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
 
-        // Step 3 – Required fields (activity + pdf)
+        // Step 3 - Required fields (activity + pdf)
         if (step === 3) {
             let ok = true;
             document.querySelectorAll("#step3 .required-field").forEach(f => {
@@ -710,6 +715,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         fetch("/api/bookings/submit", {
             method: "POST",
+            headers: {"X-Requested-With": "XMLHttpRequest"},
             body  : fd
         })
         .then(r => r.json())

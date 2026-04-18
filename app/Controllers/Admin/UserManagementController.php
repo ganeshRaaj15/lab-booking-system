@@ -13,7 +13,7 @@ class UserManagementController extends BaseController
     protected $users;
     protected BaseConnection $db;
     protected FacultyModel $faculties;
-    protected array $allowedRoles = ['student', 'external', 'technician', 'pic', 'manager', 'admin'];
+    protected array $allowedRoles = ['student', 'staff', 'external', 'technician', 'pic', 'manager', 'admin'];
 
     public function __construct()
     {
@@ -25,24 +25,59 @@ class UserManagementController extends BaseController
 
     public function index()
     {
-        $users = $this->users->findAll();
-        $userData = [];
+        $filters = $this->userFilters();
+        $allRows = $this->filteredUserRows($filters);
+        $totalFiltered = count($allRows);
+        $pageCount = max((int) ceil($totalFiltered / $filters['per_page']), 1);
+        $page = min($filters['page'], $pageCount);
+        $offset = ($page - 1) * $filters['per_page'];
+        $userData = array_slice($allRows, $offset, $filters['per_page']);
 
-        foreach ($users as $u) {
-            $email = $this->getEmailForUser((int) $u->id);
-            $roles = $this->db->table('auth_groups_users')->where('user_id', $u->id)->get()->getResultArray();
-            $userData[] = [
-                'id' => $u->id,
-                'username' => $u->username,
-                'email' => $email,
-                'roles' => array_column($roles, 'group'),
-                'active' => $u->active,
-                'full_name' => $u->full_name,
-                'phone' => $u->phone,
-            ];
+        $stats = [
+            'total' => (int) $this->db->table('users')->countAllResults(),
+            'active' => (int) $this->db->table('users')->where('active', 1)->countAllResults(),
+        ];
+
+        return view('admin/users/index', [
+            'users' => $userData,
+            'filters' => array_merge($filters, ['page' => $page]),
+            'allRoles' => $this->allowedRoles,
+            'stats' => $stats,
+            'pagination' => [
+                'total' => $totalFiltered,
+                'page' => $page,
+                'per_page' => $filters['per_page'],
+                'page_count' => $pageCount,
+            ],
+        ]);
+    }
+
+    public function exportCsv()
+    {
+        $filters = $this->userFilters();
+        $rows = $this->filteredUserRows($filters);
+
+        $handle = fopen('php://temp', 'r+');
+        fputcsv($handle, ['ID', 'Username', 'Full Name', 'Email', 'Phone', 'Roles', 'Status']);
+        foreach ($rows as $row) {
+            fputcsv($handle, [
+                $row['id'],
+                $row['username'],
+                $row['full_name'],
+                $row['email'],
+                $row['phone'],
+                implode(', ', $row['roles']),
+                $row['active'] ? 'Active' : 'Inactive',
+            ]);
         }
+        rewind($handle);
+        $csv = stream_get_contents($handle) ?: '';
+        fclose($handle);
 
-        return view('admin/users/index', ['users' => $userData]);
+        return $this->response
+            ->setHeader('Content-Type', 'text/csv; charset=UTF-8')
+            ->setHeader('Content-Disposition', 'attachment; filename="slams-users-' . date('Ymd_His') . '.csv"')
+            ->setBody($csv);
     }
 
     public function edit($id)
@@ -72,7 +107,7 @@ class UserManagementController extends BaseController
 
         $data = $this->request->getPost();
         $username = trim((string) ($data['username'] ?? ''));
-        $email = trim((string) ($data['email'] ?? ''));
+        $email = strtolower(trim((string) ($data['email'] ?? '')));
         $password = (string) ($data['password'] ?? '');
         $passwordConfirm = (string) ($data['password_confirm'] ?? '');
         $facultyId = ($data['faculty_id'] ?? '') !== '' ? (int) $data['faculty_id'] : null;
@@ -104,7 +139,7 @@ class UserManagementController extends BaseController
             return redirect()->back()->withInput()->with('error', 'Username already exists.');
         }
 
-        $emailExists = $this->db->table('auth_identities')->where('type', 'email_password')->where('secret', $email)->where('user_id !=', $user->id)->countAllResults();
+        $emailExists = $this->db->table('auth_identities')->where('type', 'email_password')->where('LOWER(secret) =', $email)->where('user_id !=', $user->id)->countAllResults();
         if ($emailExists > 0) {
             return redirect()->back()->withInput()->with('error', 'Email already exists.');
         }
@@ -181,7 +216,7 @@ class UserManagementController extends BaseController
     {
         $data = $this->request->getPost();
         $username = trim((string) ($data['username'] ?? ''));
-        $email = trim((string) ($data['email'] ?? ''));
+        $email = strtolower(trim((string) ($data['email'] ?? '')));
         $password = (string) ($data['password'] ?? '');
         $passwordConfirm = (string) ($data['password_confirm'] ?? '');
         $newRoles = array_values(array_intersect($data['roles'] ?? [], $this->allowedRoles));
@@ -210,7 +245,7 @@ class UserManagementController extends BaseController
         if ($existingUser) {
             return redirect()->back()->withInput()->with('error', 'Username already exists.');
         }
-        $emailExists = $this->db->table('auth_identities')->where('secret', $email)->where('type', 'email_password')->countAllResults() > 0;
+        $emailExists = $this->db->table('auth_identities')->where('LOWER(secret) =', $email)->where('type', 'email_password')->countAllResults() > 0;
         if ($emailExists) {
             return redirect()->back()->withInput()->with('error', 'Email already exists.');
         }
@@ -261,7 +296,87 @@ class UserManagementController extends BaseController
     protected function getEmailForUser(int $userId): string
     {
         $identity = $this->db->table('auth_identities')->where('user_id', $userId)->where('type', 'email_password')->get()->getRow();
-        return $identity->secret ?? '';
+        return isset($identity->secret) ? strtolower(trim((string) $identity->secret)) : '';
+    }
+
+    protected function userFilters(): array
+    {
+        $perPage = (int) $this->request->getGet('per_page');
+        if (! in_array($perPage, [10, 25, 50], true)) {
+            $perPage = 10;
+        }
+
+        $role = trim((string) $this->request->getGet('role'));
+        if (! in_array($role, $this->allowedRoles, true)) {
+            $role = '';
+        }
+
+        $status = trim((string) $this->request->getGet('status'));
+        if (! in_array($status, ['active', 'inactive'], true)) {
+            $status = '';
+        }
+
+        return [
+            'q' => trim((string) $this->request->getGet('q')),
+            'role' => $role,
+            'status' => $status,
+            'per_page' => $perPage,
+            'page' => max((int) $this->request->getGet('page'), 1),
+        ];
+    }
+
+    protected function filteredUserRows(array $filters): array
+    {
+        $builder = $this->db->table('users u')
+            ->select("u.id, u.username, u.full_name, u.phone, u.active, i.secret AS email, GROUP_CONCAT(DISTINCT agu.`group` ORDER BY agu.`group` SEPARATOR ',') AS role_list", false)
+            ->join('auth_identities i', "i.user_id = u.id AND i.type = 'email_password'", 'left')
+            ->join('auth_groups_users agu', 'agu.user_id = u.id', 'left')
+            ->groupBy('u.id, u.username, u.full_name, u.phone, u.active, i.secret')
+            ->orderBy('u.username', 'ASC');
+
+        if ($filters['q'] !== '') {
+            $builder->groupStart()
+                ->like('u.username', $filters['q'])
+                ->orLike('u.full_name', $filters['q'])
+                ->orLike('u.phone', $filters['q'])
+                ->orLike('i.secret', $filters['q'])
+                ->groupEnd();
+        }
+
+        if ($filters['status'] === 'active') {
+            $builder->where('u.active', 1);
+        } elseif ($filters['status'] === 'inactive') {
+            $builder->where('u.active', 0);
+        }
+
+        if ($filters['role'] !== '') {
+            $roleRows = $this->db->table('auth_groups_users')
+                ->select('user_id')
+                ->where('group', $filters['role'])
+                ->get()
+                ->getResultArray();
+            $userIds = array_map(static fn($row) => (int) $row['user_id'], $roleRows);
+            if ($userIds === []) {
+                $builder->where('u.id', 0);
+            } else {
+                $builder->whereIn('u.id', $userIds);
+            }
+        }
+
+        $rows = $builder->get()->getResultArray();
+
+        return array_map(static function (array $row): array {
+            $roles = array_values(array_filter(explode(',', (string) ($row['role_list'] ?? ''))));
+            return [
+                'id' => (int) $row['id'],
+                'username' => (string) $row['username'],
+                'email' => (string) ($row['email'] ?? ''),
+                'roles' => $roles,
+                'active' => (int) $row['active'],
+                'full_name' => (string) ($row['full_name'] ?? ''),
+                'phone' => (string) ($row['phone'] ?? ''),
+            ];
+        }, $rows);
     }
 
     protected function isPicEmailInUse(string $email): bool
@@ -269,7 +384,7 @@ class UserManagementController extends BaseController
         if ($email === '') {
             return false;
         }
-        return $this->db->table('laboratories')->where('pic_email', $email)->countAllResults() > 0;
+        return $this->db->table('laboratories')->where('LOWER(pic_email) =', strtolower(trim($email)))->countAllResults() > 0;
     }
 
     protected function hasOperationalLinks(int $userId): bool

@@ -156,7 +156,10 @@ class IssueReportController extends BaseController
             return redirect()->back()->withInput()->with('error', 'Unable to submit the issue report right now.');
         }
 
-        (new NotificationService())->notifyMaintenanceReported((int) $maintenanceId);
+        NotificationService::dispatchSafely(
+            fn(NotificationService $notifications) => $notifications->notifyMaintenanceReported((int) $maintenanceId),
+            'maintenance reported'
+        );
 
         return redirect()->to('/dashboard/report-issue')->with('success', 'Issue report submitted successfully. The technician can now review it.');
     }
@@ -170,7 +173,7 @@ class IssueReportController extends BaseController
         }
 
         $user = auth()->user();
-        if (! $user->inGroup('student') && ! $user->inGroup('pic')) {
+        if (! $user->inGroup('student') && ! $user->inGroup('staff') && ! $user->inGroup('pic')) {
             return redirect()->to('/dashboard')->with('error', 'Access denied.');
         }
 
@@ -184,7 +187,7 @@ class IssueReportController extends BaseController
             ->join('laboratories', 'laboratories.id = assets.lab_id', 'left');
 
         if ($user->inGroup('pic')) {
-            $builder->where('TRIM(laboratories.pic_email) =', trim((string) $user->email));
+            $builder->where('LOWER(TRIM(laboratories.pic_email)) =', strtolower(trim((string) $user->email)));
         }
 
         $assets = $builder

@@ -251,71 +251,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Optional: Add click effect
-            this.style.transform = 'scale(0.98)';
-            setTimeout(() => {
-                this.style.transform = '';
-            }, 150);
         });
     });
     
-    // Add animation to contact details on page load
-    const contactDetails = document.querySelectorAll('.contact-detail');
-    contactDetails.forEach((detail, index) => {
-        detail.style.opacity = '0';
-        detail.style.transform = 'translateX(-20px)';
-        
-        setTimeout(() => {
-            detail.style.transition = 'all 0.5s ease';
-            detail.style.opacity = '1';
-            detail.style.transform = 'translateX(0)';
-        }, 300 + (index * 100));
-    });
-    
-    // Add animation to staff cards on page load
-    const staffCardsAnimate = document.querySelectorAll('.staff-card');
-    staffCardsAnimate.forEach((card, index) => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        
-        setTimeout(() => {
-            card.style.transition = 'all 0.5s ease';
-            card.style.opacity = '1';
-            card.style.transform = 'translateY(0)';
-        }, 500 + (index * 150));
-    });
-    
-    // Add animation to map section
-    const mapSection = document.querySelector('.map-section');
-    if (mapSection) {
-        mapSection.style.opacity = '0';
-        mapSection.style.transform = 'translateY(30px)';
-        
-        setTimeout(() => {
-            mapSection.style.transition = 'all 0.8s ease';
-            mapSection.style.opacity = '1';
-            mapSection.style.transform = 'translateY(0)';
-        }, 800);
-    }
-    
-    // Add hover effect to map buttons
-    const mapButtons = document.querySelectorAll('.map-btn');
-    mapButtons.forEach(button => {
-        button.addEventListener('mouseenter', function() {
-            const icon = this.querySelector('i');
-            if (icon) {
-                icon.style.transform = 'scale(1.2)';
-                icon.style.transition = 'transform 0.3s ease';
-            }
-        });
-        
-        button.addEventListener('mouseleave', function() {
-            const icon = this.querySelector('i');
-            if (icon) {
-                icon.style.transform = 'scale(1)';
-            }
-        });
-    });
 });
 </script>
 

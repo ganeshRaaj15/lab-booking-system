@@ -16,9 +16,15 @@ class SendBookingReminders extends BaseCommand
     public function run(array $params)
     {
         $hoursAhead = max((int) ($params[0] ?? 24), 1);
-        $service = new NotificationService();
-        $sent = $service->sendUpcomingBookingReminders($hoursAhead);
+        $sent = 0;
 
-        CLI::write('Booking reminder notifications sent: ' . $sent, 'green');
+        try {
+            $service = new NotificationService();
+            $sent = $service->sendUpcomingBookingReminders($hoursAhead);
+            CLI::write('Booking reminder notifications sent: ' . $sent, 'green');
+        } catch (\Throwable $e) {
+            log_message('error', 'Booking reminder command failed: ' . $e->getMessage());
+            CLI::error('Booking reminder command failed. Check writable/logs for details.');
+        }
     }
 }
