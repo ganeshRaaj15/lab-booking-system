@@ -12,6 +12,7 @@ use CodeIgniter\Filters\InvalidChars;
 use CodeIgniter\Filters\PageCache;
 use CodeIgniter\Filters\PerformanceMetrics;
 use CodeIgniter\Filters\SecureHeaders;
+use CodeIgniter\Shield\Filters\AuthRates;
 
 // 🔐 Shield filters
 use CodeIgniter\Shield\Filters\SessionAuth;
@@ -43,6 +44,7 @@ class Filters extends BaseFilters
         'performance'   => PerformanceMetrics::class,
 
         // 🔐 Shield auth filters
+        'auth-rates'    => AuthRates::class,
         'session'       => SessionAuth::class,      // used in routes: ['filter' => 'session']
         'tokens'        => TokenAuth::class,
         'chain'         => ChainAuth::class,
@@ -120,5 +122,13 @@ class Filters extends BaseFilters
      *
      * @var array<string, array<string, list<string>>>
      */
-    public array $filters = [];
+    public array $filters = [
+        'auth-rates' => [
+            'before' => [
+                'login',
+                'login/*',
+                'register',
+            ],
+        ],
+    ];
 }

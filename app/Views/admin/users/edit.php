@@ -192,7 +192,7 @@
                         <div class="d-flex align-items-center">
                             <i class="bi bi-info-circle-fill me-2"></i>
                             <div class="small">
-                                Leave password fields blank if you don't want to change the password.
+                                Leave password fields blank if you don't want to change the password. For forgotten passwords, send a secure recovery link instead of sharing a temporary password.
                             </div>
                         </div>
                     </div>
@@ -283,8 +283,13 @@
                             <button type="submit" class="btn btn-primary-glass px-4">
                                 <i class="bi bi-save me-2"></i> Save Changes
                             </button>
-                            <button type="button" class="btn btn-warning-glass ms-2" id="resetPassword">
-                                <i class="bi bi-arrow-clockwise me-2"></i> Reset Password
+                            <button type="submit"
+                                    class="btn btn-warning-glass ms-2"
+                                    formaction="/admin/users/send-recovery/<?= $user->id ?>"
+                                    formmethod="post"
+                                    formnovalidate
+                                    onclick="return confirm('Send a secure sign-in link to this user\\'s registered email?');">
+                                <i class="bi bi-envelope-paper me-2"></i> Send Recovery Link
                             </button>
                         </div>
                         
@@ -321,25 +326,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 icon.className = 'bi bi-eye';
             }
         });
-    });
-    
-    // Reset password functionality
-    document.getElementById('resetPassword')?.addEventListener('click', function() {
-        if (confirm('Generate a random password for this user? The new password will be shown once.')) {
-            // Generate random password
-            const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-            let password = '';
-            for (let i = 0; i < 12; i++) {
-                password += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            
-            // Set the password fields
-            document.getElementById('password').value = password;
-            document.getElementById('password_confirm').value = password;
-            
-            // Show the password
-            alert(`New Password: ${password}\n\nCopy this password and provide it to the user.`);
-        }
     });
     
     // Deactivate/Activate user

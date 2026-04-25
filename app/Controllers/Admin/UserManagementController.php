@@ -3,6 +3,7 @@
 namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
+use App\Libraries\AccountRecoveryService;
 use App\Models\FacultyModel;
 use CodeIgniter\Database\BaseConnection;
 use CodeIgniter\Shield\Entities\User;
@@ -202,6 +203,29 @@ class UserManagementController extends BaseController
         $this->users->delete($user->id);
 
         return redirect()->to('/admin/users')->with('message', 'User deleted successfully.');
+    }
+
+    public function sendRecovery($id)
+    {
+        $user = $this->users->findById($id);
+        if (! $user) {
+            return redirect()->back()->with('error', 'User not found.');
+        }
+
+        if ((int) ($user->active ?? 0) !== 1) {
+            return redirect()->back()->with('error', 'Activate this user before sending a recovery link.');
+        }
+
+        $email = $this->getEmailForUser((int) $user->id);
+        if ($email === '') {
+            return redirect()->back()->with('error', 'This user does not have a registered email address.');
+        }
+
+        if (! (new AccountRecoveryService())->sendLoginLink($user)) {
+            return redirect()->back()->with('error', 'Unable to send the recovery email. Check the email settings and try again.');
+        }
+
+        return redirect()->back()->with('message', 'Recovery link sent to the registered email address.');
     }
 
     public function create()

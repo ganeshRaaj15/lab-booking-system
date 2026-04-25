@@ -22,6 +22,15 @@
             </div>
         <?php endif; ?>
 
+        <?php if (session()->has('errors')): ?>
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <?php foreach ((array) session('errors') as $error): ?>
+                    <div><?= esc($error) ?></div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+
         <?php if (session()->has('success')): ?>
             <div class="alert alert-success">
                 <i class="bi bi-check-circle me-2"></i>
@@ -54,7 +63,7 @@
                     <label for="remember" class="form-check-label">Remember me</label>
                 </div>
                 <a href="<?= url_to('magic-link') ?>" class="magic-link">
-                    <i class="bi bi-magic me-1"></i>Magic Link
+                    <i class="bi bi-key me-1"></i>Forgot password?
                 </a>
             </div>
 

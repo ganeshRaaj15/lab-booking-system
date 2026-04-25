@@ -46,6 +46,7 @@ use App\Controllers\Admin\SettingsController;
 use App\Controllers\Admin\AssetController;
 use App\Controllers\Admin\LaboratoryAdminController;
 use App\Controllers\Admin\UserManagementController;
+use App\Controllers\Auth\PasswordRecoveryController;
 use App\Controllers\Technician\MaintenanceController;
 
 
@@ -405,6 +406,7 @@ $routes->group('admin', ['filter' => 'group:admin'], function ($routes) {
     $routes->post('users/store', [UserManagementController::class, 'store']);
     $routes->get('users/edit/(:num)', [UserManagementController::class, 'edit/$1']);
     $routes->post('users/update/(:num)', [UserManagementController::class, 'update/$1']);
+    $routes->post('users/send-recovery/(:num)', [UserManagementController::class, 'sendRecovery/$1']);
     $routes->post('users/delete/(:num)', [UserManagementController::class, 'delete/$1']);
 });
 
@@ -427,7 +429,11 @@ $routes->group('technician', ['filter' => 'group:technician'], function ($routes
 // SHIELD AUTH ROUTES (MUST BE LAST)
 // ====================================================================
 
-service('auth')->routes($routes);
+$routes->get('login/magic-link', [PasswordRecoveryController::class, 'loginView'], ['as' => 'magic-link']);
+$routes->post('login/magic-link', [PasswordRecoveryController::class, 'loginAction']);
+$routes->get('login/verify-magic-link', [PasswordRecoveryController::class, 'verify'], ['as' => 'verify-magic-link']);
+
+service('auth')->routes($routes, ['except' => ['magic-link']]);
 
 // Logout
 $routes->post('logout', '\CodeIgniter\Shield\Controllers\LoginController::logoutAction', ['as' => 'logout']);
