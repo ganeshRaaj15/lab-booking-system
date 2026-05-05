@@ -29,6 +29,8 @@ $RECYCLE.BIN/
 
 # Linux
 *~
+__pycache__/
+*.pyc
 
 # KDE directory preferences
 .directory
