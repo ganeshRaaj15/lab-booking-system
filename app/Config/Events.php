@@ -2,9 +2,11 @@
 
 namespace Config;
 
+use App\Libraries\StudentRoleService;
 use CodeIgniter\Events\Events;
 use CodeIgniter\Exceptions\FrameworkException;
 use CodeIgniter\HotReloader\HotReloader;
+use CodeIgniter\Shield\Entities\User;
 
 /*
  * --------------------------------------------------------------------
@@ -53,3 +55,18 @@ Events::on('pre_system', static function (): void {
         }
     }
 });
+
+$syncStudentRole = static function ($user): void {
+    if (! $user instanceof User) {
+        return;
+    }
+
+    try {
+        (new StudentRoleService())->syncStudentAccess($user);
+    } catch (\Throwable $e) {
+        log_message('error', 'Student role sync failed for user ID ' . ($user->id ?? 'unknown') . ': ' . $e->getMessage());
+    }
+};
+
+Events::on('register', $syncStudentRole);
+Events::on('login', $syncStudentRole);

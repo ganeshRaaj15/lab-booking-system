@@ -3,6 +3,7 @@
 namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
+use App\Libraries\StudentRoleService;
 use App\Libraries\MaintenanceForecastService;
 use App\Libraries\NotificationService;
 use App\Models\SettingsModel;
@@ -10,6 +11,7 @@ use App\Models\SettingsModel;
 class SettingsController extends BaseController
 {
     protected $settings;
+    protected StudentRoleService $studentRoleService;
 
     public function __construct()
     {
@@ -21,6 +23,7 @@ class SettingsController extends BaseController
         }
 
         $this->settings = new SettingsModel();
+        $this->studentRoleService = new StudentRoleService();
     }
 
     /**
@@ -28,21 +31,36 @@ class SettingsController extends BaseController
      */
     public function index()
     {
-        // Fetch normal settings
         $rows = $this->settings
             ->where('class', 'system')
             ->orderBy('key', 'ASC')
             ->findAll();
 
-        $settings = [];
+        $storedSettings = [];
         foreach ($rows as $row) {
-            $settings[$row['key']] = [
+            $storedSettings[$row['key']] = [
                 'value' => $row['value'],
                 'type'  => $row['type']
             ];
         }
 
-        // Load booking slots JSON
+        $settings = [];
+        foreach ($this->managedSettings() as $key => $meta) {
+            $settings[$key] = [
+                'value' => $storedSettings[$key]['value'] ?? $meta['default'],
+                'type'  => $storedSettings[$key]['type'] ?? $meta['type'],
+                'hint'  => $meta['hint'] ?? null,
+            ];
+        }
+
+        foreach ($storedSettings as $key => $row) {
+            if (! isset($settings[$key])) {
+                $settings[$key] = $row;
+            }
+        }
+
+        ksort($settings);
+
         $slotsJson = setting('system.booking_slots') ?? '[]';
         $bookingSlots = json_decode($slotsJson, true);
 
@@ -58,36 +76,27 @@ class SettingsController extends BaseController
      */
     public function update()
     {
-        $rules = [
-            'lab_manager_email'   => 'required|valid_email',
-            'deputy_dean_email'   => 'required|valid_email',
-            'lab_assistant_email' => 'required|valid_email',
-            'fkmp_faculty_id'     => 'required|integer'
-        ];
+        $managedSettings = $this->managedSettings();
+        $rules = [];
+        foreach ($managedSettings as $key => $meta) {
+            $rules[$key] = $meta['rules'];
+        }
 
-        if (!$this->validate($rules)) {
+        if (! $this->validate($rules)) {
             return redirect()
                 ->back()
                 ->withInput()
                 ->with('errors', $this->validator->getErrors());
         }
 
-        $keys = [
-            'lab_manager_email',
-            'deputy_dean_email',
-            'lab_assistant_email',
-            'fkmp_faculty_id'
-        ];
+        foreach ($managedSettings as $key => $meta) {
+            $value = trim((string) $this->request->getPost($key));
 
-        foreach ($keys as $key) {
-            $this->settings
-                ->where('class', 'system')
-                ->where('key', $key)
-                ->set([
-                    'value'      => $this->request->getPost($key),
-                    'updated_at' => date('Y-m-d H:i:s')
-                ])
-                ->update();
+            if ($key === 'student_email_domain') {
+                $value = $this->studentRoleService->normalizeDomain($value);
+            }
+
+            $this->upsertSystemSetting($key, $value, $meta['type']);
         }
 
         return redirect()->to('/admin/settings')->with('message', 'Settings updated.');
@@ -238,5 +247,70 @@ class SettingsController extends BaseController
         }
 
         return $redirect;
+    }
+
+    protected function managedSettings(): array
+    {
+        return [
+            'deputy_dean_email' => [
+                'type' => 'string',
+                'rules' => 'required|valid_email',
+                'default' => '',
+                'hint' => 'Faculty approval email address.',
+            ],
+            'fkmp_faculty_id' => [
+                'type' => 'integer',
+                'rules' => 'required|integer',
+                'default' => '',
+                'hint' => 'Faculty ID used for FKMP approval routing.',
+            ],
+            'lab_assistant_email' => [
+                'type' => 'string',
+                'rules' => 'required|valid_email',
+                'default' => '',
+                'hint' => 'Primary laboratory assistant email address.',
+            ],
+            'lab_manager_email' => [
+                'type' => 'string',
+                'rules' => 'required|valid_email',
+                'default' => '',
+                'hint' => 'Primary laboratory manager email address.',
+            ],
+            'student_email_domain' => [
+                'type' => 'string',
+                'rules' => 'required|max_length[255]',
+                'default' => StudentRoleService::DEFAULT_STUDENT_EMAIL_DOMAIN,
+                'hint' => 'Emails ending with this domain are auto-assigned the Student role when users register or log in.',
+            ],
+        ];
+    }
+
+    protected function upsertSystemSetting(string $key, string $value, string $type): void
+    {
+        $now = date('Y-m-d H:i:s');
+        $existing = $this->settings
+            ->where('class', 'system')
+            ->where('key', $key)
+            ->first();
+
+        if ($existing) {
+            $this->settings->update($existing['id'], [
+                'value'      => $value,
+                'type'       => $type,
+                'updated_at' => $now,
+            ]);
+
+            return;
+        }
+
+        $this->settings->insert([
+            'class'      => 'system',
+            'key'        => $key,
+            'value'      => $value,
+            'type'       => $type,
+            'context'    => null,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
     }
 }

@@ -20,6 +20,8 @@ class AssetBrowseController extends BaseController
         if (! empty($search)) {
             $builder->groupStart()
                 ->like('assets.name', $search)
+                ->orLike('assets.model', $search)
+                ->orLike('assets.category', $search)
                 ->orLike('laboratories.name', $search)
                 ->groupEnd();
         }

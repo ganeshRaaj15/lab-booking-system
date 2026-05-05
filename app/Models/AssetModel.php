@@ -12,6 +12,7 @@ class AssetModel extends Model
     protected $useAutoIncrement = true;
     protected $allowedFields = [
         'lab_id',
+        'lab_service_id',
         'asset_code',
         'name',
         'category',

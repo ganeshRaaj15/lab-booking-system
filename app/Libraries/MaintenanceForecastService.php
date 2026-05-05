@@ -22,16 +22,16 @@ class MaintenanceForecastService
     public function getUpcomingForecasts(int $daysAhead = 90): array
     {
         $raw = $this->getUpcomingForecastsRaw($daysAhead);
-        $formatted = [];
 
-        foreach ($raw as $row) {
-            $formatted[] = array_merge($row, [
-                'last_completed_at' => $row['last_completed_at']?->format('Y-m-d'),
-                'next_due_at' => $row['next_due_at']?->format('Y-m-d'),
-            ]);
-        }
-
-        return $formatted;
+        return array_map(static function (array $row): array {
+            if (($row['last_completed_at'] ?? null) instanceof DateTimeImmutable) {
+                $row['last_completed_at'] = $row['last_completed_at']->format('Y-m-d');
+            }
+            if (($row['next_due_at'] ?? null) instanceof DateTimeImmutable) {
+                $row['next_due_at'] = $row['next_due_at']->format('Y-m-d');
+            }
+            return $row;
+        }, $raw);
     }
 
     public function sendUpcomingDueReminders(int $daysAhead = 30): int
@@ -46,12 +46,14 @@ class MaintenanceForecastService
 
         foreach ($forecasts as $forecast) {
             $assetId = (int) ($forecast['asset_id'] ?? 0);
-            if ($assetId <= 0 || empty($forecast['next_due_at'])) {
+            if ($assetId <= 0) {
                 continue;
             }
 
-            $nextDue = $forecast['next_due_at'];
-            $windowStart = $nextDue->sub(new DateInterval('P' . max($daysAhead, 1) . 'D'));
+            $nextDue = $forecast['next_due_at'] ?? null;
+            $windowStart = $nextDue instanceof DateTimeImmutable
+                ? $nextDue->sub(new DateInterval('P' . max($daysAhead, 1) . 'D'))
+                : (new DateTimeImmutable('now', $this->timezone))->sub(new DateInterval('P' . max($daysAhead, 1) . 'D'));
 
             $alreadySent = $this->db->table('notifications')
                 ->where('type', 'maintenance_due')
@@ -91,6 +93,13 @@ class MaintenanceForecastService
 
         $assetIds = array_map(static fn(array $row): int => (int) $row['id'], $assets);
         $forecasts = $this->buildForecasts($assetIds);
+        $predictionService = new MaintenancePredictionService($this->db, $this->timezone);
+        $predictions = [];
+        if ($predictionService->modelExists()) {
+            foreach ($predictionService->predictAllAssets() as $prediction) {
+                $predictions[(int) ($prediction['id'] ?? 0)] = $prediction;
+            }
+        }
 
         $now = new DateTimeImmutable('now', $this->timezone);
         $cutoff = $now->add(new DateInterval('P' . max($daysAhead, 1) . 'D'));
@@ -98,30 +107,71 @@ class MaintenanceForecastService
         $upcoming = [];
         foreach ($assets as $asset) {
             $assetId = (int) $asset['id'];
-            if (! isset($forecasts[$assetId])) {
-                continue;
+            $forecast = $forecasts[$assetId] ?? [
+                'asset_id' => $assetId,
+                'history_count' => 0,
+                'interval_days' => 0,
+                'basis' => 'model_only',
+                'last_completed_at' => null,
+                'next_due_at' => null,
+            ];
+            $nextDue = $forecast['next_due_at'] ?? null;
+            $prediction = $predictions[$assetId] ?? null;
+            $decision = $prediction['decision'] ?? ['action' => 'monitor', 'label' => 'Normal monitoring', 'priority' => 'low'];
+            $riskProbability = (float) ($prediction['risk_probability'] ?? 0.0);
+
+            $diffDays = null;
+            $status = 'monitor';
+            if ($nextDue instanceof DateTimeImmutable) {
+                $diffDays = (int) $now->diff($nextDue)->format('%r%a');
+                $status = $diffDays < 0 ? 'overdue' : 'upcoming';
+            } elseif ($decision['action'] !== 'monitor') {
+                $status = 'predicted';
             }
 
-            $forecast = $forecasts[$assetId];
-            $nextDue = $forecast['next_due_at'];
-            if (! $nextDue) {
-                continue;
+            $shouldInclude = false;
+            if ($nextDue instanceof DateTimeImmutable && $nextDue <= $cutoff) {
+                $shouldInclude = true;
+            }
+            if ($decision['action'] !== 'monitor') {
+                $shouldInclude = true;
             }
 
-            if ($nextDue > $cutoff) {
+            if (! $shouldInclude) {
                 continue;
             }
-
-            $diffDays = (int) $now->diff($nextDue)->format('%r%a');
-            $status = $diffDays < 0 ? 'overdue' : 'upcoming';
 
             $upcoming[] = array_merge($asset, $forecast, [
                 'days_until' => $diffDays,
                 'status' => $status,
+                'risk_probability' => $riskProbability,
+                'risk_percent' => (int) round($riskProbability * 100),
+                'risk_band' => $prediction['risk_band'] ?? 'low',
+                'decision' => $decision,
+                'decision_label' => $decision['label'] ?? 'Normal monitoring',
+                'decision_priority' => $decision['priority'] ?? 'low',
+                'reasons' => $prediction['reasons'] ?? [],
+                'threshold' => (float) ($prediction['threshold'] ?? 0.5),
             ]);
         }
 
-        usort($upcoming, static fn(array $a, array $b): int => ($a['next_due_at'] <=> $b['next_due_at']));
+        usort($upcoming, static function (array $a, array $b): int {
+            $priorityRank = ['high' => 0, 'medium' => 1, 'low' => 2];
+            $priorityCompare = ($priorityRank[$a['decision_priority'] ?? 'low'] ?? 2) <=> ($priorityRank[$b['decision_priority'] ?? 'low'] ?? 2);
+            if ($priorityCompare !== 0) {
+                return $priorityCompare;
+            }
+
+            $riskCompare = ((float) ($b['risk_probability'] ?? 0.0)) <=> ((float) ($a['risk_probability'] ?? 0.0));
+            if ($riskCompare !== 0) {
+                return $riskCompare;
+            }
+
+            $aTimestamp = ($a['next_due_at'] ?? null) instanceof DateTimeImmutable ? $a['next_due_at']->getTimestamp() : PHP_INT_MAX;
+            $bTimestamp = ($b['next_due_at'] ?? null) instanceof DateTimeImmutable ? $b['next_due_at']->getTimestamp() : PHP_INT_MAX;
+
+            return $aTimestamp <=> $bTimestamp;
+        });
 
         return $upcoming;
     }

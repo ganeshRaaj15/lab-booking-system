@@ -92,7 +92,7 @@
                                     <input type="number" 
                                            name="<?= esc($key) ?>" 
                                            id="<?= esc($key) ?>"
-                                           value="<?= esc($row['value']) ?>"
+                                           value="<?= esc(old($key, $row['value'])) ?>"
                                            class="form-control form-control-glass" 
                                            required>
 
@@ -101,21 +101,23 @@
                                             id="<?= esc($key) ?>"
                                             class="form-control form-control-glass" 
                                             required>
-                                        <option value="1" <?= ($row['value'] ? 'selected' : '') ?>>Enabled</option>
-                                        <option value="0" <?= (!$row['value'] ? 'selected' : '') ?>>Disabled</option>
+                                        <option value="1" <?= (old($key, $row['value']) ? 'selected' : '') ?>>Enabled</option>
+                                        <option value="0" <?= (!old($key, $row['value']) ? 'selected' : '') ?>>Disabled</option>
                                     </select>
 
                                 <?php else: ?>
                                     <input type="text" 
                                            name="<?= esc($key) ?>" 
                                            id="<?= esc($key) ?>"
-                                           value="<?= esc($row['value']) ?>"
+                                           value="<?= esc(old($key, $row['value'])) ?>"
                                            class="form-control form-control-glass" 
                                            required>
                                 <?php endif; ?>
                                 
                                 <div class="form-hint">
-                                    <?php if ($row['type'] === 'integer'): ?>
+                                    <?php if (!empty($row['hint'])): ?>
+                                        <?= esc($row['hint']) ?>
+                                    <?php elseif ($row['type'] === 'integer'): ?>
                                         Numeric value
                                     <?php elseif ($row['type'] === 'bool'): ?>
                                         Toggle feature on/off

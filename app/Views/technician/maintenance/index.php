@@ -4,6 +4,28 @@
     <?php if (session()->getFlashdata('success')): ?><div class="alert alert-success border-0 shadow-sm"><?= esc(session()->getFlashdata('success')) ?></div><?php endif; ?>
     <?php if (session()->getFlashdata('error')): ?><div class="alert alert-danger border-0 shadow-sm"><?= esc(session()->getFlashdata('error')) ?></div><?php endif; ?>
 
+    <?php if (! empty($modelSummary['available'])): ?>
+        <?php
+            $metrics = $modelSummary['metrics'] ?? [];
+            $dataset = $modelSummary['dataset'] ?? [];
+            $trainedAt = ! empty($modelSummary['trained_at']) ? date('d M Y H:i', strtotime((string) $modelSummary['trained_at'])) : '-';
+        ?>
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body d-flex flex-column flex-lg-row justify-content-between gap-3">
+                <div>
+                    <h6 class="mb-1">Local Predictive Maintenance Model</h6>
+                    <small class="text-muted">Runs entirely on the server using local maintenance history. Last trained: <?= esc($trainedAt) ?></small>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="badge text-bg-light border">Accuracy <?= esc(number_format(((float) ($metrics['accuracy'] ?? 0.0)) * 100, 1)) ?>%</span>
+                    <span class="badge text-bg-light border">Precision <?= esc(number_format(((float) ($metrics['precision'] ?? 0.0)) * 100, 1)) ?>%</span>
+                    <span class="badge text-bg-light border">Recall <?= esc(number_format(((float) ($metrics['recall'] ?? 0.0)) * 100, 1)) ?>%</span>
+                    <span class="badge text-bg-light border">Samples <?= esc((int) ($dataset['samples_total'] ?? 0)) ?></span>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body">
             <form method="get" class="row g-3 align-items-end">
@@ -18,24 +40,25 @@
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white d-flex justify-content-between align-items-center">
             <div>
-                <h6 class="mb-1">Upcoming Preventive Maintenance</h6>
-                <small class="text-muted">Forecasts based on completed preventive, inspection, and calibration history (next 90 days).</small>
+                <h6 class="mb-1">Predictive Maintenance Decisions</h6>
+                <small class="text-muted">Risk scores and recommended actions based on the local maintenance model and completed planned-maintenance history.</small>
             </div>
             <span class="badge text-bg-light border">Next 90 days</span>
         </div>
         <div class="card-body p-0">
             <?php if (empty($upcomingForecasts)): ?>
-                <div class="p-4 text-muted">No upcoming preventive maintenance is due in the next 90 days.</div>
+                <div class="p-4 text-muted">No assets currently require predictive maintenance action in the next 90 days.</div>
             <?php else: ?>
                 <div class="table-responsive">
                     <table class="table align-middle mb-0">
                         <thead class="table-light">
                             <tr>
                                 <th>Asset</th>
+                                <th>Risk</th>
+                                <th>System Decision</th>
                                 <th>Due Date</th>
                                 <th>Last Completed</th>
-                                <th>Cycle</th>
-                                <th>Status</th>
+                                <th>Reason</th>
                                 <th class="text-end">Action</th>
                             </tr>
                         </thead>
@@ -57,24 +80,47 @@
                                         : 'Due in ' . $daysUntil . ' day(s)';
                                     $statusClass = $daysUntil < 0 ? 'text-bg-danger' : 'text-bg-warning';
                                     $scheduledFor = $nextDueRaw ? date('Y-m-d\\T09:00', strtotime($nextDueRaw)) : '';
+                                    if ($scheduledFor === '') {
+                                        $scheduledFor = date('Y-m-d\\T09:00', strtotime('+7 days'));
+                                    }
+                                    $recommendedPriority = $forecast['decision_priority'] ?? 'medium';
                                     $planQuery = http_build_query([
                                         'asset_id' => $forecast['asset_id'] ?? '',
                                         'scheduled_for' => $scheduledFor,
                                         'issue_type' => 'preventive',
                                         'title' => 'Preventive Maintenance - ' . ($forecast['name'] ?? 'Equipment'),
-                                        'priority' => 'medium',
+                                        'priority' => $recommendedPriority === 'high' ? 'high' : 'medium',
                                         'quantity_affected' => 1,
                                     ], '', '&', PHP_QUERY_RFC3986);
+                                    $riskClass = match ($forecast['risk_band'] ?? 'low') {
+                                        'high' => 'text-bg-danger',
+                                        'medium' => 'text-bg-warning',
+                                        default => 'text-bg-success',
+                                    };
+                                    $reasonText = implode(' ', array_slice($forecast['reasons'] ?? [], 0, 1));
                                 ?>
                                 <tr>
                                     <td>
                                         <div class="fw-semibold"><?= esc($forecast['name'] ?? '-') ?></div>
                                         <small class="text-muted"><?= esc($forecast['lab_name'] ?? '-') ?></small>
                                     </td>
+                                    <td><span class="badge <?= esc($riskClass) ?>"><?= esc((int) ($forecast['risk_percent'] ?? 0)) ?>%</span></td>
+                                    <td>
+                                        <div class="fw-semibold"><?= esc($forecast['decision_label'] ?? 'Normal monitoring') ?></div>
+                                        <small class="text-muted text-uppercase"><?= esc($forecast['decision_priority'] ?? 'low') ?> priority</small>
+                                    </td>
                                     <td><?= esc($nextDueLabel) ?></td>
                                     <td><?= esc($lastCompletedLabel) ?></td>
-                                    <td><?= esc($cycleLabel) ?></td>
-                                    <td><span class="badge <?= esc($statusClass) ?>"><?= esc($statusText) ?></span></td>
+                                    <td>
+                                        <?php if ($reasonText !== ''): ?>
+                                            <div class="small"><?= esc($reasonText) ?></div>
+                                        <?php else: ?>
+                                            <span class="badge <?= esc($statusClass) ?>"><?= esc($statusText) ?></span>
+                                        <?php endif; ?>
+                                        <?php if ($intervalDays > 0): ?>
+                                            <div class="small text-muted mt-1"><?= esc($cycleLabel) ?></div>
+                                        <?php endif; ?>
+                                    </td>
                                     <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="/technician/maintenance/create?<?= esc($planQuery) ?>">Plan</a></td>
                                 </tr>
                             <?php endforeach; ?>
@@ -86,8 +132,8 @@
     </div>
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <div><h5 class="mb-1">Maintenance Workflow</h5><small class="text-muted">User-reported faults should move through schedule, repair, testing, and completion with clear evidence.</small></div>
-            <a href="/technician/maintenance/create" class="btn btn-success btn-sm"><i class="bi bi-plus-circle"></i> Plan Preventive Work</a>
+            <div><h5 class="mb-1">Maintenance Workflow</h5><small class="text-muted">Each case is completed step by step: first schedule and diagnose, then record repair work, then test and close with evidence.</small></div>
+            <a href="/technician/maintenance/create" class="btn btn-success btn-sm"><i class="bi bi-plus-circle"></i> New Planned Maintenance</a>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">

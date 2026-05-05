@@ -1,5 +1,13 @@
 <?= $this->extend('layouts/main_user') ?>
 <?= $this->section('content') ?>
+<?php
+/** @var array<int, array<string, mixed>> $assets */
+/** @var string $search */
+
+$assets = is_array($assets ?? null) ? $assets : [];
+$search = isset($search) ? (string) $search : '';
+$assetTotal = count($assets);
+?>
 <div class="assets-page">
     <section class="asset-hero">
         <div class="container hero-content text-center">
@@ -13,7 +21,7 @@
                     <input type="text"
                            name="q"
                            id="searchInput"
-                           value="<?= esc($search ?? '') ?>"
+                           value="<?= esc($search) ?>"
                            class="form-control search-input"
                            placeholder="Search equipment or lab...">
                     <button class="btn search-btn" type="submit">
@@ -22,7 +30,7 @@
                 </form>
 
                 <div class="search-indicator" id="searchIndicator">
-                    <?php if (! empty($search)): ?>
+                    <?php if ($search !== ''): ?>
                         <span>Showing results for: <strong><?= esc($search) ?></strong></span>
                         <button class="clear-search-btn ms-2" id="clearFilterBtn" type="button">Clear</button>
                     <?php else: ?>
@@ -34,11 +42,9 @@
         </div>
     </section>
 
-    <?php $assetTotal = is_array($assets ?? null) ? count($assets) : 0; ?>
-
     <div class="container pb-5">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <div class="assets-count" id="assetCount">
+        <div class="text-center mb-3">
+            <div class="assets-count d-inline-block" id="assetCount">
                 <?= $assetTotal ?> <?= $assetTotal === 1 ? 'Asset' : 'Assets' ?> Available
             </div>
         </div>
@@ -63,9 +69,13 @@
                     : (($displayStatus === 'partially available' || $status === 'maintenance') ? 'status-maintenance' : 'status-faulty');
                 $labName = $asset['lab_name'] ?? '';
                 $labRoom = $asset['lab_room'] ?? '';
+                $assetModel = trim((string) ($asset['model'] ?? ''));
+                $assetCategory = trim((string) ($asset['category'] ?? ''));
                 ?>
                 <div class="col-md-6 col-lg-4 asset-item"
                      data-name="<?= esc(strtolower($asset['name'] ?? '')) ?>"
+                     data-model="<?= esc(strtolower($assetModel)) ?>"
+                     data-category="<?= esc(strtolower($assetCategory)) ?>"
                      data-lab="<?= esc(strtolower($labName)) ?>"
                      data-room="<?= esc(strtolower($labRoom)) ?>"
                      data-status="<?= esc(strtolower($displayStatus)) ?>"
@@ -87,6 +97,18 @@
                                 </div>
 
                                 <div class="asset-meta">
+                                    <?php if ($assetModel !== ''): ?>
+                                        <div>
+                                            <i class="bi bi-cpu"></i>
+                                            <?= esc($assetModel) ?>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php if ($assetCategory !== ''): ?>
+                                        <div>
+                                            <i class="bi bi-tags"></i>
+                                            <?= esc($assetCategory) ?>
+                                        </div>
+                                    <?php endif; ?>
                                     <div>
                                         <i class="bi bi-building"></i>
                                         <?= esc($labName ?: 'Unknown Lab') ?>
@@ -149,12 +171,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
         assetItems.forEach(item => {
             const name = item.dataset.name || '';
+            const model = item.dataset.model || '';
+            const category = item.dataset.category || '';
             const lab = item.dataset.lab || '';
             const room = item.dataset.room || '';
             const status = item.dataset.status || '';
             const qty = item.dataset.qty || '';
 
             const matches = name.includes(searchLower) ||
+                model.includes(searchLower) ||
+                category.includes(searchLower) ||
                 lab.includes(searchLower) ||
                 room.includes(searchLower) ||
                 status.includes(searchLower) ||

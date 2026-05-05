@@ -2,6 +2,8 @@
 
 namespace Config;
 
+use App\Validation\UserRules;
+use CodeIgniter\Shield\Authentication\Passwords;
 use CodeIgniter\Config\BaseConfig;
 use CodeIgniter\Validation\StrictRules\CreditCardRules;
 use CodeIgniter\Validation\StrictRules\FileRules;
@@ -25,6 +27,7 @@ class Validation extends BaseConfig
         FormatRules::class,
         FileRules::class,
         CreditCardRules::class,
+        UserRules::class,
     ];
 
     /**
@@ -41,4 +44,39 @@ class Validation extends BaseConfig
     // --------------------------------------------------------------------
     // Rules
     // --------------------------------------------------------------------
+
+    public array $registration = [];
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        $auth = config('Auth');
+        $usernameRules = $auth->usernameValidationRules;
+        $usernameRules['rules'][] = 'reusable_username';
+        $usernameRules['errors']['reusable_username'] = 'That username is already in use.';
+
+        $emailRules = $auth->emailValidationRules;
+        $emailRules['rules'][] = 'is_unique[' . $auth->tables['identities'] . '.secret]';
+
+        $this->registration = [
+            'username' => $usernameRules,
+            'email' => $emailRules,
+            'password' => [
+                'label' => 'Auth.password',
+                'rules' => [
+                    'required',
+                    Passwords::getMaxLengthRule(),
+                    'strong_password[]',
+                ],
+                'errors' => [
+                    'max_byte' => 'Auth.errorPasswordTooLongBytes',
+                ],
+            ],
+            'password_confirm' => [
+                'label' => 'Auth.passwordConfirm',
+                'rules' => 'required|matches[password]',
+            ],
+        ];
+    }
 }

@@ -136,7 +136,14 @@ if ($picPhone === '') {
                     <!-- Hidden Inputs -->
                     <input type="hidden" name="asset_selection" id="asset_selection_modal">
                     <input type="hidden" name="lab_id" id="labIdInput">
+                    <input type="hidden" name="service_id" id="service_id_modal">
                     <!-- user_type is implied as UTHM on server-side; no need for hidden field -->
+
+                    <div id="selectedServicePanel" class="alert alert-info small mb-4 d-none">
+                        <div class="fw-semibold mb-1">Selected Service</div>
+                        <div id="selectedServiceName" class="mb-1">No service selected.</div>
+                        <div id="selectedServiceMeta" class="text-muted"></div>
+                    </div>
 
                     <!-- ====================== STEP 1 ====================== -->
                     <div id="step1" class="wizard-step">
@@ -310,6 +317,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const endField    = document.getElementById("endTime");
     const conflictEl  = document.getElementById("slotConflictWarning");
     const recommendEl = document.getElementById("recommendedSlots");
+    const serviceField = document.getElementById("service_id_modal");
+    const servicePanel = document.getElementById("selectedServicePanel");
+    const serviceNameEl = document.getElementById("selectedServiceName");
+    const serviceMetaEl = document.getElementById("selectedServiceMeta");
 
     const defaultFacultyId = "<?= esc($defaultFacultyId ?? '') ?>";
     const csrfTokenName = "<?= csrf_token() ?>";
@@ -323,9 +334,36 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const widths = {1:33, 2:66, 3:100};
     let slotConflict = null;
+    let currentServiceContext = null;
 
     function shouldShowRecommendations() {
         return (!dateField.value && !startField.value && !endField.value);
+    }
+
+    function renderSelectedServiceSummary(service) {
+        if (!servicePanel || !serviceNameEl || !serviceMetaEl) return;
+
+        if (!service || !service.id) {
+            servicePanel.classList.add("d-none");
+            serviceNameEl.textContent = "No service selected.";
+            serviceMetaEl.textContent = "";
+            return;
+        }
+
+        const metaParts = [];
+        if (service.calibrationStatus) {
+            metaParts.push(`Calibration: ${service.calibrationStatus}`);
+        }
+        if (service.equipmentModels) {
+            metaParts.push(`Equipment: ${service.equipmentModels}`);
+        }
+        if (service.acceptanceCriteria) {
+            metaParts.push(`Criteria: ${service.acceptanceCriteria}`);
+        }
+
+        serviceNameEl.textContent = service.name || "Selected service";
+        serviceMetaEl.textContent = metaParts.join(" | ");
+        servicePanel.classList.remove("d-none");
     }
 
 
@@ -372,11 +410,18 @@ document.addEventListener("DOMContentLoaded", () => {
     async function checkSlotConflict() {
         const assetString = document.getElementById("asset_selection_modal")?.value || "";
         const labId = document.getElementById("labIdInput")?.value || "";
+        const serviceId = serviceField?.value || "";
+
+        if (!serviceId) {
+            slotConflict = null;
+            renderConflictWarning("Choose a service before checking slot availability.");
+            return false;
+        }
 
         if (!assetString) {
             slotConflict = null;
-            renderConflictWarning("Select equipment before choosing a slot.");
-            return true;
+            renderConflictWarning("No linked equipment is available for the selected service.");
+            return false;
         }
 
         if (!labId || !dateField.value || !startField.value || !endField.value) {
@@ -387,6 +432,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const fd = new FormData();
         fd.append("lab_id", labId);
+        fd.append("service_id", serviceId);
         fd.append("date", dateField.value);
         fd.append("start_time", startField.value);
         fd.append("end_time", endField.value);
@@ -422,13 +468,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const assetString = document.getElementById("asset_selection_modal")?.value || "";
         const labId = document.getElementById("labIdInput")?.value || "";
+        const serviceId = serviceField?.value || "";
 
         if (!shouldShowRecommendations()) {
             recommendEl.innerHTML = "";
             return;
         }
 
-        if (!assetString || !labId) {
+        if (!serviceId || !assetString || !labId) {
             recommendEl.innerHTML = "";
             return;
         }
@@ -451,7 +498,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const dateStr = d.toISOString().slice(0, 10);
 
             try {
-                const res = await fetch(`/api/bookings/day-with-assets/${labId}/${dateStr}?assets=${encodeURIComponent(assetString)}`);
+                const res = await fetch(`/api/bookings/day-with-assets/${labId}/${dateStr}?service_id=${encodeURIComponent(serviceId)}&assets=${encodeURIComponent(assetString)}`);
                 const data = await res.json();
                 const slots = data.slots || [];
                 slots.forEach(slot => {
@@ -524,7 +571,20 @@ document.addEventListener("DOMContentLoaded", () => {
     // Expose reset function for external scripts (e.g., show.php)
     window.resetBookingWizard = function() {
         currentStep = 1;
+        slotConflict = null;
+        renderSelectedServiceSummary(currentServiceContext);
+        renderConflictWarning("");
         showStep(1);
+    };
+
+    window.updateBookingServiceContext = function(service) {
+        currentServiceContext = service && service.id ? service : null;
+        if (serviceField) {
+            serviceField.value = currentServiceContext?.id ? String(currentServiceContext.id) : "";
+        }
+        renderSelectedServiceSummary(currentServiceContext);
+        refreshRecommendedSlots();
+        checkSlotConflict();
     };
 
 
@@ -615,6 +675,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Step 2 - Date and time
         if (step === 2) {
+            if (!serviceField?.value) {
+                showError("Please choose a service before confirming date and time.");
+                return false;
+            }
             if (!dateField.value || !startField.value || !endField.value) {
                 showError("Please complete date and time.");
                 return false;
@@ -705,9 +769,14 @@ document.addEventListener("DOMContentLoaded", () => {
         e.preventDefault();
         clearError();
 
+        const serviceId = serviceField?.value || "";
         const assetString = document.getElementById("asset_selection_modal").value;
+        if (!serviceId) {
+            showError("Service selection missing. Please choose a laboratory service before booking.");
+            return;
+        }
         if (!assetString) {
-            showError("Asset selection missing. Please choose equipment before booking.");
+            showError("Linked equipment is missing for the selected service. Please choose another service.");
             return;
         }
 
@@ -748,6 +817,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // Initial
+    renderSelectedServiceSummary(null);
     showStep(1);
 });
 </script>

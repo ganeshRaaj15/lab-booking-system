@@ -1,0 +1,430 @@
+{
+  "header_row": 11,
+  "raw_calibration_values": [
+    "",
+    "-",
+    "EXPIRED",
+    "NO",
+    "YES"
+  ],
+  "missing_acceptance_criteria_rows": [
+    {
+      "source_row_no": 15,
+      "laboratory_name": "Makmal Pencirian Bahan",
+      "service_name": "Microscopy Examination",
+      "equipment_model": "Nikon & Olympus",
+      "calibration_raw": "Expired"
+    },
+    {
+      "source_row_no": 16,
+      "laboratory_name": "Makmal Sains Bahan",
+      "service_name": "Sectioning for Metalography",
+      "equipment_model": "METKON METACUT 302",
+      "calibration_raw": "No"
+    },
+    {
+      "source_row_no": 58,
+      "laboratory_name": "Makmal Persekitaran Terma",
+      "service_name": "",
+      "equipment_model": "TSI Dust Trak Monitor",
+      "calibration_raw": "expired"
+    },
+    {
+      "source_row_no": 59,
+      "laboratory_name": "Makmal Persekitaran Terma",
+      "service_name": "",
+      "equipment_model": "MiniRAE TVOC Meter",
+      "calibration_raw": "yes"
+    },
+    {
+      "source_row_no": 60,
+      "laboratory_name": "Makmal Persekitaran Terma",
+      "service_name": "",
+      "equipment_model": "Aeroqual Ozone Meter",
+      "calibration_raw": "yes"
+    },
+    {
+      "source_row_no": 61,
+      "laboratory_name": "Makmal Persekitaran Terma",
+      "service_name": "",
+      "equipment_model": "PPM Formalde Meter",
+      "calibration_raw": "yes"
+    },
+    {
+      "source_row_no": 63,
+      "laboratory_name": "Makmal Persekitaran Terma",
+      "service_name": "",
+      "equipment_model": "Kimo Instrument",
+      "calibration_raw": "yes"
+    },
+    {
+      "source_row_no": 65,
+      "laboratory_name": "Makmal Pemesinan Termaju",
+      "service_name": "CNC Lathe",
+      "equipment_model": "Mazak QTN 100, Mazak QTN 100 Msy & HAAS SL20",
+      "calibration_raw": "-"
+    },
+    {
+      "source_row_no": 66,
+      "laboratory_name": "Makmal Pemesinan Termaju",
+      "service_name": "CNC Milling",
+      "equipment_model": "Mazak VCN 410A",
+      "calibration_raw": "-"
+    },
+    {
+      "source_row_no": 67,
+      "laboratory_name": "Makmal Pemesinan Jitu",
+      "service_name": "CNC EDM Wire Cut",
+      "equipment_model": "MITSUBISHI RA90",
+      "calibration_raw": "-"
+    },
+    {
+      "source_row_no": 68,
+      "laboratory_name": "Makmal Pemesinan Jitu",
+      "service_name": "CNC EDM Die Singking",
+      "equipment_model": "SODICK AQ55L",
+      "calibration_raw": "-"
+    }
+  ],
+  "missing_equipment_model_rows": [
+    {
+      "source_row_no": 20,
+      "laboratory_name": "Makmal Sains Bahan",
+      "service_name": "Metalography Examination",
+      "equipment_model": "",
+      "calibration_raw": "No"
+    },
+    {
+      "source_row_no": 27,
+      "laboratory_name": "Makmal Pengujian Mekanik",
+      "service_name": "Fracture Test",
+      "equipment_model": "",
+      "calibration_raw": ""
+    },
+    {
+      "source_row_no": 28,
+      "laboratory_name": "Makmal Pengujian Mekanik",
+      "service_name": "Fatigue Test",
+      "equipment_model": "",
+      "calibration_raw": ""
+    },
+    {
+      "source_row_no": 29,
+      "laboratory_name": "Makmal Pengujian Mekanik",
+      "service_name": "Tensile Test",
+      "equipment_model": "",
+      "calibration_raw": ""
+    },
+    {
+      "source_row_no": 30,
+      "laboratory_name": "Makmal Pengujian Mekanik",
+      "service_name": "Compression Test",
+      "equipment_model": "",
+      "calibration_raw": ""
+    },
+    {
+      "source_row_no": 32,
+      "laboratory_name": "Makmal Polimer",
+      "service_name": "Compression Test",
+      "equipment_model": "",
+      "calibration_raw": ""
+    },
+    {
+      "source_row_no": 33,
+      "laboratory_name": "Makmal Polimer",
+      "service_name": "Flexural Test",
+      "equipment_model": "",
+      "calibration_raw": ""
+    },
+    {
+      "source_row_no": 44,
+      "laboratory_name": "Makmal Getaran & Kebisingan",
+      "service_name": "Sound Absorption Coefficients (\u03b1)",
+      "equipment_model": "",
+      "calibration_raw": ""
+    },
+    {
+      "source_row_no": 45,
+      "laboratory_name": "Makmal Getaran & Kebisingan",
+      "service_name": "",
+      "equipment_model": "",
+      "calibration_raw": ""
+    },
+    {
+      "source_row_no": 46,
+      "laboratory_name": "Makmal Getaran & Kebisingan",
+      "service_name": "Sound Transmission Loss (TL)",
+      "equipment_model": "",
+      "calibration_raw": ""
+    },
+    {
+      "source_row_no": 47,
+      "laboratory_name": "Makmal Getaran & Kebisingan",
+      "service_name": "",
+      "equipment_model": "",
+      "calibration_raw": ""
+    }
+  ],
+  "continuation_rows": [
+    {
+      "source_row_no": 39,
+      "laboratory_name": "Makmal Seramik",
+      "parent_service": "Sintering Furnace"
+    },
+    {
+      "source_row_no": 45,
+      "laboratory_name": "Makmal Getaran & Kebisingan",
+      "parent_service": "Sound Absorption Coefficients (\u03b1)"
+    },
+    {
+      "source_row_no": 47,
+      "laboratory_name": "Makmal Getaran & Kebisingan",
+      "parent_service": "Sound Transmission Loss (TL)"
+    },
+    {
+      "source_row_no": 58,
+      "laboratory_name": "Makmal Persekitaran Terma",
+      "parent_service": "Indoor Air Quality IAQ Assesment"
+    },
+    {
+      "source_row_no": 59,
+      "laboratory_name": "Makmal Persekitaran Terma",
+      "parent_service": "Indoor Air Quality IAQ Assesment"
+    },
+    {
+      "source_row_no": 60,
+      "laboratory_name": "Makmal Persekitaran Terma",
+      "parent_service": "Indoor Air Quality IAQ Assesment"
+    },
+    {
+      "source_row_no": 61,
+      "laboratory_name": "Makmal Persekitaran Terma",
+      "parent_service": "Indoor Air Quality IAQ Assesment"
+    },
+    {
+      "source_row_no": 63,
+      "laboratory_name": "Makmal Persekitaran Terma",
+      "parent_service": "1.Thermal  Comfort Measurement 2.Heat Stress Measurement 3.Hygiene Tech Measurement"
+    }
+  ],
+  "orphan_continuation_rows": [],
+  "unknown_calibration_rows": [
+    {
+      "source_row_no": 16,
+      "laboratory_name": "Makmal Sains Bahan",
+      "service_name": "Sectioning for Metalography",
+      "equipment_model": "METKON METACUT 302",
+      "calibration_raw": "No"
+    },
+    {
+      "source_row_no": 17,
+      "laboratory_name": "Makmal Sains Bahan",
+      "service_name": "Mounting for Metalography",
+      "equipment_model": "METKON ECOPRESS 52",
+      "calibration_raw": "No"
+    },
+    {
+      "source_row_no": 18,
+      "laboratory_name": "Makmal Sains Bahan",
+      "service_name": "Grindng for Metalography",
+      "equipment_model": "BUEHLER SIMPLIMET",
+      "calibration_raw": "No"
+    },
+    {
+      "source_row_no": 19,
+      "laboratory_name": "Makmal Sains Bahan",
+      "service_name": "Polishing for Metalography",
+      "equipment_model": "METKON FORCIPOL / BUEHLER",
+      "calibration_raw": "No"
+    },
+    {
+      "source_row_no": 20,
+      "laboratory_name": "Makmal Sains Bahan",
+      "service_name": "Metalography Examination",
+      "equipment_model": "",
+      "calibration_raw": "No"
+    },
+    {
+      "source_row_no": 27,
+      "laboratory_name": "Makmal Pengujian Mekanik",
+      "service_name": "Fracture Test",
+      "equipment_model": "",
+      "calibration_raw": ""
+    },
+    {
+      "source_row_no": 28,
+      "laboratory_name": "Makmal Pengujian Mekanik",
+      "service_name": "Fatigue Test",
+      "equipment_model": "",
+      "calibration_raw": ""
+    },
+    {
+      "source_row_no": 29,
+      "laboratory_name": "Makmal Pengujian Mekanik",
+      "service_name": "Tensile Test",
+      "equipment_model": "",
+      "calibration_raw": ""
+    },
+    {
+      "source_row_no": 30,
+      "laboratory_name": "Makmal Pengujian Mekanik",
+      "service_name": "Compression Test",
+      "equipment_model": "",
+      "calibration_raw": ""
+    },
+    {
+      "source_row_no": 32,
+      "laboratory_name": "Makmal Polimer",
+      "service_name": "Compression Test",
+      "equipment_model": "",
+      "calibration_raw": ""
+    },
+    {
+      "source_row_no": 33,
+      "laboratory_name": "Makmal Polimer",
+      "service_name": "Flexural Test",
+      "equipment_model": "",
+      "calibration_raw": ""
+    },
+    {
+      "source_row_no": 34,
+      "laboratory_name": "Makmal Polimer",
+      "service_name": "Ball Mill",
+      "equipment_model": "Fritsch",
+      "calibration_raw": "No"
+    },
+    {
+      "source_row_no": 35,
+      "laboratory_name": "Makmal Polimer",
+      "service_name": "Sieve Shaker",
+      "equipment_model": "Fritsch",
+      "calibration_raw": "No"
+    },
+    {
+      "source_row_no": 36,
+      "laboratory_name": "Makmal Polimer",
+      "service_name": "Internal Mixer",
+      "equipment_model": "Brabender",
+      "calibration_raw": "No"
+    },
+    {
+      "source_row_no": 37,
+      "laboratory_name": "Makmal Polimer",
+      "service_name": "Plastic Granulator",
+      "equipment_model": "-",
+      "calibration_raw": "No"
+    },
+    {
+      "source_row_no": 38,
+      "laboratory_name": "Makmal Seramik",
+      "service_name": "Sintering Furnace",
+      "equipment_model": "Nabetherm LHT 08/18",
+      "calibration_raw": "No"
+    },
+    {
+      "source_row_no": 39,
+      "laboratory_name": "Makmal Seramik",
+      "service_name": "",
+      "equipment_model": "PLF 140/5",
+      "calibration_raw": "No"
+    },
+    {
+      "source_row_no": 41,
+      "laboratory_name": "Makmal Metalurgi",
+      "service_name": "Tube Furnace",
+      "equipment_model": "Elite Thermal System TSH16/50/180-2416CG",
+      "calibration_raw": "No"
+    },
+    {
+      "source_row_no": 42,
+      "laboratory_name": "Makmal Metalurgi",
+      "service_name": "Ball Mill",
+      "equipment_model": "RETSCH PM 400 MA-type",
+      "calibration_raw": "No"
+    },
+    {
+      "source_row_no": 43,
+      "laboratory_name": "Makmal Metalurgi",
+      "service_name": "Potentiostat",
+      "equipment_model": "Metrohm Autolab Vionic-161000003005",
+      "calibration_raw": "No"
+    },
+    {
+      "source_row_no": 44,
+      "laboratory_name": "Makmal Getaran & Kebisingan",
+      "service_name": "Sound Absorption Coefficients (\u03b1)",
+      "equipment_model": "",
+      "calibration_raw": ""
+    },
+    {
+      "source_row_no": 45,
+      "laboratory_name": "Makmal Getaran & Kebisingan",
+      "service_name": "",
+      "equipment_model": "",
+      "calibration_raw": ""
+    },
+    {
+      "source_row_no": 46,
+      "laboratory_name": "Makmal Getaran & Kebisingan",
+      "service_name": "Sound Transmission Loss (TL)",
+      "equipment_model": "",
+      "calibration_raw": ""
+    },
+    {
+      "source_row_no": 47,
+      "laboratory_name": "Makmal Getaran & Kebisingan",
+      "service_name": "",
+      "equipment_model": "",
+      "calibration_raw": ""
+    },
+    {
+      "source_row_no": 55,
+      "laboratory_name": "Makmal Pembakaran Dalam",
+      "service_name": "2) OBD Scantools",
+      "equipment_model": "bosch kts 560 scantool",
+      "calibration_raw": "no"
+    },
+    {
+      "source_row_no": 56,
+      "laboratory_name": "Makmal Pembakaran Dalam",
+      "service_name": "3) Exhaust Smoke and Gas Analyser",
+      "equipment_model": "QGA6000",
+      "calibration_raw": "no"
+    },
+    {
+      "source_row_no": 64,
+      "laboratory_name": "Makmal Persekitaran Terma",
+      "service_name": "Industrial Hygiene Measurement",
+      "equipment_model": "(Gillian Personal Air Sampling Pump)",
+      "calibration_raw": "no"
+    },
+    {
+      "source_row_no": 65,
+      "laboratory_name": "Makmal Pemesinan Termaju",
+      "service_name": "CNC Lathe",
+      "equipment_model": "Mazak QTN 100, Mazak QTN 100 Msy & HAAS SL20",
+      "calibration_raw": "-"
+    },
+    {
+      "source_row_no": 66,
+      "laboratory_name": "Makmal Pemesinan Termaju",
+      "service_name": "CNC Milling",
+      "equipment_model": "Mazak VCN 410A",
+      "calibration_raw": "-"
+    },
+    {
+      "source_row_no": 67,
+      "laboratory_name": "Makmal Pemesinan Jitu",
+      "service_name": "CNC EDM Wire Cut",
+      "equipment_model": "MITSUBISHI RA90",
+      "calibration_raw": "-"
+    },
+    {
+      "source_row_no": 68,
+      "laboratory_name": "Makmal Pemesinan Jitu",
+      "service_name": "CNC EDM Die Singking",
+      "equipment_model": "SODICK AQ55L",
+      "calibration_raw": "-"
+    }
+  ]
+}

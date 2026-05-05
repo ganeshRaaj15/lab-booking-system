@@ -1,0 +1,57 @@
+source_row_no,sequence_no,field_name,laboratory_name,service_name,row_type,acceptance_criteria,equipment_model,calibration_raw,calibration_status,pic_name
+13,1,MATERIALS CHARACTERIZATION,Makmal Pencirian Bahan,Scanning Electron Microscope (SEM/EDX),service,"20mm x 20mm x 5mm solid sample, powder, dry sample",Hitachi SU1510,YES,valid,Nooriskandar bin Sani
+14,2,MATERIALS CHARACTERIZATION,Makmal Pencirian Bahan,X-Ray Diffraction (XRD),service,"20mm x 20mm x 5mm solid sample, powder",Bruker D8 Advance,YES,valid,Nooriskandar bin Sani
+15,3,MATERIALS CHARACTERIZATION,Makmal Pencirian Bahan,Microscopy Examination,service,,Nikon & Olympus,Expired,expired,Nooriskandar bin Sani
+16,4,MATERIALS CHARACTERIZATION,Makmal Sains Bahan,Sectioning for Metalography,service,,METKON METACUT 302,No,unknown,Anuar bin Ismail
+17,5,MATERIALS CHARACTERIZATION,Makmal Sains Bahan,Mounting for Metalography,service,1) Only for samples that are solid and strong with: / - heat-resistant above 180°C and / - pressure-resistant above 300 kg/cm2 (> 294.2 bar). / 2) Maximum sample size: / - Cubic specimen: 15 mm (L) × 15 mm (W) × 13 mm (H) / - Cuboid specimen: 25 mm (L) × 10 mm (W) × 13 mm (H) / - Cylindrical specimen: 25 mm (Dia) × 13 mm (H),METKON ECOPRESS 52,No,unknown,Anuar bin Ismail
+18,6,MATERIALS CHARACTERIZATION,Makmal Sains Bahan,Grindng for Metalography,service,Use mounted specimens not exceeding 30 mm in diameter,BUEHLER SIMPLIMET,No,unknown,Anuar bin Ismail
+19,7,MATERIALS CHARACTERIZATION,Makmal Sains Bahan,Polishing for Metalography,service,Use mounted specimens not exceeding 30 mm in diameter,METKON FORCIPOL / BUEHLER,No,unknown,Anuar bin Ismail
+20,8,MATERIALS CHARACTERIZATION,Makmal Sains Bahan,Metalography Examination,service,"Only specimens that have been etched are allowed. / Available magnification: 50x, 100x, 200x, and 1000x / Specimens must be flate",,No,unknown,Anuar bin Ismail
+21,9,MATERIALS CHARACTERIZATION,Makmal Seramik,Simoutelneous Thermal Analysis,service,"Heating rate 5 and 10 °C/min, Temp. range: RT- 1550 deg. C",Linseis / STA 1600,Expired,expired,Fazlannuddin Hanur bin Harith
+22,10,MATERIALS CHARACTERIZATION,Makmal Seramik,Density Kit,service,"Solid sample 10mm x 10mm, Immersing sample in fluid",Mettler Toledo / XS64,Expired,expired,Fazlannuddin Hanur bin Harith
+23,11,MATERIALS CHARACTERIZATION,Makmal Seramik,Fourier Transform Infra Red (FTIR),service,Using ATR system/ (Spectrum range 4000-600/cm),Perkin Elmer / Spectrum 100,Expired,expired,Fazlannuddin Hanur bin Harith
+24,12,MECHANICAL MATERIAL TESTING,Makmal Pencirian Bahan,Rockwell Hardness Tester,service,Max Load,Instron Wilson,Expired,expired,Nooriskandar bin Sani
+25,13,MECHANICAL MATERIAL TESTING,Makmal Pencirian Bahan,Vickers Hardness Tester,service,50kg Max Load,Buehler,Expired,expired,Nooriskandar bin Sani
+26,14,MECHANICAL MATERIAL TESTING,Makmal Seramik,Micro Hardness Test,service,0.019 kN Max Load,HMV-2TE,Expired,expired,Fazlannuddin Hanur bin Harith
+27,15,MECHANICAL MATERIAL TESTING,Makmal Pengujian Mekanik,Fracture Test,service,"100kN Max load, Max 62.5mm x 25mm x 60 mm specimen (LxWxH), 37.5mm PCD and  Ø12.5mm for Dowel Pin Holes, **Samples quantity subject to Testing Standard.",,,unknown,Mohd Yusof bin Mohd Sahil
+28,16,MECHANICAL MATERIAL TESTING,Makmal Pengujian Mekanik,Fatigue Test,service,"12mm Max thickness, 100kN Max load, **Samples quantity subject to Testing Standard.",,,unknown,Mohd Yusof bin Mohd Sahil
+29,17,MECHANICAL MATERIAL TESTING,Makmal Pengujian Mekanik,Tensile Test,service,"12mm Max thickness, 100kN Max load",,,unknown,Mohd Yusof bin Mohd Sahil
+30,18,MECHANICAL MATERIAL TESTING,Makmal Pengujian Mekanik,Compression Test,service,100kN max Load,,,unknown,Mohd Yusof bin Mohd Sahil
+31,19,MECHANICAL MATERIAL TESTING,Makmal Polimer,Tensile Test,service,"10mm max thickness ,  10kN Max load",Instron,Yes,valid,Mohamad Shahrulelmi bin Mohd Rodzi
+32,20,MECHANICAL MATERIAL TESTING,Makmal Polimer,Compression Test,service,"100 mm diameter , 10kN Max load",,,unknown,Mohamad Shahrulelmi bin Mohd Rodzi
+33,21,MECHANICAL MATERIAL TESTING,Makmal Polimer,Flexural Test,service,"100mm lower support , 10kN Max load",,,unknown,Mohamad Shahrulelmi bin Mohd Rodzi
+34,22,MATERIAL PREPARATION,Makmal Polimer,Ball Mill,service,"Small particles, 100-300 RPM, below 200g",Fritsch,No,unknown,Mohamad Shahrulelmi bin Mohd Rodzi
+35,23,MATERIAL PREPARATION,Makmal Polimer,Sieve Shaker,service,"Sieve 90, 112, 180, 250, 355, 700 micron                                                                               Sieve 2, 3.2 mm",Fritsch,No,unknown,Mohamad Shahrulelmi bin Mohd Rodzi
+36,24,MATERIAL PREPARATION,Makmal Polimer,Internal Mixer,service,"Temp. range: 100°C - 250°C , Fibre below 2mm",Brabender,No,unknown,Mohamad Shahrulelmi bin Mohd Rodzi
+37,25,MATERIAL PREPARATION,Makmal Polimer,Plastic Granulator,service,Plastic and shell,-,No,unknown,Mohamad Shahrulelmi bin Mohd Rodzi
+38,26,MATERIAL PREPARATION,Makmal Seramik,Sintering Furnace,service,Temperature ranges :- RT - 1800 deg. C,Nabetherm LHT 08/18,No,unknown,Fazlannuddin Hanur bin Harith
+39,27,MATERIAL PREPARATION,Makmal Seramik,,continuation,Temperature ranges :- RT - 1400 deg. C,PLF 140/5,No,unknown,Fazlannuddin Hanur bin Harith
+40,28,MATERIAL PREPARATION,Makmal Seramik,Hydraulic Press,service,"Minimum 50 samples , 8 Tonnes Max pressing load. / Sample shape: dia. 13mm, dia. 5mm and rectangular 102 x 10mm",38-51-0,Expired,expired,Fazlannuddin Hanur bin Harith
+41,29,MATERIAL PREPARATION,Makmal Metalurgi,Tube Furnace,service,Maximum temperature  1600 °C,Elite Thermal System TSH16/50/180-2416CG,No,unknown,Mohd Haidi bin Md Ishak
+42,30,MATERIAL PREPARATION,Makmal Metalurgi,Ball Mill,service,"Maximum 4 sample at a time, for metal only",RETSCH PM 400 MA-type,No,unknown,Mohd Haidi bin Md Ishak
+43,31,MATERIAL PREPARATION,Makmal Metalurgi,Potentiostat,service,"EIS test, Corrosion test",Metrohm Autolab Vionic-161000003005,No,unknown,Mohd Haidi bin Md Ishak
+44,32,NDT,Makmal Getaran & Kebisingan,Sound Absorption Coefficients (α),service,"Low Frequency - Ø tube 100mm, max length 250mm",,,unknown,Saiful Hazmi bin Sanip
+45,,NDT,Makmal Getaran & Kebisingan,,continuation,"High Frequency - Ø tube 28mm, max length 250mm",,,unknown,Saiful Hazmi bin Sanip
+46,33,NDT,Makmal Getaran & Kebisingan,Sound Transmission Loss (TL),service,"Low Frequency - Ø tube 100mm, max length 250mm",,,unknown,Saiful Hazmi bin Sanip
+47,,NDT,Makmal Getaran & Kebisingan,,continuation,"High Frequency - Ø tube 28mm, max length 250mm",,,unknown,Saiful Hazmi bin Sanip
+48,34,NDT,Makmal Pemeriksaan & Pengujian,Ultrasonic testing,service,"Used for detecting internal defects such as cracks, lack of fusion, or voids in welds and cast materials. Criteria: Absence of indications exceeding the reference amplitude and length limits defined by the governing code",Olympus Epoch 650,Expired,expired,Tc. Muhamad Radhi bin Ujang
+49,35,NDT,Makmal Pemeriksaan & Pengujian,Eddy Current testing,service,"Used for detecting surface or near-surface defects (e.g., fine cracks or pitting) or for material sorting on conductive materials (e.g., tubes, bars). Criteria: Defect signals must be below the established threshold of the reference standard.",Olympus Epoch 600,Expired,expired,Tc. Muhamad Radhi bin Ujang
+50,36,NDT,Makmal Pemeriksaan & Pengujian,Thickness testing,service,"Used to measure the current wall thickness of pipelines, tanks, and pressure vessels susceptible to corrosion. Criteria: The measured thickness must be equal to or greater than the required Design Minimum Thickness",Olympus 45MG,Expired,expired,Tc. Muhamad Radhi bin Ujang
+51,37,NDT,Makmal Mekanik Mesin,Infrared Thermography Inspection,service,"Passive thermography, -40° to 2000° C",FLIR T640,Yes,valid,Mohd Hamimi bin Masrom
+52,38,VEHICLE AND ENGINE TESTING,Makmal Pembakaran Dalam,A) Chassis Dyno Test,service,all light vehicles 2WD and 4WD,dynapack2000,expired,expired,Tc. MZahar bin Abd Jalal
+53,39,VEHICLE AND ENGINE TESTING,Makmal Pembakaran Dalam,B) Motocycle Dyno Test,service,all type of motocycle and ATVs,dynomite,expired,expired,Tc. MZahar bin Abd Jalal
+54,40,VEHICLE AND ENGINE TESTING,Makmal Pembakaran Dalam,1) Massflow meter,service,all type of fuels,onosukki FM2500 & FZ2100,expired,expired,Tc. MZahar bin Abd Jalal
+55,41,VEHICLE AND ENGINE TESTING,Makmal Pembakaran Dalam,2) OBD Scantools,service,all type of ODBII standard vehicles,bosch kts 560 scantool,no,unknown,Tc. MZahar bin Abd Jalal
+56,42,VEHICLE AND ENGINE TESTING,Makmal Pembakaran Dalam,3) Exhaust Smoke and Gas Analyser,service,"(CO, HC, CO2, O2, Nox, Lambda, and AFR), gasoline, LPG cars and Diesel vehicle Smoke can be analyzed.",QGA6000,no,unknown,Tc. MZahar bin Abd Jalal
+57,43,ENVIROMENTAL AND INDOOR AIR QUALITY,Makmal Persekitaran Terma,Indoor Air Quality IAQ Assesment,service,1.Carbon Dioxide (CO2) 2.Carbon Monoxide (CO) 3.Respirable Particulates (PM10) 4.Total Volatile Organic Compounds (TVOC) 5.Ozone (O3) 6.Formaldehyde,TSI IAQ Calc Meter,expired,expired,Yaacub Zaki bin Ali
+58,44,ENVIROMENTAL AND INDOOR AIR QUALITY,Makmal Persekitaran Terma,,continuation,,TSI Dust Trak Monitor,expired,expired,Yaacub Zaki bin Ali
+59,45,ENVIROMENTAL AND INDOOR AIR QUALITY,Makmal Persekitaran Terma,,continuation,,MiniRAE TVOC Meter,yes,valid,Yaacub Zaki bin Ali
+60,46,ENVIROMENTAL AND INDOOR AIR QUALITY,Makmal Persekitaran Terma,,continuation,,Aeroqual Ozone Meter,yes,valid,Yaacub Zaki bin Ali
+61,47,ENVIROMENTAL AND INDOOR AIR QUALITY,Makmal Persekitaran Terma,,continuation,,PPM Formalde Meter,yes,valid,Yaacub Zaki bin Ali
+62,48,ENVIROMENTAL AND INDOOR AIR QUALITY,Makmal Persekitaran Terma,1.Thermal  Comfort Measurement 2.Heat Stress Measurement 3.Hygiene Tech Measurement,service,1.Air Temperature 2.Relative Humidity 3.Air Movement 4.Globe Temperature,TSI Velocicalc Plus Meter,expired,expired,Yaacub Zaki bin Ali
+63,49,ENVIROMENTAL AND INDOOR AIR QUALITY,Makmal Persekitaran Terma,,continuation,,Kimo Instrument,yes,valid,Yaacub Zaki bin Ali
+64,50,ENVIROMENTAL AND INDOOR AIR QUALITY,Makmal Persekitaran Terma,Industrial Hygiene Measurement,service,1.Respirable Particulates Dust 2.Airborne Particles,(Gillian Personal Air Sampling Pump),no,unknown,Yaacub Zaki bin Ali
+65,51,ADVANCE MACHINING,Makmal Pemesinan Termaju,CNC Lathe,service,,"Mazak QTN 100, Mazak QTN 100 Msy & HAAS SL20",-,unknown,Mohd Raminhizad Bin Abd Razaman
+66,52,ADVANCE MACHINING,Makmal Pemesinan Termaju,CNC Milling,service,,Mazak VCN 410A,-,unknown,Mohd Raminhizad Bin Abd Razaman
+67,53,ADVANCE MACHINING,Makmal Pemesinan Jitu,CNC EDM Wire Cut,service,,MITSUBISHI RA90,-,unknown,Mohamad Faizal bin Jasman
+68,54,ADVANCE MACHINING,Makmal Pemesinan Jitu,CNC EDM Die Singking,service,,SODICK AQ55L,-,unknown,Mohamad Faizal bin Jasman

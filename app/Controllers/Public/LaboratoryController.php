@@ -119,6 +119,7 @@ class LaboratoryController extends BaseController
         }
 
         $assets    = $this->assets->where('lab_id', $id)->findAll();
+        $services  = $this->servicesForLab($id);
         $faculties = $this->faculties->getAllForDropdown();
         $userProfile = null;
 
@@ -176,9 +177,43 @@ class LaboratoryController extends BaseController
         return view('public/laboratories/show', [
             'lab'         => $lab,
             'assets'      => $assets,
+            'services'    => $services,
             'faculties'   => $faculties,
             'bookingMode' => $bookingMode,
             'userProfile' => $userProfile,
         ]);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    protected function servicesForLab(int $labId): array
+    {
+        $db = \Config\Database::connect();
+
+        if (! $db->tableExists('lab_services')) {
+            return [];
+        }
+
+        return $db->table('lab_services ls')
+            ->select("
+                ls.id,
+                ls.field_name,
+                ls.service_name,
+                ls.acceptance_criteria,
+                ls.calibration_status,
+                GROUP_CONCAT(
+                    DISTINCT NULLIF(TRIM(sem.equipment_model), '')
+                    ORDER BY sem.sort_order ASC
+                    SEPARATOR ' | '
+                ) AS equipment_models
+            ", false)
+            ->join('service_equipment_models sem', 'sem.lab_service_id = ls.id', 'left')
+            ->where('ls.laboratory_id', $labId)
+            ->where('ls.is_active', 1)
+            ->groupBy('ls.id')
+            ->orderBy('ls.service_name', 'ASC')
+            ->get()
+            ->getResultArray();
     }
 }

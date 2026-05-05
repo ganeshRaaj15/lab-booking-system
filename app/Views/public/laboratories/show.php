@@ -5,6 +5,7 @@
 $picName = trim((string)($lab['pic_name'] ?? ''));
 $picEmail = trim((string)($lab['pic_email'] ?? ''));
 $picPhone = trim((string)($lab['pic_phone'] ?? ''));
+$services = is_array($services ?? null) ? $services : [];
 
 if ($picName === '') {
     $picName = 'null';
@@ -45,8 +46,8 @@ if ($picPhone === '') {
                     <?php endif; ?>
                     
                     <p class="lab-description">
-                        Select equipment, check real-time availability, and submit your booking request 
-                        for this state-of-the-art laboratory facility.
+                        Choose a laboratory service, review the linked equipment, then check real-time
+                        availability before submitting your booking request.
                     </p>
                 </div>
                 
@@ -144,6 +145,11 @@ if ($picPhone === '') {
                             <?= count($assets) ?> Equipment Available
                         </span>
                     </div>
+
+                    <div id="selectedServiceSummary" class="alert alert-info small mb-3">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Choose a service below to activate the correct equipment set for booking.
+                    </div>
                     
                     <?php if (empty($assets)): ?>
                         <div class="text-center py-5">
@@ -192,7 +198,8 @@ if ($picPhone === '') {
                                                 $statusClass = 'status-unavailable';
                                         }
                                         ?>
-                                        <tr data-asset-id="<?= esc($a['id']) ?>" 
+                                        <tr data-asset-id="<?= esc($a['id']) ?>"
+                                            data-service-id="<?= esc((string) ($a['lab_service_id'] ?? '')) ?>"
                                             data-status="<?= esc(strtolower($maintenanceUnits > 0 && $availableUnits > 0 ? 'partially available' : $a['status'])) ?>"
                                             data-quantity="<?= esc($availableUnits) ?>"
                                             class="<?= !$isAvailable ? 'text-muted' : '' ?>">
@@ -205,7 +212,12 @@ if ($picPhone === '') {
                                             </td>
                                             <td data-label="Equipment">
                                                 <div class="equipment-name"><?= esc($a['name']) ?></div>
-                                                <?php if (!empty($a['description'])): ?>
+                                                <?php if (!empty($a['model'])): ?>
+                                                    <div class="equipment-desc">Model: <?= esc($a['model']) ?></div>
+                                                <?php endif; ?>
+                                                <?php if (!empty($a['specifications'])): ?>
+                                                    <div class="equipment-desc"><?= esc($a['specifications']) ?></div>
+                                                <?php elseif (!empty($a['description'])): ?>
                                                     <div class="equipment-desc"><?= esc($a['description']) ?></div>
                                                 <?php endif; ?>
                                             </td>
@@ -260,6 +272,88 @@ if ($picPhone === '') {
             </div>
         </div>
 
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                    <div>
+                        <h2 class="h4 mb-1 text-primary">
+                            <i class="bi bi-list-check me-2"></i>
+                            Available Services
+                        </h2>
+                        <p class="text-muted mb-0">Choose the service you need. The system will align the linked equipment automatically.</p>
+                    </div>
+                    <span class="badge text-bg-primary px-3 py-2">
+                        <?= count($services) ?> <?= count($services) === 1 ? 'Service' : 'Services' ?>
+                    </span>
+                </div>
+
+                <?php if ($services === []): ?>
+                    <div class="text-center text-muted py-4">
+                        No services have been imported for this laboratory yet.
+                    </div>
+                <?php else: ?>
+                    <div class="list-group list-group-flush">
+                        <?php foreach ($services as $service): ?>
+                            <?php
+                            $serviceCalibration = strtolower(trim((string) ($service['calibration_status'] ?? 'unknown')));
+                            $calibrationClass = $serviceCalibration === 'valid'
+                                ? 'text-bg-success'
+                                : ($serviceCalibration === 'expired' ? 'text-bg-warning' : 'text-bg-secondary');
+                            $equipmentModels = trim((string) ($service['equipment_models'] ?? ''));
+                            $criteriaText = trim((string) ($service['acceptance_criteria'] ?? ''));
+                            ?>
+                            <div class="list-group-item px-3 py-3 border-bottom">
+                                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                                    <div>
+                                        <div class="fw-semibold"><?= esc($service['service_name'] ?? '') ?></div>
+                                        <?php if (!empty($service['field_name'])): ?>
+                                            <div class="small text-muted mt-1">
+                                                <i class="bi bi-diagram-3 me-1"></i>
+                                                <?= esc($service['field_name']) ?>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                    <span class="badge <?= esc($calibrationClass) ?>">
+                                        Calibration: <?= esc(ucfirst($serviceCalibration)) ?>
+                                    </span>
+                                </div>
+
+                                <?php if ($equipmentModels !== ''): ?>
+                                    <div class="small mt-2">
+                                        <span class="fw-semibold">Equipment models:</span>
+                                        <?= esc(str_replace(' | ', ', ', $equipmentModels)) ?>
+                                    </div>
+                                <?php endif; ?>
+
+                                <?php if ($criteriaText !== ''): ?>
+                                    <div class="small text-muted mt-2">
+                                        <span class="fw-semibold text-dark">Acceptance criteria:</span>
+                                        <?= esc($criteriaText) ?>
+                                    </div>
+                                <?php endif; ?>
+
+                                <div class="mt-3 d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                                    <button type="button"
+                                            class="btn btn-outline-primary btn-sm select-service-btn"
+                                            data-service-id="<?= esc((string) ($service['id'] ?? '')) ?>"
+                                            data-service-name="<?= esc($service['service_name'] ?? '') ?>"
+                                            data-service-calibration="<?= esc(ucfirst($serviceCalibration)) ?>"
+                                            data-service-equipment="<?= esc(str_replace(' | ', ', ', $equipmentModels)) ?>"
+                                            data-service-criteria="<?= esc($criteriaText) ?>">
+                                        <i class="bi bi-check2-square me-1"></i>
+                                        Choose Service
+                                    </button>
+                                    <div class="small text-muted service-state-label">
+                                        This service will drive equipment and slot selection.
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
         <!-- Booking CTA Card -->
         <div class="booking-card">
             <h2 class="booking-title">
@@ -273,9 +367,9 @@ if ($picPhone === '') {
             
             <p class="booking-description">
                 <?php if ($bookingMode === 'uthm'): ?>
-                    Select your required equipment above, check the calendar availability below, 
-                    then launch the booking wizard to complete your reservation request.
-                    <span class="text-danger fw-semibold d-block mt-1">Note: Only equipment marked as "Available" can be booked.</span>
+                    Start by choosing a service. The system will load the linked equipment, check availability,
+                    and guide you into the booking wizard with the correct context.
+                    <span class="text-danger fw-semibold d-block mt-1">Note: Only equipment marked as "Available" and linked to the chosen service can be booked.</span>
                 <?php else: ?>
                     You can browse equipment and view availability, but online booking is exclusively 
                     available for UTHM users. External users should contact the Person in Charge.
@@ -284,7 +378,7 @@ if ($picPhone === '') {
             
             <div class="booking-alert">
                 <i class="bi bi-info-circle"></i>
-                <p>Availability is calculated based on your selected equipment and may vary between timeslots.</p>
+                <p>Availability is calculated from the selected service and its linked equipment, and may vary between timeslots.</p>
             </div>
             
             <div class="booking-actions">
@@ -294,7 +388,7 @@ if ($picPhone === '') {
                             data-lab-id="<?= esc($lab['id']) ?>"
                             disabled>
                         <i class="bi bi-magic me-1"></i>
-                        Launch Booking Wizard (Select Equipment First)
+                        Launch Booking Wizard (Select Service First)
                     </button>
                 <?php else: ?>
                     <button id="openBookingWizardBtn"
@@ -315,7 +409,7 @@ if ($picPhone === '') {
                     Laboratory Availability
                 </h2>
             <div class="calendar-note">
-                Select equipment above to view real-time availability. Click on any date to see available timeslots.
+                Choose a service above to load its linked equipment and real-time availability. Click on any date to see available timeslots.
                 <span class="d-block text-danger small mt-1">Note: Equipment can still be booked when some units remain available, even if other units are under maintenance.</span>
             </div>
         </div>
@@ -349,8 +443,12 @@ document.addEventListener("DOMContentLoaded", function () {
     const openWizardBtn    = document.getElementById("openBookingWizardBtn");
     const hiddenAssetField = document.getElementById("asset_selection_modal");
     const hiddenLabIdInput = document.getElementById("labIdInput");
+    const hiddenServiceInput = document.getElementById("service_id_modal");
+    const selectedServiceSummary = document.getElementById("selectedServiceSummary");
+    const serviceButtons = document.querySelectorAll(".select-service-btn");
     const todayDate = new Date();
     todayDate.setHours(0, 0, 0, 0);
+    let selectedService = null;
 
     // -------------------------------
     // Check if equipment is available based on status
@@ -363,6 +461,173 @@ document.addEventListener("DOMContentLoaded", function () {
         const qty = parseInt(row.dataset.quantity || '0', 10);
 
         return status !== 'maintenance' && status !== 'faulty' && qty > 0;
+    }
+
+    function getSelectedServiceId() {
+        return selectedService && selectedService.id ? String(selectedService.id) : "";
+    }
+
+    function buildServiceInfo(button) {
+        if (!button) return null;
+
+        const id = button.dataset.serviceId || "";
+        if (!id) return null;
+
+        return {
+            id,
+            name: button.dataset.serviceName || "Selected Service",
+            calibrationStatus: button.dataset.serviceCalibration || "",
+            equipmentModels: button.dataset.serviceEquipment || "",
+            acceptanceCriteria: button.dataset.serviceCriteria || "",
+        };
+    }
+
+    function syncServiceContextToModal() {
+        const serviceId = getSelectedServiceId();
+        if (hiddenServiceInput) {
+            hiddenServiceInput.value = serviceId;
+        }
+        if (typeof window.updateBookingServiceContext === "function") {
+            window.updateBookingServiceContext(selectedService);
+        }
+    }
+
+    function updateServiceButtonStates(serviceId) {
+        serviceButtons.forEach(button => {
+            const isSelected = serviceId !== "" && button.dataset.serviceId === serviceId;
+            button.classList.toggle("btn-primary", isSelected);
+            button.classList.toggle("btn-outline-primary", !isSelected);
+            button.innerHTML = isSelected
+                ? '<i class="bi bi-check2-circle me-1"></i>Selected Service'
+                : '<i class="bi bi-check2-square me-1"></i>Choose Service';
+
+            const stateLabel = button.parentElement?.querySelector(".service-state-label");
+            if (stateLabel) {
+                stateLabel.textContent = isSelected
+                    ? "This service is active for availability and booking."
+                    : "This service will drive equipment and slot selection.";
+            }
+        });
+    }
+
+    function updateSelectedServiceSummary(linkedCount = 0, availableCount = 0) {
+        if (!selectedServiceSummary) return;
+
+        if (!selectedService) {
+            selectedServiceSummary.className = "alert alert-info small mb-3";
+            selectedServiceSummary.innerHTML = `
+                <i class="bi bi-info-circle me-1"></i>
+                Choose a service below to activate the correct equipment set for booking.
+            `;
+            return;
+        }
+
+        const meta = [];
+        if (selectedService.calibrationStatus) {
+            meta.push(`Calibration: ${selectedService.calibrationStatus}`);
+        }
+        if (selectedService.equipmentModels) {
+            meta.push(`Equipment: ${selectedService.equipmentModels}`);
+        }
+        if (selectedService.acceptanceCriteria) {
+            meta.push(`Criteria: ${selectedService.acceptanceCriteria}`);
+        }
+
+        const isReady = availableCount > 0;
+        selectedServiceSummary.className = `alert ${isReady ? "alert-success" : "alert-warning"} small mb-3`;
+        selectedServiceSummary.innerHTML = `
+            <div class="fw-semibold mb-1">${selectedService.name}</div>
+            <div>${linkedCount} linked equipment item(s), ${availableCount} currently bookable.</div>
+            ${meta.length ? `<div class="mt-1 text-muted">${meta.join(" | ")}</div>` : ""}
+        `;
+    }
+
+    function applyRowSelectionState(row, enabled, checked) {
+        const checkbox = row.querySelector(".asset-checkbox");
+        const qtyInput = row.querySelector(".asset-qty");
+        const assetId = row.dataset.assetId || "";
+
+        if (!checkbox || !qtyInput) return;
+
+        if (!enabled) {
+            checkbox.checked = false;
+            checkbox.disabled = true;
+            qtyInput.disabled = true;
+            qtyInput.style.borderColor = "#e2e8f0";
+            qtyInput.value = isEquipmentAvailable(assetId) ? 1 : 0;
+            return;
+        }
+
+        checkbox.disabled = false;
+        checkbox.checked = checked;
+
+        if (checked && isEquipmentAvailable(assetId)) {
+            qtyInput.disabled = false;
+            qtyInput.style.borderColor = "#3b82f6";
+            if (!qtyInput.value || parseInt(qtyInput.value, 10) < 1) {
+                qtyInput.value = 1;
+            }
+        } else {
+            qtyInput.disabled = true;
+            qtyInput.style.borderColor = "#e2e8f0";
+        }
+    }
+
+    function filterAssetsForService(serviceId) {
+        let linkedCount = 0;
+        let availableCount = 0;
+
+        document.querySelectorAll("tr[data-asset-id]").forEach(row => {
+            const rowServiceId = row.dataset.serviceId || "";
+            const matches = serviceId !== "" && rowServiceId === serviceId;
+            const assetId = row.dataset.assetId || "";
+            const available = isEquipmentAvailable(assetId);
+
+            row.classList.toggle("d-none", serviceId !== "" && !matches);
+
+            if (!matches) {
+                applyRowSelectionState(row, false, false);
+                return;
+            }
+
+            linkedCount++;
+            if (available) {
+                availableCount++;
+            }
+
+            applyRowSelectionState(row, available, available);
+        });
+
+        if (serviceId === "") {
+            document.querySelectorAll("tr[data-asset-id]").forEach(row => {
+                row.classList.remove("d-none");
+            });
+        }
+
+        return { linkedCount, availableCount };
+    }
+
+    function selectService(service) {
+        selectedService = service && service.id ? service : null;
+        const serviceId = getSelectedServiceId();
+
+        updateServiceButtonStates(serviceId);
+
+        const { linkedCount, availableCount } = filterAssetsForService(serviceId);
+        updateSelectedServiceSummary(linkedCount, availableCount);
+        updateBookingButton();
+        syncAssetSelectionToModal();
+        syncServiceContextToModal();
+        refreshCalendar();
+    }
+
+    function selectServiceById(serviceId) {
+        if (!serviceId) return false;
+        const button = document.querySelector(`.select-service-btn[data-service-id="${serviceId}"]`);
+        if (!button) return false;
+
+        selectService(buildServiceInfo(button));
+        return true;
     }
 
     // -------------------------------
@@ -415,16 +680,19 @@ document.addEventListener("DOMContentLoaded", function () {
     // -------------------------------
     function updateBookingButton() {
         if (!openWizardBtn) return;
-        
+
         const availableCount = getAvailableAssetsCount();
-        
+
         if (BOOKING_MODE === 'uthm') {
-            if (availableCount > 0) {
+            if (!getSelectedServiceId()) {
+                openWizardBtn.disabled = true;
+                openWizardBtn.innerHTML = '<i class="bi bi-magic me-1"></i>Launch Booking Wizard (Select Service First)';
+            } else if (availableCount > 0) {
                 openWizardBtn.disabled = false;
                 openWizardBtn.innerHTML = '<i class="bi bi-magic me-1"></i>Launch Booking Wizard';
             } else {
                 openWizardBtn.disabled = true;
-                openWizardBtn.innerHTML = '<i class="bi bi-magic me-1"></i>Launch Booking Wizard (Select Equipment First)';
+                openWizardBtn.innerHTML = '<i class="bi bi-magic me-1"></i>No Bookable Equipment for Selected Service';
             }
         }
     }
@@ -457,6 +725,12 @@ document.addEventListener("DOMContentLoaded", function () {
             updateBookingButton();
             refreshCalendar();
             syncAssetSelectionToModal();
+        });
+    });
+
+    serviceButtons.forEach(button => {
+        button.addEventListener("click", () => {
+            selectService(buildServiceInfo(button));
         });
     });
 
@@ -532,8 +806,9 @@ document.addEventListener("DOMContentLoaded", function () {
     // Refresh availability on calendar
     // -------------------------------
     function refreshCalendar() {
+        const serviceId = getSelectedServiceId();
         const assets = buildAssetSelectionString();
-        if (!assets) {
+        if (!serviceId || !assets) {
             calendar.removeAllEvents();
             return;
         }
@@ -541,7 +816,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // Show loading state
         calendar.updateSize();
         
-        fetch(`/api/calendar-with-assets/${LAB_ID}?assets=${encodeURIComponent(assets)}`)
+        fetch(`/api/calendar-with-assets/${LAB_ID}?service_id=${encodeURIComponent(serviceId)}&assets=${encodeURIComponent(assets)}`)
             .then(r => r.json())
             .then(data => {
                 calendar.removeAllEvents();
@@ -584,16 +859,22 @@ document.addEventListener("DOMContentLoaded", function () {
     // Load day slots for clicked date
     // -------------------------------
     function loadDaySlots(dateStr) {
+        const serviceId = getSelectedServiceId();
+        if (!serviceId) {
+            showAlert("Please choose a service first.", "warning");
+            return;
+        }
+
         const assets = buildAssetSelectionString();
         if (!assets) {
-            showAlert("Please select at least one available equipment item first.", "warning");
+            showAlert("No bookable equipment is linked to the selected service right now.", "warning");
             return;
         }
 
         // Show loading
         showLoadingPopup();
 
-        fetch(`/api/bookings/day-with-assets/${LAB_ID}/${dateStr}?assets=${encodeURIComponent(assets)}`)
+        fetch(`/api/bookings/day-with-assets/${LAB_ID}/${dateStr}?service_id=${encodeURIComponent(serviceId)}&assets=${encodeURIComponent(assets)}`)
             .then(r => r.json())
             .then(data => {
                 showSlotPopup(dateStr, data.slots || []);
@@ -618,7 +899,7 @@ document.addEventListener("DOMContentLoaded", function () {
             <div class="slot-popup">
                 <div class="slot-header mb-4">
                     <h4 class="fw-bold text-primary mb-1">${formattedDate}</h4>
-                    <p class="text-muted mb-0">Available timeslots for selected equipment</p>
+                    <p class="text-muted mb-0">Available timeslots for the selected service and linked equipment</p>
                 </div>
         `;
 
@@ -811,15 +1092,23 @@ document.addEventListener("DOMContentLoaded", function () {
         const dateField      = document.getElementById("selectedDate");
         const startField     = document.getElementById("startTime");
         const endField       = document.getElementById("endTime");
+        const serviceId      = getSelectedServiceId();
+
+        if (!serviceId) {
+            showAlert("Please choose a service before booking a slot.", "warning");
+            return;
+        }
 
         const assetsString = buildAssetSelectionString();
         if (!assetsString) {
-            showAlert("Please select at least one available equipment item before booking.", "warning");
+            showAlert("No bookable equipment is linked to the selected service right now.", "warning");
             return;
         }
 
         if (hiddenAssetField) hiddenAssetField.value = assetsString;
         if (hiddenLabIdInput) hiddenLabIdInput.value = LAB_ID;
+        if (hiddenServiceInput) hiddenServiceInput.value = serviceId;
+        syncServiceContextToModal();
         syncAssetSelectionToModal();
 
         if (dateField)  dateField.value  = dateStr;
@@ -850,14 +1139,22 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             // UTHM: normal booking wizard flow
+            const serviceId = getSelectedServiceId();
+            if (!serviceId) {
+                showAlert("Please choose a service before proceeding.", "warning");
+                return;
+            }
+
             const assetsString = buildAssetSelectionString();
             if (!assetsString) {
-                showAlert("Please select at least one available equipment item before proceeding.", "warning");
+                showAlert("No bookable equipment is linked to the selected service right now.", "warning");
                 return;
             }
 
             if (hiddenAssetField) hiddenAssetField.value = assetsString;
             if (hiddenLabIdInput) hiddenLabIdInput.value = LAB_ID;
+            if (hiddenServiceInput) hiddenServiceInput.value = serviceId;
+            syncServiceContextToModal();
             syncAssetSelectionToModal();
 
             if (window.resetBookingWizard) {
@@ -876,11 +1173,18 @@ document.addEventListener("DOMContentLoaded", function () {
         const assetId = assetParam.replace(/[^0-9]/g, "");
         if (!assetId) return false;
 
+        const row = document.querySelector(`tr[data-asset-id="${assetId}"]`);
         const checkbox = document.querySelector(`.asset-checkbox[data-asset-id="${assetId}"]`);
         const qtyInput = document.querySelector(`.asset-qty[data-asset-id="${assetId}"]`);
 
         if (!checkbox) {
             showAlert("Selected equipment is not listed in this laboratory.", "warning");
+            return false;
+        }
+
+        const rowServiceId = row?.dataset.serviceId || "";
+        if (!rowServiceId || !selectServiceById(rowServiceId)) {
+            showAlert("Selected equipment is not linked to a bookable service.", "warning");
             return false;
         }
 
@@ -919,6 +1223,8 @@ document.addEventListener("DOMContentLoaded", function () {
         const assetsString = buildAssetSelectionString();
         if (hiddenAssetField) hiddenAssetField.value = assetsString;
         if (hiddenLabIdInput) hiddenLabIdInput.value = LAB_ID;
+        if (hiddenServiceInput) hiddenServiceInput.value = rowServiceId;
+        syncServiceContextToModal();
 
         if (window.resetBookingWizard) {
             window.resetBookingWizard();
@@ -932,6 +1238,13 @@ document.addEventListener("DOMContentLoaded", function () {
     const qrApplied = applyQrSelectionFromQuery();
     // Initial calendar load
     if (!qrApplied) {
+        if (serviceButtons.length === 1) {
+            selectService(buildServiceInfo(serviceButtons[0]));
+        } else {
+            filterAssetsForService("");
+            updateSelectedServiceSummary(0, 0);
+            syncServiceContextToModal();
+        }
         refreshCalendar();
         updateBookingButton();
     }

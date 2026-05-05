@@ -19,6 +19,7 @@ class BookingModel extends Model
     protected $allowedFields = [
         'user_id',
         'lab_id',
+        'service_id',
         'user_type',
         'faculty_id',
         'approval_flow',

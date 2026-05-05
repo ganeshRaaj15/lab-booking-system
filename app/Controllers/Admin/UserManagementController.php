@@ -4,6 +4,7 @@ namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
 use App\Libraries\AccountRecoveryService;
+use App\Libraries\UserReclaimService;
 use App\Models\FacultyModel;
 use CodeIgniter\Database\BaseConnection;
 use CodeIgniter\Shield\Entities\User;
@@ -14,6 +15,7 @@ class UserManagementController extends BaseController
     protected $users;
     protected BaseConnection $db;
     protected FacultyModel $faculties;
+    protected UserReclaimService $userReclaimService;
     protected array $allowedRoles = ['student', 'staff', 'external', 'technician', 'pic', 'manager', 'admin'];
 
     public function __construct()
@@ -22,11 +24,13 @@ class UserManagementController extends BaseController
         $this->users = model(UserModel::class);
         $this->db = db_connect();
         $this->faculties = new FacultyModel();
+        $this->userReclaimService = new UserReclaimService();
     }
 
     public function index()
     {
         $filters = $this->userFilters();
+        $roleTabs = $this->allowedRoles;
         $allRows = $this->filteredUserRows($filters);
         $totalFiltered = count($allRows);
         $pageCount = max((int) ceil($totalFiltered / $filters['per_page']), 1);
@@ -35,14 +39,16 @@ class UserManagementController extends BaseController
         $userData = array_slice($allRows, $offset, $filters['per_page']);
 
         $stats = [
-            'total' => (int) $this->db->table('users')->countAllResults(),
-            'active' => (int) $this->db->table('users')->where('active', 1)->countAllResults(),
+            'total' => (int) $this->activeUsersTable()->countAllResults(),
+            'active' => (int) $this->activeUsersTable()->where('active', 1)->countAllResults(),
         ];
 
         return view('admin/users/index', [
             'users' => $userData,
             'filters' => array_merge($filters, ['page' => $page]),
             'allRoles' => $this->allowedRoles,
+            'roleTabs' => $roleTabs,
+            'roleTabCounts' => $this->quickRoleCounts($filters, $roleTabs),
             'stats' => $stats,
             'pagination' => [
                 'total' => $totalFiltered,
@@ -135,8 +141,7 @@ class UserManagementController extends BaseController
             return redirect()->back()->withInput()->with('error', 'Student accounts must have a faculty assigned for booking approval routing.');
         }
 
-        $usernameExists = $this->db->table('users')->where('username', $username)->where('id !=', $user->id)->countAllResults();
-        if ($usernameExists > 0) {
+        if (! $this->userReclaimService->usernameAvailable($username, (int) $user->id)) {
             return redirect()->back()->withInput()->with('error', 'Username already exists.');
         }
 
@@ -200,7 +205,7 @@ class UserManagementController extends BaseController
 
         $this->db->table('auth_identities')->where('user_id', $user->id)->delete();
         $this->db->table('auth_groups_users')->where('user_id', $user->id)->delete();
-        $this->users->delete($user->id);
+        $this->users->delete($user->id, true);
 
         return redirect()->to('/admin/users')->with('message', 'User deleted successfully.');
     }
@@ -265,8 +270,7 @@ class UserManagementController extends BaseController
             return redirect()->back()->withInput()->with('error', 'Student accounts must have a faculty assigned for booking approval routing.');
         }
 
-        $existingUser = $this->db->table('users')->where('username', $username)->countAllResults() > 0;
-        if ($existingUser) {
+        if (! $this->userReclaimService->usernameAvailable($username)) {
             return redirect()->back()->withInput()->with('error', 'Username already exists.');
         }
         $emailExists = $this->db->table('auth_identities')->where('LOWER(secret) =', $email)->where('type', 'email_password')->countAllResults() > 0;
@@ -355,6 +359,7 @@ class UserManagementController extends BaseController
             ->select("u.id, u.username, u.full_name, u.phone, u.active, i.secret AS email, GROUP_CONCAT(DISTINCT agu.`group` ORDER BY agu.`group` SEPARATOR ',') AS role_list", false)
             ->join('auth_identities i', "i.user_id = u.id AND i.type = 'email_password'", 'left')
             ->join('auth_groups_users agu', 'agu.user_id = u.id', 'left')
+            ->where('u.deleted_at', null)
             ->groupBy('u.id, u.username, u.full_name, u.phone, u.active, i.secret')
             ->orderBy('u.username', 'ASC');
 
@@ -403,6 +408,28 @@ class UserManagementController extends BaseController
         }, $rows);
     }
 
+    protected function quickRoleCounts(array $filters, array $roles): array
+    {
+        $baseFilters = $filters;
+        $baseFilters['role'] = '';
+        $rows = $this->filteredUserRows($baseFilters);
+
+        $counts = ['all' => count($rows)];
+        foreach ($roles as $role) {
+            $counts[$role] = 0;
+        }
+
+        foreach ($rows as $row) {
+            foreach ($roles as $role) {
+                if (in_array($role, $row['roles'], true)) {
+                    $counts[$role]++;
+                }
+            }
+        }
+
+        return $counts;
+    }
+
     protected function isPicEmailInUse(string $email): bool
     {
         if ($email === '') {
@@ -417,5 +444,10 @@ class UserManagementController extends BaseController
         $reportedCount = $this->db->table('maintenance_records')->where('reported_by', $userId)->countAllResults();
         $assignedCount = $this->db->table('maintenance_records')->where('assigned_technician_id', $userId)->countAllResults();
         return ($bookingCount + $reportedCount + $assignedCount) > 0;
+    }
+
+    protected function activeUsersTable(string $alias = 'users')
+    {
+        return $this->db->table($alias)->where(($alias === 'users' ? 'deleted_at' : $alias . '.deleted_at'), null);
     }
 }

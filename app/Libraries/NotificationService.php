@@ -297,6 +297,9 @@ class NotificationService
         $nextDue = $context['next_due_at'] ?? null;
         $intervalDays = (int) ($context['interval_days'] ?? 0);
         $basis = $context['basis'] ?? '';
+        $riskPercent = (int) ($context['risk_percent'] ?? 0);
+        $decisionLabel = trim((string) ($context['decision_label'] ?? ''));
+        $reasons = $context['reasons'] ?? [];
 
         $dueText = '';
         if ($nextDue instanceof \DateTimeImmutable) {
@@ -324,6 +327,18 @@ class NotificationService
         if ($intervalDays > 0) {
             $months = max((int) round($intervalDays / 30), 1);
             $message .= ' Estimated cycle: ~' . $months . ' month(s) (' . ($basis === 'average' ? 'average' : 'default') . ').';
+        }
+
+        if ($decisionLabel !== '') {
+            $message .= ' Recommended action: ' . $decisionLabel . '.';
+        }
+
+        if ($riskPercent > 0) {
+            $message .= ' Model risk score: ' . $riskPercent . '%.';
+        }
+
+        if (is_array($reasons) && $reasons !== []) {
+            $message .= ' Reason: ' . trim((string) $reasons[0]);
         }
 
         $link = '/technician/maintenance?asset_id=' . $assetId;

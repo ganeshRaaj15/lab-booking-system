@@ -5,6 +5,7 @@ namespace App\Controllers\Technician;
 use App\Controllers\BaseController;
 use App\Libraries\NotificationService;
 use App\Libraries\MaintenanceForecastService;
+use App\Libraries\MaintenancePredictionService;
 use App\Models\AssetModel;
 use App\Models\MaintenanceLogModel;
 use App\Models\MaintenanceRecordModel;
@@ -58,6 +59,7 @@ class MaintenanceController extends BaseController
         if ($assetId > 0) {
             $upcomingForecasts = array_values(array_filter($upcomingForecasts, fn(array $row): bool => (int) ($row['asset_id'] ?? 0) === $assetId));
         }
+        $predictionService = new MaintenancePredictionService();
 
 
         return view('technician/maintenance/index', [
@@ -67,6 +69,7 @@ class MaintenanceController extends BaseController
             'user' => $user,
             'records' => $records,
             'upcomingForecasts' => $upcomingForecasts,
+            'modelSummary' => $predictionService->getModelSummary(),
             'assets' => $this->assetOptions(),
             'filters' => ['status' => $status, 'asset_id' => $assetId, 'scope' => $scope],
             'statusOptions' => array_keys($labels),
@@ -101,6 +104,7 @@ class MaintenanceController extends BaseController
         ];
 
         $record = array_merge($record, $this->prefillMaintenance($assetId));
+        $predictionService = new MaintenancePredictionService();
 
         return view('technician/maintenance/form', [
             'title' => 'Plan Maintenance | FKMP Smart Lab',
@@ -116,6 +120,8 @@ class MaintenanceController extends BaseController
             'statusLabels' => $this->maintenanceModel->workflowLabels(),
             'stageMode' => 'pre',
             'isLocked' => false,
+            'assetPrediction' => $assetId ? $predictionService->predictAsset($assetId) : null,
+            'modelSummary' => $predictionService->getModelSummary(),
         ]);
     }
 
@@ -217,6 +223,7 @@ class MaintenanceController extends BaseController
 
         $isLocked = in_array($record['status'], ['completed', 'cancelled'], true);
         $stageMode = $isLocked ? 'locked' : $record['status'];
+        $predictionService = new MaintenancePredictionService();
 
         return view('technician/maintenance/form', [
             'title' => 'Update Maintenance | FKMP Smart Lab',
@@ -232,6 +239,8 @@ class MaintenanceController extends BaseController
             'statusLabels' => $this->maintenanceModel->workflowLabels(),
             'stageMode' => $stageMode,
             'isLocked' => $isLocked,
+            'assetPrediction' => $predictionService->predictAsset((int) ($record['asset_id'] ?? 0)),
+            'modelSummary' => $predictionService->getModelSummary(),
         ]);
     }
 

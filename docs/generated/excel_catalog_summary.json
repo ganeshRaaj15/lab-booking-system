@@ -1,0 +1,15 @@
+{
+  "workbook_path": "C:\\Users\\User\\Desktop\\20251114 Senarai Tempahan Equipment Makmal to Dr Hamidon.xlsx",
+  "output_directory": "C:\\laragon\\www\\slams\\docs\\generated",
+  "counts": {
+    "normalized_rows": 56,
+    "laboratories": 13,
+    "services": 48,
+    "pics": 13,
+    "continuation_rows": 8,
+    "rows_missing_acceptance_criteria": 11,
+    "rows_missing_equipment_model": 11,
+    "rows_with_unknown_calibration": 31,
+    "orphan_continuation_rows": 0
+  }
+}

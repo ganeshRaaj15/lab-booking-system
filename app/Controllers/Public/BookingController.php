@@ -8,6 +8,7 @@ use App\Models\BookingModel;
 use App\Models\BookingApplicantModel;
 use App\Models\BookingAssetModel;
 use App\Models\AssetModel;
+use App\Models\LabServiceModel;
 use CodeIgniter\HTTP\ResponseInterface;
 use Config\Services;
 
@@ -91,6 +92,63 @@ class BookingController extends BaseController
         return $result;
     }
 
+    protected function findLabService(int $labId, int $serviceId): ?array
+    {
+        if ($labId <= 0 || $serviceId <= 0) {
+            return null;
+        }
+
+        return (new LabServiceModel())
+            ->where('id', $serviceId)
+            ->where('laboratory_id', $labId)
+            ->where('is_active', 1)
+            ->first();
+    }
+
+    protected function defaultServiceAssets(int $labId, int $serviceId): array
+    {
+        if ($this->findLabService($labId, $serviceId) === null) {
+            return [];
+        }
+
+        $rows = (new AssetModel())
+            ->select('id')
+            ->where('lab_id', $labId)
+            ->where('lab_service_id', $serviceId)
+            ->orderBy('id', 'ASC')
+            ->findAll();
+
+        $selected = [];
+        foreach ($rows as $row) {
+            $selected[(int) $row['id']] = 1;
+        }
+
+        return $selected;
+    }
+
+    protected function resolveSelectedAssets(int $labId, int $serviceId, ?string $assetsRaw): array
+    {
+        $parsed = $this->parseAssetsString($assetsRaw);
+
+        if ($serviceId <= 0) {
+            return $parsed;
+        }
+
+        $serviceDefaults = $this->defaultServiceAssets($labId, $serviceId);
+        if ($serviceDefaults === []) {
+            return [];
+        }
+
+        if ($parsed === []) {
+            return $serviceDefaults;
+        }
+
+        $allowedIds = array_fill_keys(array_keys($serviceDefaults), true);
+        $filtered = array_intersect_key($parsed, $allowedIds);
+
+        return $filtered === [] ? $serviceDefaults : $filtered;
+    }
+
     /*
     |--------------------------------------------------------------------------
     | ASSET AVAILABILITY ENGINE
@@ -162,7 +220,8 @@ class BookingController extends BaseController
     */
     public function calendarWithAssets(int $labId): ResponseInterface
     {
-        $selected = $this->parseAssetsString($this->request->getGet('assets'));
+        $serviceId = (int) $this->request->getGet('service_id');
+        $selected = $this->resolveSelectedAssets($labId, $serviceId, (string) $this->request->getGet('assets'));
 
         return $this->response->setJSON([
             'unavailableDates' => $this->calendarAssetsInternal($labId, $selected)
@@ -231,7 +290,8 @@ class BookingController extends BaseController
     */
     public function dayWithAssets(int $labId, string $date): ResponseInterface
     {
-        $selected = $this->parseAssetsString($this->request->getGet('assets'));
+        $serviceId = (int) $this->request->getGet('service_id');
+        $selected = $this->resolveSelectedAssets($labId, $serviceId, (string) $this->request->getGet('assets'));
 
         return $this->response->setJSON([
             'slots' => $this->dayAssetsInternal($labId, $date, $selected)
@@ -312,17 +372,25 @@ class BookingController extends BaseController
     public function checkSlot(): ResponseInterface
     {
         $labId     = (int) $this->request->getPost('lab_id');
+        $serviceId = (int) $this->request->getPost('service_id');
         $date      = $this->request->getPost('date');
         $startTime = $this->request->getPost('start_time');
         $endTime   = $this->request->getPost('end_time');
         $assetsRaw = $this->request->getPost('asset_selection');
 
-        $selected = $this->parseAssetsString($assetsRaw);
+        if ($serviceId <= 0 || $this->findLabService($labId, $serviceId) === null) {
+            return $this->response->setJSON([
+                'conflict' => true,
+                'reason' => 'Please choose a valid laboratory service before checking availability.'
+            ]);
+        }
+
+        $selected = $this->resolveSelectedAssets($labId, $serviceId, is_string($assetsRaw) ? $assetsRaw : null);
 
         if (!$labId || !$date || !$startTime || !$endTime || empty($selected)) {
             return $this->response->setJSON([
                 'conflict' => true,
-                'reason' => 'Missing data or no assets selected.'
+                'reason' => 'Missing data or no linked equipment is available for the selected service.'
             ]);
         }
 
@@ -375,6 +443,7 @@ class BookingController extends BaseController
     {
         $rules = [
             'lab_id'     => 'required|integer',
+            'service_id' => 'required|integer',
             'date'       => 'required|valid_date[Y-m-d]',
             'start_time' => 'required',
             'end_time'   => 'required',
@@ -410,6 +479,7 @@ class BookingController extends BaseController
 
         $userType = 'UTHM';
         $labId = (int) $this->request->getPost('lab_id');
+        $serviceId = (int) $this->request->getPost('service_id');
         $date = (string) $this->request->getPost('date');
         $startTime = $this->normalizeTime((string) $this->request->getPost('start_time'));
         $endTime = $this->normalizeTime((string) $this->request->getPost('end_time'));
@@ -417,6 +487,14 @@ class BookingController extends BaseController
         $supervisorName = trim((string) $this->request->getPost('supervisor_name'));
         $supervisorEmail = trim((string) $this->request->getPost('supervisor_email'));
         $supervisorPhone = trim((string) $this->request->getPost('supervisor_phone'));
+
+        $service = $this->findLabService($labId, $serviceId);
+        if ($service === null) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Please choose a valid service for this laboratory.'
+            ]);
+        }
 
         if ($startTime >= $endTime) {
             return $this->response->setJSON([
@@ -484,12 +562,16 @@ class BookingController extends BaseController
         }
 
         $approvalFlow = ($facultyId === 3) ? 'FKMP_APPROVAL' : 'FACULTY_APPROVAL';
-        $selectedAssets = $this->parseAssetsString($this->request->getPost('asset_selection'));
+        $selectedAssets = $this->resolveSelectedAssets(
+            $labId,
+            $serviceId,
+            (string) $this->request->getPost('asset_selection')
+        );
 
         if (empty($selectedAssets)) {
             return $this->response->setJSON([
                 'status' => 'error',
-                'message' => 'Please select at least one asset before booking.'
+                'message' => 'No linked equipment is available for the selected service.'
             ]);
         }
 
@@ -551,6 +633,7 @@ class BookingController extends BaseController
             $bookingId = $bookingModel->insert([
                 'user_id'          => auth()->id(),
                 'lab_id'           => $labId,
+                'service_id'       => $serviceId,
                 'user_type'        => $userType,
                 'faculty_id'       => $facultyId,
                 'approval_flow'    => $approvalFlow,
