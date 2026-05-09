@@ -75,6 +75,7 @@
 
                 <div class="row g-4">
                     <?php foreach ($settings as $key => $row): ?>
+                        <?php if ($key === 'booking_slots') continue; ?>
                         <div class="col-md-6">
                             <div class="form-group-glass">
                                 <label for="<?= esc($key) ?>">

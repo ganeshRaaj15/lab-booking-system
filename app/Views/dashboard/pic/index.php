@@ -21,10 +21,13 @@
         <a href="/dashboard/report-issue" class="btn btn-outline-danger btn-sm px-3 shadow-sm">
             <i class="bi bi-tools me-1"></i> Report Asset Issue
         </a>
-        <a href="/dashboard/reports/pdf" class="btn btn-outline-primary btn-sm px-3 shadow-sm">
+        <a href="/dashboard/analytics" class="btn btn-outline-secondary btn-sm px-3 shadow-sm">
+            <i class="bi bi-graph-up-arrow me-1"></i> Analytics Hub
+        </a>
+        <a href="/dashboard/reports/pdf?type=summary" class="btn btn-outline-primary btn-sm px-3 shadow-sm">
             <i class="bi bi-file-earmark-pdf me-1"></i> Download Report
         </a>
-        <a href="/dashboard/reports/csv" class="btn btn-outline-success btn-sm px-3 shadow-sm">
+        <a href="/dashboard/reports/csv?type=summary" class="btn btn-outline-success btn-sm px-3 shadow-sm">
             <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
         </a>
     </div>
@@ -367,11 +370,7 @@ function viewBookingDetails(id) {
 function displayBookingDetails(booking) {
     const container = document.getElementById('bookingDetails');
     
-    // Determine approval flow
     const isFkmp = booking.is_fkmp == 1;
-    const approvalFlow = isFkmp ? 
-        '<span class="badge bg-success">FKMP Student (PIC Final Approval)</span>' :
-        '<span class="badge bg-info">Non-FKMP Student (Requires Manager Approval)</span>';
     
     // Assets list
     let assetsHtml = '<p class="text-muted mb-0">No assets selected</p>';
@@ -430,7 +429,6 @@ function displayBookingDetails(booking) {
                         <p class="mb-2"><strong>Date:</strong> ${booking.date}</p>
                         <p class="mb-2"><strong>Time:</strong> ${booking.start_time} - ${booking.end_time}</p>
                         <p class="mb-2"><strong>Faculty:</strong> ${booking.faculty_name} ${isFkmp ? '(FKMP)' : ''}</p>
-                        <p class="mb-2"><strong>Approval Flow:</strong> ${approvalFlow}</p>
                     </div>
                 </div>
             </div>

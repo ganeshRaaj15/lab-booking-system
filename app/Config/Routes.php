@@ -315,8 +315,12 @@ $routes->get('dashboard', [DashboardController::class, 'index'], ['filter' => 's
 $routes->group('dashboard', ['filter' => 'session'], function ($routes) {
     $routes->get('profile', [ProfileController::class, 'index']);
     $routes->post('profile/update', [ProfileController::class, 'update']);
+    $routes->get('analytics', [ReportController::class, 'analytics'], ['filter' => 'group:pic,manager,admin']);
     $routes->get('reports/pdf', [ReportController::class, 'download'], ['filter' => 'group:pic,manager,admin']);
     $routes->get('reports/csv', [ReportController::class, 'downloadCsv'], ['filter' => 'group:pic,manager,admin']);
+    $routes->get('reports/export/pdf/(:segment)', [ReportController::class, 'exportPdf/$1'], ['filter' => 'group:pic,manager,admin']);
+    $routes->get('reports/export/csv/(:segment)', [ReportController::class, 'exportCsv/$1'], ['filter' => 'group:pic,manager,admin']);
+    $routes->get('reports/(:segment)', [ReportController::class, 'show/$1'], ['filter' => 'group:pic,manager,admin']);
     $routes->get('notifications', [NotificationController::class, 'index']);
     $routes->post('notifications/read/(:num)', [NotificationController::class, 'markRead/$1']);
     $routes->post('notifications/mark-all-read', [NotificationController::class, 'markAllRead']);
@@ -375,6 +379,12 @@ $routes->group('booking', ['filter' => 'session'], function ($routes) {
 // ====================================================================
 
 $routes->group('admin', ['filter' => 'group:admin'], function ($routes) {
+    $routes->get('analytics', [ReportController::class, 'analytics']);
+    $routes->get('reports/pdf', [ReportController::class, 'download']);
+    $routes->get('reports/csv', [ReportController::class, 'downloadCsv']);
+    $routes->get('reports/export/pdf/(:segment)', [ReportController::class, 'exportPdf/$1']);
+    $routes->get('reports/export/csv/(:segment)', [ReportController::class, 'exportCsv/$1']);
+    $routes->get('reports/(:segment)', [ReportController::class, 'show/$1']);
 
     // Settings
     $routes->get('settings', [SettingsController::class, 'index']);

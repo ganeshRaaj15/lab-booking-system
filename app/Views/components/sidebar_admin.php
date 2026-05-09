@@ -13,6 +13,10 @@
         <i class="bi bi-briefcase"></i> Admin Panel
     </a>
 
+    <a href="/admin/analytics" class="sidebar-link <?= url_is('admin/analytics') || url_is('admin/reports*') ? 'active' : '' ?>">
+        <i class="bi bi-graph-up-arrow"></i> Analytics & Reports
+    </a>
+
     <a href="/admin/labs" class="sidebar-link <?= url_is('admin/labs*') ? 'active' : '' ?>">
         <i class="bi bi-building"></i> Manage Labs
     </a>

@@ -446,9 +446,57 @@ document.addEventListener("DOMContentLoaded", function () {
     const hiddenServiceInput = document.getElementById("service_id_modal");
     const selectedServiceSummary = document.getElementById("selectedServiceSummary");
     const serviceButtons = document.querySelectorAll(".select-service-btn");
-    const todayDate = new Date();
-    todayDate.setHours(0, 0, 0, 0);
+    const DEVICE_CLOCK_REFRESH_MS = 30000;
     let selectedService = null;
+
+    function twoDigits(value) {
+        return String(value).padStart(2, "0");
+    }
+
+    function getLocalNow() {
+        return new Date();
+    }
+
+    function getLocalTodayStart(now = getLocalNow()) {
+        const next = new Date(now);
+        next.setHours(0, 0, 0, 0);
+        return next;
+    }
+
+    function parseLocalDate(dateStr) {
+        const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec((dateStr || "").trim());
+        if (!match) return null;
+
+        return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 0, 0, 0, 0);
+    }
+
+    function parseLocalDateTime(dateStr, timeStr) {
+        const dateMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec((dateStr || "").trim());
+        const timeMatch = /^(\d{2}):(\d{2})$/.exec((timeStr || "").trim());
+        if (!dateMatch || !timeMatch) return null;
+
+        return new Date(
+            Number(dateMatch[1]),
+            Number(dateMatch[2]) - 1,
+            Number(dateMatch[3]),
+            Number(timeMatch[1]),
+            Number(timeMatch[2]),
+            0,
+            0
+        );
+    }
+
+    function isPastBookingDate(dateStr, now = getLocalNow()) {
+        const date = parseLocalDate(dateStr);
+        return !!date && date < getLocalTodayStart(now);
+    }
+
+    function isPastBookingSlot(dateStr, endTime, now = getLocalNow()) {
+        if (isPastBookingDate(dateStr, now)) return true;
+
+        const endAt = parseLocalDateTime(dateStr, endTime);
+        return !!endAt && endAt <= now;
+    }
 
     // -------------------------------
     // Check if equipment is available based on status
@@ -780,15 +828,14 @@ document.addEventListener("DOMContentLoaded", function () {
             day: "Day"
         },
         dateClick: (info) => {
-            const clickedDate = new Date(info.dateStr + "T00:00:00");
-            if (clickedDate < todayDate) {
+            if (isPastBookingDate(info.dateStr)) {
                 return;
             }
             loadDaySlots(info.dateStr);
         },
         dayCellClassNames: (info) => {
             const cellDate = new Date(info.date.getFullYear(), info.date.getMonth(), info.date.getDate());
-            return cellDate < todayDate ? ["fc-day-past-disabled"] : [];
+            return cellDate < getLocalTodayStart() ? ["fc-day-past-disabled"] : [];
         },
         eventDidMount: (info) => {
             // Add tooltip for events
@@ -859,6 +906,11 @@ document.addEventListener("DOMContentLoaded", function () {
     // Load day slots for clicked date
     // -------------------------------
     function loadDaySlots(dateStr) {
+        if (isPastBookingDate(dateStr)) {
+            showAlert("That date has already passed on this device. Please choose a current or future date.", "warning");
+            return;
+        }
+
         const serviceId = getSelectedServiceId();
         if (!serviceId) {
             showAlert("Please choose a service first.", "warning");
@@ -888,11 +940,23 @@ document.addEventListener("DOMContentLoaded", function () {
     // Timeslot popup - Enhanced Design
     // -------------------------------
     function showSlotPopup(dateStr, slots) {
-        const formattedDate = new Date(dateStr).toLocaleDateString('en-US', {
+        const popupDate = parseLocalDate(dateStr) || new Date(dateStr + "T00:00:00");
+        const formattedDate = popupDate.toLocaleDateString('en-US', {
             weekday: 'long',
             year: 'numeric',
             month: 'long',
             day: 'numeric'
+        });
+        const normalizedSlots = (slots || []).map((slot) => {
+            if (!isPastBookingSlot(dateStr, slot.end)) {
+                return slot;
+            }
+
+            return {
+                ...slot,
+                can_book: false,
+                reason: 'Slot is already in the past.',
+            };
         });
 
         let html = `
@@ -903,7 +967,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 </div>
         `;
 
-        if (!slots.length) {
+        if (!normalizedSlots.length) {
             html += `
                 <div class="no-slots text-center py-4">
                     <i class="bi bi-calendar-x text-primary fs-1 mb-3"></i>
@@ -912,7 +976,7 @@ document.addEventListener("DOMContentLoaded", function () {
             `;
         }
 
-        slots.forEach((slot, index) => {
+        normalizedSlots.forEach((slot, index) => {
             const colorClass = slot.can_book ? "slot-available" : "slot-unavailable";
             const statusText = slot.can_book ? "Available" : "Unavailable";
             const statusIcon = slot.can_book ? "bi-check-circle" : "bi-x-circle";
@@ -1084,6 +1148,11 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
+        if (isPastBookingSlot(dateStr, end)) {
+            showAlert("This slot is already in the past on this device. Please choose another time.", "warning");
+            return;
+        }
+
         if (window.currentSlotModal?.instance) {
             window.currentSlotModal.instance.hide();
         }
@@ -1236,6 +1305,11 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     const qrApplied = applyQrSelectionFromQuery();
+    window.setInterval(() => {
+        if (!document.hidden) {
+            calendar.render();
+        }
+    }, DEVICE_CLOCK_REFRESH_MS);
     // Initial calendar load
     if (!qrApplied) {
         if (serviceButtons.length === 1) {

@@ -333,8 +333,62 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     const widths = {1:33, 2:66, 3:100};
+    const DEVICE_CLOCK_REFRESH_MS = 30000;
     let slotConflict = null;
     let currentServiceContext = null;
+
+    function twoDigits(value) {
+        return String(value).padStart(2, "0");
+    }
+
+    function getLocalNow() {
+        return new Date();
+    }
+
+    function getLocalTodayStart(now = getLocalNow()) {
+        const next = new Date(now);
+        next.setHours(0, 0, 0, 0);
+        return next;
+    }
+
+    function toLocalDateString(date) {
+        return `${date.getFullYear()}-${twoDigits(date.getMonth() + 1)}-${twoDigits(date.getDate())}`;
+    }
+
+    function parseLocalDate(dateStr) {
+        const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec((dateStr || "").trim());
+        if (!match) return null;
+
+        return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 0, 0, 0, 0);
+    }
+
+    function parseLocalDateTime(dateStr, timeStr) {
+        const dateMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec((dateStr || "").trim());
+        const timeMatch = /^(\d{2}):(\d{2})$/.exec((timeStr || "").trim());
+        if (!dateMatch || !timeMatch) return null;
+
+        return new Date(
+            Number(dateMatch[1]),
+            Number(dateMatch[2]) - 1,
+            Number(dateMatch[3]),
+            Number(timeMatch[1]),
+            Number(timeMatch[2]),
+            0,
+            0
+        );
+    }
+
+    function isPastBookingDate(dateStr, now = getLocalNow()) {
+        const date = parseLocalDate(dateStr);
+        return !!date && date < getLocalTodayStart(now);
+    }
+
+    function isPastBookingSlot(dateStr, endTime, now = getLocalNow()) {
+        if (isPastBookingDate(dateStr, now)) return true;
+
+        const endAt = parseLocalDateTime(dateStr, endTime);
+        return !!endAt && endAt <= now;
+    }
 
     function shouldShowRecommendations() {
         return (!dateField.value && !startField.value && !endField.value);
@@ -399,12 +453,40 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function formatDateLabel(dateStr) {
-        const d = new Date(dateStr + "T00:00:00");
+        const d = parseLocalDate(dateStr);
+        if (!d) return dateStr;
         return d.toLocaleDateString("en-US", {
             weekday: "short",
             month: "short",
             day: "numeric"
         });
+    }
+
+    function ensureCurrentSlotSelectionIsValid() {
+        if (!dateField?.value) {
+            return true;
+        }
+
+        if (isPastBookingDate(dateField.value)) {
+            dateField.value = "";
+            startField.value = "";
+            endField.value = "";
+            slotConflict = true;
+            renderConflictWarning("Selected booking date has already passed on this device. Please choose a new slot.");
+            refreshRecommendedSlots();
+            return false;
+        }
+
+        if (startField.value && endField.value && isPastBookingSlot(dateField.value, endField.value)) {
+            startField.value = "";
+            endField.value = "";
+            slotConflict = true;
+            renderConflictWarning("Selected slot has already ended on this device. Please choose another time.");
+            refreshRecommendedSlots();
+            return false;
+        }
+
+        return true;
     }
 
     async function checkSlotConflict() {
@@ -425,9 +507,15 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (!labId || !dateField.value || !startField.value || !endField.value) {
-            slotConflict = null;
-            renderConflictWarning("");
-            return true;
+            if (slotConflict !== true) {
+                slotConflict = null;
+                renderConflictWarning("");
+            }
+            return slotConflict !== true;
+        }
+
+        if (!ensureCurrentSlotSelectionIsValid()) {
+            return false;
         }
 
         const fd = new FormData();
@@ -490,19 +578,19 @@ document.addEventListener("DOMContentLoaded", () => {
         const results = [];
         const maxDays = 14;
         const limit = 3;
-        const today = new Date();
+        const today = getLocalNow();
 
         for (let i = 0; i < maxDays && results.length < limit; i++) {
             const d = new Date(today);
             d.setDate(today.getDate() + i);
-            const dateStr = d.toISOString().slice(0, 10);
+            const dateStr = toLocalDateString(d);
 
             try {
                 const res = await fetch(`/api/bookings/day-with-assets/${labId}/${dateStr}?service_id=${encodeURIComponent(serviceId)}&assets=${encodeURIComponent(assetString)}`);
                 const data = await res.json();
                 const slots = data.slots || [];
                 slots.forEach(slot => {
-                    if (slot.can_book && results.length < limit) {
+                    if (slot.can_book && !isPastBookingSlot(dateStr, slot.end) && results.length < limit) {
                         results.push({
                             date: dateStr,
                             start: slot.start,
@@ -737,8 +825,11 @@ document.addEventListener("DOMContentLoaded", () => {
     [dateField, startField, endField].forEach(field => {
         if (!field) return;
         field.addEventListener("change", () => {
+            const isCurrentSelectionValid = ensureCurrentSlotSelectionIsValid();
             refreshRecommendedSlots();
-            checkSlotConflict();
+            if (isCurrentSelectionValid) {
+                checkSlotConflict();
+            }
         });
     });
 
@@ -751,14 +842,37 @@ document.addEventListener("DOMContentLoaded", () => {
             startField.value = btn.dataset.start || "";
             endField.value = btn.dataset.end || "";
 
+            const isCurrentSelectionValid = ensureCurrentSlotSelectionIsValid();
             refreshRecommendedSlots();
-            checkSlotConflict();
+            if (isCurrentSelectionValid) {
+                checkSlotConflict();
+            }
         });
     }
 
     window.addEventListener("assetSelectionUpdated", () => {
+        const isCurrentSelectionValid = ensureCurrentSlotSelectionIsValid();
         refreshRecommendedSlots();
-        checkSlotConflict();
+        if (isCurrentSelectionValid) {
+            checkSlotConflict();
+        }
+    });
+
+    const deviceClockInterval = window.setInterval(() => {
+        const modalIsOpen = document.getElementById("bookingModal")?.classList.contains("show");
+        if (!modalIsOpen || currentStep !== 2) {
+            return;
+        }
+
+        const isCurrentSelectionValid = ensureCurrentSlotSelectionIsValid();
+        refreshRecommendedSlots();
+        if (isCurrentSelectionValid) {
+            checkSlotConflict();
+        }
+    }, DEVICE_CLOCK_REFRESH_MS);
+
+    window.addEventListener("beforeunload", () => {
+        window.clearInterval(deviceClockInterval);
     });
 
 

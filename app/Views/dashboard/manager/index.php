@@ -6,12 +6,17 @@
         <h2 class="fw-bold text-primary mb-0">Lab Manager Dashboard</h2>
         <p class="text-muted small">Comprehensive overview and management tools for all laboratories.</p>
     </div>
-    <a href="/dashboard/reports/pdf" class="btn btn-outline-primary btn-sm">
-        <i class="bi bi-file-earmark-pdf me-1"></i> Download Report
-    </a>
-    <a href="/dashboard/reports/csv" class="btn btn-outline-success btn-sm">
-        <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
-    </a>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="/dashboard/analytics" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-graph-up-arrow me-1"></i> Analytics Hub
+        </a>
+        <a href="/dashboard/reports/pdf?type=summary" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-file-earmark-pdf me-1"></i> Download Report
+        </a>
+        <a href="/dashboard/reports/csv?type=summary" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
+        </a>
+    </div>
 </div>
 
 <!-- QUICK STATS CARDS -->

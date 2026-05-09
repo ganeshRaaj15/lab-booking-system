@@ -238,7 +238,8 @@ class BookingController extends BaseController
         $slotDefs = $this->getSlotDefinitions();
 
         $dates = $db->table('bookings')
-            ->select('DISTINCT date')
+            ->select('date')
+            ->distinct()
             ->where('lab_id', $labId)
             ->where('date >=', $today)
             ->whereIn('status', ['PENDING', 'APPROVED'])
