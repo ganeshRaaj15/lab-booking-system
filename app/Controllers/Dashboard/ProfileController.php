@@ -114,6 +114,10 @@ class ProfileController extends BaseController
         $photoPath = null;
         $photoFile = $this->request->getFile('profile_photo');
 
+        if ($photoFile && $photoFile->getError() !== UPLOAD_ERR_NO_FILE && ! $photoFile->isValid()) {
+            return redirect()->back()->withInput()->with('errors', [$photoFile->getErrorString()]);
+        }
+
         if ($photoFile && $photoFile->isValid() && ! $photoFile->hasMoved()) {
             $allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
             if (! in_array($photoFile->getMimeType(), $allowedTypes, true)) {
