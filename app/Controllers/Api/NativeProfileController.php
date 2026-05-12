@@ -84,12 +84,15 @@ class NativeProfileController extends BaseController
         ];
 
         if (! $this->validateData($payload, $rules)) {
+            $errors = $this->validator->getErrors();
+            $firstError = is_array($errors) && $errors !== [] ? (string) reset($errors) : '';
+
             return $this->response
                 ->setStatusCode(422)
                 ->setJSON([
                     'status' => 'error',
-                    'message' => 'Invalid profile update payload.',
-                    'errors' => $this->validator->getErrors(),
+                    'message' => $firstError !== '' ? $firstError : 'Invalid profile update payload.',
+                    'errors' => $errors,
                 ]);
         }
 
