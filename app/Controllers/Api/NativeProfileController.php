@@ -6,6 +6,7 @@ use App\Controllers\BaseController;
 use App\Libraries\NativeUserSerializer;
 use App\Models\FacultyModel;
 use CodeIgniter\Shield\Entities\User;
+use Throwable;
 
 class NativeProfileController extends BaseController
 {
@@ -127,37 +128,11 @@ class NativeProfileController extends BaseController
                 ]);
         }
 
-        $photoPath = null;
-        $photoFile = $this->request->getFile('profile_photo');
-        if ($photoFile && $photoFile->getError() !== UPLOAD_ERR_NO_FILE && ! $photoFile->isValid()) {
-            return $this->response
-                ->setStatusCode(422)
-                ->setJSON([
-                    'status' => 'error',
-                    'message' => $photoFile->getErrorString(),
-                ]);
+        $photoUpload = $this->handleProfilePhotoUpload();
+        if (isset($photoUpload['response'])) {
+            return $photoUpload['response'];
         }
-
-        if ($photoFile && $photoFile->isValid() && ! $photoFile->hasMoved()) {
-            $allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-            if (! in_array($photoFile->getMimeType(), $allowedTypes, true)) {
-                return $this->response
-                    ->setStatusCode(422)
-                    ->setJSON([
-                        'status' => 'error',
-                        'message' => 'Profile photo must be a JPG, PNG, or WEBP image.',
-                    ]);
-            }
-
-            $destination = FCPATH . 'images/users';
-            if (! is_dir($destination)) {
-                mkdir($destination, 0755, true);
-            }
-
-            $newName = $photoFile->getRandomName();
-            $photoFile->move($destination, $newName);
-            $photoPath = 'images/users/' . $newName;
-        }
+        $photoPath = $photoUpload['path'];
 
         $updateData = [
             'username' => $username,
@@ -219,5 +194,100 @@ class NativeProfileController extends BaseController
         $post = $this->request->getPost();
 
         return is_array($post) ? $post : [];
+    }
+
+    /**
+     * @return array{path: string|null, response?: \CodeIgniter\HTTP\ResponseInterface}
+     */
+    protected function handleProfilePhotoUpload(): array
+    {
+        $photoFile = $this->request->getFile('profile_photo');
+        if (! $photoFile || $photoFile->getError() === UPLOAD_ERR_NO_FILE) {
+            return ['path' => null];
+        }
+
+        if (! $photoFile->isValid()) {
+            return [
+                'path' => null,
+                'response' => $this->response
+                    ->setStatusCode(422)
+                    ->setJSON([
+                        'status' => 'error',
+                        'message' => $photoFile->getErrorString(),
+                    ]),
+            ];
+        }
+
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        if (! in_array($photoFile->getMimeType(), $allowedTypes, true)) {
+            return [
+                'path' => null,
+                'response' => $this->response
+                    ->setStatusCode(422)
+                    ->setJSON([
+                        'status' => 'error',
+                        'message' => 'Profile photo must be a JPG, PNG, or WEBP image.',
+                    ]),
+            ];
+        }
+
+        $destination = rtrim(FCPATH, DIRECTORY_SEPARATOR . '/\\') . DIRECTORY_SEPARATOR . 'images' . DIRECTORY_SEPARATOR . 'users';
+        if (is_file($destination)) {
+            return [
+                'path' => null,
+                'response' => $this->response
+                    ->setStatusCode(500)
+                    ->setJSON([
+                        'status' => 'error',
+                        'message' => 'Profile photo upload path is blocked by a file on the server.',
+                    ]),
+            ];
+        }
+
+        if (! is_dir($destination) && ! @mkdir($destination, 0775, true) && ! is_dir($destination)) {
+            return [
+                'path' => null,
+                'response' => $this->response
+                    ->setStatusCode(500)
+                    ->setJSON([
+                        'status' => 'error',
+                        'message' => 'Profile photo upload directory could not be created on the server.',
+                    ]),
+            ];
+        }
+
+        if (! is_writable($destination)) {
+            @chmod($destination, 0775);
+        }
+
+        if (! is_writable($destination)) {
+            return [
+                'path' => null,
+                'response' => $this->response
+                    ->setStatusCode(500)
+                    ->setJSON([
+                        'status' => 'error',
+                        'message' => 'Profile photo upload directory is not writable on the server.',
+                    ]),
+            ];
+        }
+
+        $newName = $photoFile->getRandomName();
+
+        try {
+            $photoFile->move($destination, $newName);
+        } catch (Throwable $exception) {
+            return [
+                'path' => null,
+                'response' => $this->response
+                    ->setStatusCode(500)
+                    ->setJSON([
+                        'status' => 'error',
+                        'message' => 'Unable to store the profile photo on the server: ' . $exception->getMessage(),
+                    ]),
+            ];
+        }
+
+        return ['path' => 'images/users/' . $newName];
     }
 }

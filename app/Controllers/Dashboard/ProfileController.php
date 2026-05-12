@@ -6,6 +6,7 @@ use App\Controllers\BaseController;
 use App\Models\FacultyModel;
 use CodeIgniter\HTTP\RedirectResponse;
 use CodeIgniter\Shield\Models\UserModel;
+use Throwable;
 
 class ProfileController extends BaseController
 {
@@ -111,28 +112,11 @@ class ProfileController extends BaseController
             return redirect()->back()->withInput()->with('errors', ['Username already exists.']);
         }
 
-        $photoPath = null;
-        $photoFile = $this->request->getFile('profile_photo');
-
-        if ($photoFile && $photoFile->getError() !== UPLOAD_ERR_NO_FILE && ! $photoFile->isValid()) {
-            return redirect()->back()->withInput()->with('errors', [$photoFile->getErrorString()]);
+        $photoUpload = $this->handleProfilePhotoUpload();
+        if ($photoUpload['error'] !== null) {
+            return redirect()->back()->withInput()->with('errors', [$photoUpload['error']]);
         }
-
-        if ($photoFile && $photoFile->isValid() && ! $photoFile->hasMoved()) {
-            $allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-            if (! in_array($photoFile->getMimeType(), $allowedTypes, true)) {
-                return redirect()->back()->withInput()->with('errors', ['Profile photo must be a JPG, PNG, or WEBP image.']);
-            }
-
-            $destination = FCPATH . 'images/users';
-            if (! is_dir($destination)) {
-                mkdir($destination, 0755, true);
-            }
-
-            $newName = $photoFile->getRandomName();
-            $photoFile->move($destination, $newName);
-            $photoPath = 'images/users/' . $newName;
-        }
+        $photoPath = $photoUpload['path'];
 
         $updateData = [
             'username' => trim($post['username']),
@@ -167,6 +151,53 @@ class ProfileController extends BaseController
         }
 
         return redirect()->to('/dashboard/profile')->with('message', 'Profile updated successfully.');
+    }
+
+    /**
+     * @return array{path: string|null, error: string|null}
+     */
+    protected function handleProfilePhotoUpload(): array
+    {
+        $photoFile = $this->request->getFile('profile_photo');
+        if (! $photoFile || $photoFile->getError() === UPLOAD_ERR_NO_FILE) {
+            return ['path' => null, 'error' => null];
+        }
+
+        if (! $photoFile->isValid()) {
+            return ['path' => null, 'error' => $photoFile->getErrorString()];
+        }
+
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        if (! in_array($photoFile->getMimeType(), $allowedTypes, true)) {
+            return ['path' => null, 'error' => 'Profile photo must be a JPG, PNG, or WEBP image.'];
+        }
+
+        $destination = rtrim(FCPATH, DIRECTORY_SEPARATOR . '/\\') . DIRECTORY_SEPARATOR . 'images' . DIRECTORY_SEPARATOR . 'users';
+        if (is_file($destination)) {
+            return ['path' => null, 'error' => 'Profile photo upload path is blocked by a file on the server.'];
+        }
+
+        if (! is_dir($destination) && ! @mkdir($destination, 0775, true) && ! is_dir($destination)) {
+            return ['path' => null, 'error' => 'Profile photo upload directory could not be created on the server.'];
+        }
+
+        if (! is_writable($destination)) {
+            @chmod($destination, 0775);
+        }
+
+        if (! is_writable($destination)) {
+            return ['path' => null, 'error' => 'Profile photo upload directory is not writable on the server.'];
+        }
+
+        $newName = $photoFile->getRandomName();
+
+        try {
+            $photoFile->move($destination, $newName);
+        } catch (Throwable $exception) {
+            return ['path' => null, 'error' => 'Unable to store the profile photo on the server: ' . $exception->getMessage()];
+        }
+
+        return ['path' => 'images/users/' . $newName, 'error' => null];
     }
 }
 
