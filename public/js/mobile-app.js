@@ -1,11 +1,6 @@
 (function () {
     "use strict";
 
-    var mobileSheetElements = {
-        sheet: null,
-        backdrop: null,
-        toggle: null
-    };
     var serviceWorkerRegistrationPromise = null;
     var pendingServiceWorker = null;
     var shouldReloadForUpdate = false;
@@ -259,75 +254,6 @@
         return !!(window.isSecureContext && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window);
     }
 
-    function openMobileSheet() {
-        if (!mobileSheetElements.sheet || !mobileSheetElements.backdrop) {
-            return;
-        }
-
-        mobileSheetElements.sheet.classList.add("is-open");
-        mobileSheetElements.sheet.setAttribute("aria-hidden", "false");
-        mobileSheetElements.backdrop.hidden = false;
-        document.body.classList.add("slams-mobile-sheet-open");
-        if (mobileSheetElements.toggle) {
-            mobileSheetElements.toggle.setAttribute("aria-expanded", "true");
-        }
-    }
-
-    function closeMobileSheet() {
-        if (!mobileSheetElements.sheet || !mobileSheetElements.backdrop) {
-            return;
-        }
-
-        mobileSheetElements.sheet.classList.remove("is-open");
-        mobileSheetElements.sheet.setAttribute("aria-hidden", "true");
-        mobileSheetElements.backdrop.hidden = true;
-        document.body.classList.remove("slams-mobile-sheet-open");
-        if (mobileSheetElements.toggle) {
-            mobileSheetElements.toggle.setAttribute("aria-expanded", "false");
-        }
-    }
-
-    function setupMobileSheet() {
-        mobileSheetElements.sheet = document.getElementById("slamsMobileActionSheet");
-        mobileSheetElements.backdrop = document.querySelector("[data-mobile-sheet-backdrop]");
-        mobileSheetElements.toggle = document.querySelector("[data-mobile-sheet-toggle]");
-
-        if (!mobileSheetElements.sheet || !mobileSheetElements.backdrop || !mobileSheetElements.toggle) {
-            return;
-        }
-
-        mobileSheetElements.toggle.addEventListener("click", function () {
-            if (mobileSheetElements.sheet.classList.contains("is-open")) {
-                closeMobileSheet();
-                return;
-            }
-
-            openMobileSheet();
-        });
-
-        document.querySelectorAll("[data-mobile-sheet-close]").forEach(function (button) {
-            button.addEventListener("click", closeMobileSheet);
-        });
-
-        mobileSheetElements.backdrop.addEventListener("click", closeMobileSheet);
-
-        document.querySelectorAll("[data-mobile-action-link]").forEach(function (link) {
-            link.addEventListener("click", closeMobileSheet);
-        });
-
-        document.querySelectorAll("[data-mobile-refresh]").forEach(function (button) {
-            button.addEventListener("click", function () {
-                window.location.reload();
-            });
-        });
-
-        document.addEventListener("keydown", function (event) {
-            if (event.key === "Escape") {
-                closeMobileSheet();
-            }
-        });
-    }
-
     function showUpdateBanner(registration) {
         var banner = ensureUpdateBanner();
         if (!banner) {
@@ -531,49 +457,6 @@
         });
     }
 
-    var deferredInstallPrompt = null;
-
-    function ensureInstallButton() {
-        var existing = document.querySelector(".slams-mobile-install");
-        if (existing) {
-            return existing;
-        }
-
-        var button = document.createElement("button");
-        button.type = "button";
-        button.className = "slams-mobile-install";
-        button.innerHTML = '<i class="bi bi-phone"></i><span>Install App</span>';
-        document.body.appendChild(button);
-        return button;
-    }
-
-    window.addEventListener("beforeinstallprompt", function (event) {
-        event.preventDefault();
-        deferredInstallPrompt = event;
-
-        var button = ensureInstallButton();
-        button.classList.add("is-visible");
-        button.addEventListener("click", function () {
-            if (!deferredInstallPrompt) {
-                return;
-            }
-
-            button.classList.remove("is-visible");
-            deferredInstallPrompt.prompt();
-            deferredInstallPrompt.userChoice.finally(function () {
-                deferredInstallPrompt = null;
-            });
-        }, { once: true });
-    });
-
-    window.addEventListener("appinstalled", function () {
-        deferredInstallPrompt = null;
-        var button = document.querySelector(".slams-mobile-install");
-        if (button) {
-            button.classList.remove("is-visible");
-        }
-    });
-
     window.addEventListener("online", function () {
         refreshNetworkStatus();
         updateLastSync(new Date());
@@ -586,7 +469,6 @@
 
     document.addEventListener("DOMContentLoaded", function () {
         readAppConfig();
-        setupMobileSheet();
         setupUpdateButton();
         loadLastSync();
         refreshNetworkStatus();

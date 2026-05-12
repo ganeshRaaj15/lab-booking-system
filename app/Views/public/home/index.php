@@ -57,12 +57,6 @@ $heroPoster = base_url('images/fkmp/FKMP.jpeg');
             </div>
         </div>
     </div>
-    
-        <!-- Campus Info -->
-    <div class="campus-info">
-        <i class="bi bi-camera-video-fill"></i>
-        <span>UTHM Campus Night Aerial Footage</span>
-    </div>
 </section>
 
 

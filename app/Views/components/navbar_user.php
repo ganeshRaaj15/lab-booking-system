@@ -22,9 +22,14 @@ if (function_exists('auth') && auth()->loggedIn()) {
 
         <div class="slams-navbar-app-shell">
             <?= $this->include('components/navbar_app_controls') ?>
-            <button class="navbar-toggler glass-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#userNavbar" aria-controls="userNavbar" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+            <?php if (auth()->loggedIn()): ?>
+                <form action="/logout" method="post" class="d-lg-none">
+                    <?= csrf_field() ?>
+                    <button type="submit" class="slams-navbar-app-btn" aria-label="Logout" title="Logout">
+                        <i class="bi bi-box-arrow-right"></i>
+                    </button>
+                </form>
+            <?php endif; ?>
         </div>
 
         <div class="collapse navbar-collapse" id="userNavbar">
