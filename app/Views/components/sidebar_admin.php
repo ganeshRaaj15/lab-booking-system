@@ -13,10 +13,6 @@
         <i class="bi bi-briefcase"></i> Admin Panel
     </a>
 
-    <a href="/admin/analytics" class="sidebar-link <?= url_is('admin/analytics') || url_is('admin/reports*') ? 'active' : '' ?>">
-        <i class="bi bi-graph-up-arrow"></i> Analytics & Reports
-    </a>
-
     <a href="/admin/labs" class="sidebar-link <?= url_is('admin/labs*') ? 'active' : '' ?>">
         <i class="bi bi-building"></i> Manage Labs
     </a>
@@ -27,6 +23,10 @@
 
     <a href="/admin/users" class="sidebar-link <?= url_is('admin/users*') ? 'active' : '' ?>">
         <i class="bi bi-people"></i> User Management
+    </a>
+
+    <a href="/dashboard/external-requests" class="sidebar-link <?= url_is('dashboard/external-requests*') ? 'active' : '' ?>">
+        <i class="bi bi-clipboard-data"></i> External Requests
     </a>
 
     <a href="/admin/settings" class="sidebar-link <?= url_is('admin/settings') ? 'active' : '' ?>">

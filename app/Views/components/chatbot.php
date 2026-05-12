@@ -51,6 +51,7 @@ $csrfTokenHash = csrf_hash();
     }
 
     const toggle = document.getElementById('chatbotToggle');
+    const navToggle = document.getElementById('chatbotNavToggle');
     const panel = document.getElementById('chatbotPanel');
     const closeBtn = document.getElementById('chatbotClose');
     const form = document.getElementById('chatbotForm');
@@ -61,17 +62,26 @@ $csrfTokenHash = csrf_hash();
     const apiUrl = <?= json_encode(site_url('api/chat')) ?>;
     let csrfTokenName = <?= json_encode($csrfTokenName) ?>;
     let csrfTokenValue = <?= json_encode($csrfTokenHash) ?>;
+    const toggles = [toggle, navToggle].filter(Boolean);
+
+    const syncToggleState = (isOpen) => {
+        toggles.forEach((button) => {
+            button.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            button.setAttribute('aria-label', isOpen ? 'Close chatbot' : 'Open chatbot');
+            button.classList.toggle('is-active', isOpen);
+        });
+    };
 
     const openPanel = () => {
         widget.classList.add('is-open');
-        toggle.setAttribute('aria-expanded', 'true');
+        syncToggleState(true);
         panel.setAttribute('aria-hidden', 'false');
         input.focus();
     };
 
     const closePanel = () => {
         widget.classList.remove('is-open');
-        toggle.setAttribute('aria-expanded', 'false');
+        syncToggleState(false);
         panel.setAttribute('aria-hidden', 'true');
     };
 
@@ -124,12 +134,14 @@ $csrfTokenHash = csrf_hash();
         });
     };
 
-    toggle.addEventListener('click', () => {
-        if (widget.classList.contains('is-open')) {
-            closePanel();
-        } else {
-            openPanel();
-        }
+    toggles.forEach((button) => {
+        button.addEventListener('click', () => {
+            if (widget.classList.contains('is-open')) {
+                closePanel();
+            } else {
+                openPanel();
+            }
+        });
     });
 
     closeBtn.addEventListener('click', closePanel);

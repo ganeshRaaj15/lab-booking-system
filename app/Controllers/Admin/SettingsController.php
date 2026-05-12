@@ -3,9 +3,10 @@
 namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
-use App\Libraries\StudentRoleService;
 use App\Libraries\MaintenanceForecastService;
 use App\Libraries\NotificationService;
+use App\Libraries\StudentRoleService;
+use App\Libraries\WebPushConfiguration;
 use App\Models\SettingsModel;
 
 class SettingsController extends BaseController
@@ -74,7 +75,8 @@ class SettingsController extends BaseController
 
         return view('admin/settings/index', [
             'settings'      => $settings,
-            'bookingSlots'  => $bookingSlots
+            'bookingSlots'  => $bookingSlots,
+            'webPush'       => (new WebPushConfiguration())->diagnostics(),
         ]);
     }
 

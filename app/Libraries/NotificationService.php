@@ -42,6 +42,7 @@ class NotificationService
 
         $emailContext = $this->bookingEmailContext($context);
         $studentLink = '/dashboard/student?focus_booking=' . (int) $context['id'];
+        $studentActionUrl = $this->studentBookingActionUrl((int) $context['id']);
         $approvalLink = '/dashboard/approvals?focus_booking=' . (int) $context['id'];
         $picPendingCount = $this->pendingPicCountForEmail((string) ($context['pic_email'] ?? ''));
 
@@ -57,7 +58,7 @@ class NotificationService
             $this->emailTemplate('Booking Request Submitted', [
                 'Your booking request has been successfully sent to the PIC for review.',
                 $this->bookingDetailBlock($context),
-            ], site_url($studentLink), 'Open Booking Details'),
+            ], $studentActionUrl, 'Open Booking Details'),
             null,
             $emailContext
         );
@@ -84,6 +85,7 @@ class NotificationService
 
         $emailContext = $this->bookingEmailContext($context);
         $studentLink = '/dashboard/student?focus_booking=' . (int) $context['id'];
+        $studentActionUrl = $this->studentBookingActionUrl((int) $context['id']);
         $approvalLink = '/dashboard/approvals?focus_booking=' . (int) $context['id'];
         $managerPendingCount = $this->pendingManagerCount();
 
@@ -99,7 +101,7 @@ class NotificationService
             $this->emailTemplate('PIC Approved Your Booking', [
                 'Your booking request has been approved by the PIC and is now waiting for Lab Manager approval.',
                 $this->bookingDetailBlock($context),
-            ], site_url($studentLink), 'Open Booking Details'),
+            ], $studentActionUrl, 'Open Booking Details'),
             null,
             $emailContext
         );
@@ -154,6 +156,7 @@ class NotificationService
 
         $emailContext = $this->bookingEmailContext($context);
         $studentLink = '/dashboard/student?focus_booking=' . (int) $context['id'];
+        $studentActionUrl = $this->studentBookingActionUrl((int) $context['id']);
         $label = $rejectedBy !== '' ? ' by ' . $rejectedBy : '';
         $message = 'Your booking request for ' . $this->bookingDescriptor($context) . ' has been rejected' . $label . '.';
 
@@ -165,7 +168,7 @@ class NotificationService
             $this->emailTemplate('Booking Rejected', [
                 $message,
                 $this->bookingDetailBlock($context),
-            ], site_url($studentLink), 'Open Booking Details'),
+            ], $studentActionUrl, 'Open Booking Details'),
             null,
             $emailContext
         );
@@ -500,11 +503,7 @@ class NotificationService
         }
 
         if ($rows !== []) {
-            try {
-                $this->notificationModel->insertBatch($rows);
-            } catch (\Throwable $e) {
-                log_message('error', 'Notification insert error: ' . $e->getMessage());
-            }
+            (new UserNotificationDispatcher($this->notificationModel))->dispatch($rows);
         }
     }
 
@@ -657,6 +656,11 @@ class NotificationService
             'entity_type' => 'booking',
             'entity_id' => (int) ($context['id'] ?? 0),
         ];
+    }
+
+    protected function studentBookingActionUrl(int $bookingId): string
+    {
+        return site_url('open/booking/' . max($bookingId, 0));
     }
 
     protected function googleCalendarLink(array $context): string

@@ -29,11 +29,11 @@ class SettingsModel extends Model
             return null;
         }
 
-        // Cast value by type
-        return match ($row['type']) {
-            'int'    => (int) $row['value'],
-            'bool'   => filter_var($row['value'], FILTER_VALIDATE_BOOL),
-            default  => $row['value'],
+        // Accept both framework-style and UI-generated type labels.
+        return match (strtolower((string) $row['type'])) {
+            'int', 'integer'   => (int) $row['value'],
+            'bool', 'boolean'  => filter_var($row['value'], FILTER_VALIDATE_BOOL),
+            default            => $row['value'],
         };
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Controllers\Public;
 
 use App\Controllers\BaseController;
+use App\Libraries\ApprovalFlowResolver;
 use App\Libraries\NotificationService;
 use App\Models\BookingModel;
 use App\Models\BookingApplicantModel;
@@ -69,6 +70,23 @@ class BookingController extends BaseController
         if (preg_match('/^\d{2}:\d{2}$/', $time)) return $time . ':00';
 
         return $time;
+    }
+
+    protected function findMatchingSlotDefinition(string $startTime, string $endTime): ?array
+    {
+        $start = $this->normalizeTime($startTime);
+        $end = $this->normalizeTime($endTime);
+
+        foreach ($this->getSlotDefinitions() as $slot) {
+            if (
+                $this->normalizeTime((string) ($slot['start'] ?? '')) === $start
+                && $this->normalizeTime((string) ($slot['end'] ?? '')) === $end
+            ) {
+                return $slot;
+            }
+        }
+
+        return null;
     }
 
     /*
@@ -404,6 +422,13 @@ class BookingController extends BaseController
             ]);
         }
 
+        if ($this->findMatchingSlotDefinition($start, $end) === null) {
+            return $this->response->setJSON([
+                'conflict' => true,
+                'reason'   => 'Please choose one of the configured booking sessions for this laboratory.',
+            ]);
+        }
+
         $today = date('Y-m-d');
         $now   = date('H:i:s');
 
@@ -474,7 +499,7 @@ class BookingController extends BaseController
         if ($user->inGroup('external')) {
             return $this->response->setJSON([
                 'status'  => 'error',
-                'message' => 'External users must contact the PIC to submit bookings.'
+                'message' => 'External users cannot submit bookings directly. Please use the lab access request flow instead.'
             ]);
         }
 
@@ -501,6 +526,13 @@ class BookingController extends BaseController
             return $this->response->setJSON([
                 'status'  => 'error',
                 'message' => 'End time must be later than start time.'
+            ]);
+        }
+
+        if ($this->findMatchingSlotDefinition($startTime, $endTime) === null) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Please choose one of the configured booking sessions for this laboratory.',
             ]);
         }
 
@@ -562,7 +594,13 @@ class BookingController extends BaseController
             ]);
         }
 
-        $approvalFlow = ($facultyId === 3) ? 'FKMP_APPROVAL' : 'FACULTY_APPROVAL';
+        $approvalFlow = (new ApprovalFlowResolver())->resolveForFacultyId($facultyId);
+        if ($approvalFlow === null) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'The selected faculty is not recognized. Please refresh and try again.'
+            ]);
+        }
         $selectedAssets = $this->resolveSelectedAssets(
             $labId,
             $serviceId,

@@ -28,6 +28,7 @@ if (function_exists('auth') && auth()->loggedIn()) {
         </div>
 
         <div class="navbar-actions">
+            <?= $this->include('components/navbar_app_controls') ?>
             <?php if (isset($user) && $user): ?>
                 <div class="dropdown">
                     <a href="#" class="notification-trigger" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications">

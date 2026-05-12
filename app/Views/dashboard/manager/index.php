@@ -6,17 +6,12 @@
         <h2 class="fw-bold text-primary mb-0">Lab Manager Dashboard</h2>
         <p class="text-muted small">Comprehensive overview and management tools for all laboratories.</p>
     </div>
-    <div class="d-flex flex-wrap gap-2">
-        <a href="/dashboard/analytics" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-graph-up-arrow me-1"></i> Analytics Hub
-        </a>
-        <a href="/dashboard/reports/pdf?type=summary" class="btn btn-outline-primary btn-sm">
-            <i class="bi bi-file-earmark-pdf me-1"></i> Download Report
-        </a>
-        <a href="/dashboard/reports/csv?type=summary" class="btn btn-outline-success btn-sm">
-            <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
-        </a>
-    </div>
+    <a href="/dashboard/reports/pdf" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-file-earmark-pdf me-1"></i> Download Report
+    </a>
+    <a href="/dashboard/reports/csv" class="btn btn-outline-success btn-sm">
+        <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
+    </a>
 </div>
 
 <!-- QUICK STATS CARDS -->
@@ -653,7 +648,7 @@
 
 <!-- MODAL FOR BOOKING DETAILS -->
 <div class="modal fade" id="bookingModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-primary text-white border-0 rounded-top-3">
                 <h5 class="modal-title">Booking Details - Manager Review</h5>
@@ -1003,7 +998,13 @@ function updateTrendChart(type) {
 // Booking functions
 function viewBookingDetails(id) {
     currentBookingId = id;
-    const modal = new bootstrap.Modal(document.getElementById('bookingModal'));
+    const modalElement = document.getElementById('bookingModal');
+    if (window.slamsPrepareModal) {
+        window.slamsPrepareModal(modalElement);
+    } else if (modalElement && modalElement.parentElement !== document.body) {
+        document.body.appendChild(modalElement);
+    }
+    const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
     
     document.getElementById('bookingDetails').innerHTML = `
         <div class="text-center py-4">

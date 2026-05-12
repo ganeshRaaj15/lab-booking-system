@@ -4,6 +4,7 @@ namespace App\Controllers\Approvals;
 
 use App\Controllers\BaseController;
 use App\Libraries\NotificationService;
+use App\Libraries\UserRoleResolver;
 use App\Models\BookingModel;
 use App\Models\LaboratoryModel;
 use Config\Database;
@@ -28,10 +29,12 @@ class BookingApprovalController extends BaseController
 
         $user = auth()->user();
         $userEmail = strtolower(trim((string) $user->email));
-        $isPic = $user->inGroup('pic');
-        $isManager = $user->inGroup('manager') || $user->inGroup('admin');
+        $approverRole = (new UserRoleResolver())->approvalRole($user);
+        $isPic = $approverRole === 'pic';
+        $isManager = $approverRole === 'manager';
+        $isAdmin = $approverRole === 'admin';
 
-        if (! $isPic && ! $isManager) {
+        if (! $isPic && ! $isManager && ! $isAdmin) {
             return $this->respondForbidden('You are not authorized to approve this booking.');
         }
 
@@ -121,6 +124,10 @@ class BookingApprovalController extends BaseController
             return $this->successResponse('Booking fully approved by Manager.', 'APPROVED');
         }
 
+        if ($isAdmin) {
+            return $this->approveAsAdmin($id, $booking, $bookingModel, $isFkmpBooking);
+        }
+
         return $this->respondForbidden('You are not authorized to approve this booking.');
     }
 
@@ -142,10 +149,12 @@ class BookingApprovalController extends BaseController
 
         $user = auth()->user();
         $userEmail = strtolower(trim((string) $user->email));
-        $isPic = $user->inGroup('pic');
-        $isManager = $user->inGroup('manager') || $user->inGroup('admin');
+        $approverRole = (new UserRoleResolver())->approvalRole($user);
+        $isPic = $approverRole === 'pic';
+        $isManager = $approverRole === 'manager';
+        $isAdmin = $approverRole === 'admin';
 
-        if (! $isPic && ! $isManager) {
+        if (! $isPic && ! $isManager && ! $isAdmin) {
             return $this->respondForbidden('You are not authorized to reject this booking.');
         }
         if ($booking['status'] === 'REJECTED') {
@@ -201,7 +210,85 @@ class BookingApprovalController extends BaseController
             return $this->successResponse('Booking rejected by Manager.', 'REJECTED');
         }
 
+        if ($isAdmin) {
+            return $this->rejectAsAdmin($id, $booking, $bookingModel);
+        }
+
         return $this->respondForbidden('You are not authorized to reject this booking.');
+    }
+
+    protected function approveAsAdmin(int $id, array $booking, BookingModel $bookingModel, bool $isFkmpBooking)
+    {
+        if ((int) ($booking['approved_by_pic'] ?? 0) === 0) {
+            $updates = [
+                'approved_by_pic' => 1,
+                'updated_at' => date('Y-m-d H:i:s'),
+            ];
+
+            if ($isFkmpBooking) {
+                $updates['approved_by_manager'] = 1;
+                $updates['status'] = 'APPROVED';
+                $bookingModel->update($id, $updates);
+                $updated = $bookingModel->find($id) ?: array_merge($booking, $updates);
+                NotificationService::dispatchSafely(
+                    fn(NotificationService $notifications) => $notifications->notifyBookingApproved($updated),
+                    'booking approved by administrator'
+                );
+
+                return $this->successResponse('Administrator completed final approval for this FKMP booking.', 'APPROVED');
+            }
+
+            $updates['status'] = 'PENDING';
+            $bookingModel->update($id, $updates);
+            $updated = $bookingModel->find($id) ?: array_merge($booking, $updates);
+            NotificationService::dispatchSafely(
+                fn(NotificationService $notifications) => $notifications->notifyBookingPendingManager($updated),
+                'booking advanced to manager by administrator'
+            );
+
+            return $this->successResponse('Administrator approved the PIC stage. Booking now awaits Manager approval.', 'PENDING_MANAGER');
+        }
+
+        if ($booking['status'] === 'APPROVED' && (int) ($booking['approved_by_manager'] ?? 0) === 1) {
+            return $this->successResponse('Booking already approved.', 'APPROVED');
+        }
+
+        $bookingModel->update($id, [
+            'approved_by_manager' => 1,
+            'status' => 'APPROVED',
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+        $updated = $bookingModel->find($id) ?: array_merge($booking, ['approved_by_manager' => 1, 'status' => 'APPROVED']);
+        NotificationService::dispatchSafely(
+            fn(NotificationService $notifications) => $notifications->notifyBookingApproved($updated),
+            'booking approved by administrator'
+        );
+
+        return $this->successResponse('Administrator completed the final approval.', 'APPROVED');
+    }
+
+    protected function rejectAsAdmin(int $id, array $booking, BookingModel $bookingModel)
+    {
+        $updates = [
+            'status' => 'REJECTED',
+            'updated_at' => date('Y-m-d H:i:s'),
+        ];
+
+        if ((int) ($booking['approved_by_pic'] ?? 0) === 0) {
+            $updates['approved_by_pic'] = 0;
+            $updates['approved_by_manager'] = 0;
+        } else {
+            $updates['approved_by_manager'] = 0;
+        }
+
+        $bookingModel->update($id, $updates);
+        $updated = $bookingModel->find($id) ?: array_merge($booking, $updates);
+        NotificationService::dispatchSafely(
+            fn(NotificationService $notifications) => $notifications->notifyBookingRejected($updated, 'Administrator'),
+            'booking rejected by administrator'
+        );
+
+        return $this->successResponse('Booking rejected by Administrator.', 'REJECTED');
     }
 
     protected function ensureAssetsStillAvailable(array $booking): ?string
@@ -280,7 +367,7 @@ class BookingApprovalController extends BaseController
 
     protected function respondNotFound(string $msg)
     {
-        if ($this->request->isAJAX()) {
+        if ($this->shouldReturnJson()) {
             return $this->response->setStatusCode(404)->setJSON(['status' => 'error', 'message' => $msg]);
         }
         return redirect()->back()->with('error', $msg);
@@ -288,7 +375,7 @@ class BookingApprovalController extends BaseController
 
     protected function respondForbidden(string $msg)
     {
-        if ($this->request->isAJAX()) {
+        if ($this->shouldReturnJson()) {
             return $this->response->setStatusCode(403)->setJSON(['status' => 'error', 'message' => $msg]);
         }
         return redirect()->back()->with('error', $msg);
@@ -296,10 +383,19 @@ class BookingApprovalController extends BaseController
 
     protected function successResponse(string $msg, string $status)
     {
-        if ($this->request->isAJAX()) {
+        if ($this->shouldReturnJson()) {
             return $this->response->setJSON(['status' => 'success', 'newStatus' => $status, 'message' => $msg]);
         }
         return redirect()->back()->with('message', $msg);
+    }
+
+    protected function shouldReturnJson(): bool
+    {
+        if ($this->request->isAJAX()) {
+            return true;
+        }
+
+        return str_starts_with(trim((string) $this->request->getPath(), '/'), 'api/native/');
     }
 
 }

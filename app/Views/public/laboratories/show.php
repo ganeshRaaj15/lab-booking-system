@@ -128,7 +128,7 @@ if ($picPhone === '') {
                     
                     <div class="pic-note">
                         <i class="bi bi-info-circle"></i>
-                        External users and guests must contact the PIC to arrange bookings.
+                        External users can submit an access request after login. Guests should contact the PIC or register for an external account first.
                     </div>
                 </div>
             </div>
@@ -302,7 +302,7 @@ if ($picPhone === '') {
                             $equipmentModels = trim((string) ($service['equipment_models'] ?? ''));
                             $criteriaText = trim((string) ($service['acceptance_criteria'] ?? ''));
                             ?>
-                            <div class="list-group-item px-3 py-3 border-bottom">
+                            <div class="list-group-item px-0 py-3 border-bottom">
                                 <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
                                     <div>
                                         <div class="fw-semibold"><?= esc($service['service_name'] ?? '') ?></div>
@@ -365,16 +365,17 @@ if ($picPhone === '') {
                 <?php endif; ?>
             </h2>
             
-            <p class="booking-description">
-                <?php if ($bookingMode === 'uthm'): ?>
-                    Start by choosing a service. The system will load the linked equipment, check availability,
-                    and guide you into the booking wizard with the correct context.
-                    <span class="text-danger fw-semibold d-block mt-1">Note: Only equipment marked as "Available" and linked to the chosen service can be booked.</span>
-                <?php else: ?>
-                    You can browse equipment and view availability, but online booking is exclusively 
-                    available for UTHM users. External users should contact the Person in Charge.
-                <?php endif; ?>
-            </p>
+                <p class="booking-description">
+                    <?php if ($bookingMode === 'uthm'): ?>
+                        Start by choosing a service. The system will load the linked equipment, check availability,
+                        and guide you into the booking wizard with the correct context.
+                        <span class="text-danger fw-semibold d-block mt-1">Note: Only equipment marked as "Available" and linked to the chosen service can be booked.</span>
+                    <?php elseif ($bookingMode === 'external'): ?>
+                        Review the laboratory resources, then submit an external access request. The PIC will review your request and decide whether it can move forward for scheduling.
+                    <?php else: ?>
+                        You can browse equipment and view availability, but direct booking is reserved for UTHM users. Login with an external account to submit a request, or contact the PIC first.
+                    <?php endif; ?>
+                </p>
             
             <div class="booking-alert">
                 <i class="bi bi-info-circle"></i>
@@ -390,13 +391,16 @@ if ($picPhone === '') {
                         <i class="bi bi-magic me-1"></i>
                         Launch Booking Wizard (Select Service First)
                     </button>
+                <?php elseif ($bookingMode === 'external'): ?>
+                    <a href="/dashboard/external/request?lab_id=<?= esc($lab['id']) ?>" class="btn booking-btn">
+                        <i class="bi bi-clipboard-check me-1"></i>
+                        Request Lab Access
+                    </a>
                 <?php else: ?>
-                    <button id="openBookingWizardBtn"
-                            class="btn booking-btn booking-btn-outline"
-                            type="button">
-                        <i class="bi bi-person-gear me-1"></i>
-                        Contact PIC for Booking
-                    </button>
+                    <a href="/login" class="btn booking-btn booking-btn-outline">
+                        <i class="bi bi-box-arrow-in-right me-1"></i>
+                        Login to Submit a Request
+                    </a>
                 <?php endif; ?>
             </div>
         </div>
@@ -446,57 +450,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const hiddenServiceInput = document.getElementById("service_id_modal");
     const selectedServiceSummary = document.getElementById("selectedServiceSummary");
     const serviceButtons = document.querySelectorAll(".select-service-btn");
-    const DEVICE_CLOCK_REFRESH_MS = 30000;
+    const todayDate = new Date();
+    todayDate.setHours(0, 0, 0, 0);
     let selectedService = null;
-
-    function twoDigits(value) {
-        return String(value).padStart(2, "0");
-    }
-
-    function getLocalNow() {
-        return new Date();
-    }
-
-    function getLocalTodayStart(now = getLocalNow()) {
-        const next = new Date(now);
-        next.setHours(0, 0, 0, 0);
-        return next;
-    }
-
-    function parseLocalDate(dateStr) {
-        const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec((dateStr || "").trim());
-        if (!match) return null;
-
-        return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 0, 0, 0, 0);
-    }
-
-    function parseLocalDateTime(dateStr, timeStr) {
-        const dateMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec((dateStr || "").trim());
-        const timeMatch = /^(\d{2}):(\d{2})$/.exec((timeStr || "").trim());
-        if (!dateMatch || !timeMatch) return null;
-
-        return new Date(
-            Number(dateMatch[1]),
-            Number(dateMatch[2]) - 1,
-            Number(dateMatch[3]),
-            Number(timeMatch[1]),
-            Number(timeMatch[2]),
-            0,
-            0
-        );
-    }
-
-    function isPastBookingDate(dateStr, now = getLocalNow()) {
-        const date = parseLocalDate(dateStr);
-        return !!date && date < getLocalTodayStart(now);
-    }
-
-    function isPastBookingSlot(dateStr, endTime, now = getLocalNow()) {
-        if (isPastBookingDate(dateStr, now)) return true;
-
-        const endAt = parseLocalDateTime(dateStr, endTime);
-        return !!endAt && endAt <= now;
-    }
 
     // -------------------------------
     // Check if equipment is available based on status
@@ -828,14 +784,15 @@ document.addEventListener("DOMContentLoaded", function () {
             day: "Day"
         },
         dateClick: (info) => {
-            if (isPastBookingDate(info.dateStr)) {
+            const clickedDate = new Date(info.dateStr + "T00:00:00");
+            if (clickedDate < todayDate) {
                 return;
             }
             loadDaySlots(info.dateStr);
         },
         dayCellClassNames: (info) => {
             const cellDate = new Date(info.date.getFullYear(), info.date.getMonth(), info.date.getDate());
-            return cellDate < getLocalTodayStart() ? ["fc-day-past-disabled"] : [];
+            return cellDate < todayDate ? ["fc-day-past-disabled"] : [];
         },
         eventDidMount: (info) => {
             // Add tooltip for events
@@ -906,11 +863,6 @@ document.addEventListener("DOMContentLoaded", function () {
     // Load day slots for clicked date
     // -------------------------------
     function loadDaySlots(dateStr) {
-        if (isPastBookingDate(dateStr)) {
-            showAlert("That date has already passed on this device. Please choose a current or future date.", "warning");
-            return;
-        }
-
         const serviceId = getSelectedServiceId();
         if (!serviceId) {
             showAlert("Please choose a service first.", "warning");
@@ -940,23 +892,11 @@ document.addEventListener("DOMContentLoaded", function () {
     // Timeslot popup - Enhanced Design
     // -------------------------------
     function showSlotPopup(dateStr, slots) {
-        const popupDate = parseLocalDate(dateStr) || new Date(dateStr + "T00:00:00");
-        const formattedDate = popupDate.toLocaleDateString('en-US', {
+        const formattedDate = new Date(dateStr).toLocaleDateString('en-US', {
             weekday: 'long',
             year: 'numeric',
             month: 'long',
             day: 'numeric'
-        });
-        const normalizedSlots = (slots || []).map((slot) => {
-            if (!isPastBookingSlot(dateStr, slot.end)) {
-                return slot;
-            }
-
-            return {
-                ...slot,
-                can_book: false,
-                reason: 'Slot is already in the past.',
-            };
         });
 
         let html = `
@@ -967,7 +907,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 </div>
         `;
 
-        if (!normalizedSlots.length) {
+        if (!slots.length) {
             html += `
                 <div class="no-slots text-center py-4">
                     <i class="bi bi-calendar-x text-primary fs-1 mb-3"></i>
@@ -976,7 +916,7 @@ document.addEventListener("DOMContentLoaded", function () {
             `;
         }
 
-        normalizedSlots.forEach((slot, index) => {
+        slots.forEach((slot, index) => {
             const colorClass = slot.can_book ? "slot-available" : "slot-unavailable";
             const statusText = slot.can_book ? "Available" : "Unavailable";
             const statusIcon = slot.can_book ? "bi-check-circle" : "bi-x-circle";
@@ -1019,11 +959,18 @@ document.addEventListener("DOMContentLoaded", function () {
                         <i class="bi bi-calendar-plus me-1"></i>Book This Slot
                     </button>
                 `;
-            } else if (slot.can_book && BOOKING_MODE !== "uthm") {
+            } else if (slot.can_book && BOOKING_MODE === "external") {
+                html += `
+                    <a class="btn btn-outline-primary btn-sm w-100 mt-3"
+                       href="/dashboard/external/request?lab_id=${LAB_ID}&preferred_date=${dateStr}&preferred_start_time=${slot.start}&preferred_end_time=${slot.end}">
+                        <i class="bi bi-clipboard-plus me-1"></i>Request This Slot
+                    </a>
+                `;
+            } else if (slot.can_book && BOOKING_MODE === "guest") {
                 html += `
                     <div class="alert alert-warning small mt-3 mb-0">
-                        <i class="bi bi-person-gear me-1"></i>
-                        Online booking is only available for UTHM users. Please contact the PIC.
+                        <i class="bi bi-box-arrow-in-right me-1"></i>
+                        Login with an external account to request this slot, or contact the PIC.
                     </div>
                 `;
             }
@@ -1145,11 +1092,6 @@ document.addEventListener("DOMContentLoaded", function () {
     window.selectSlot = function(dateStr, start, end) {
         if (BOOKING_MODE !== "uthm") {
             showAlert("Online booking is only available for UTHM users.", "warning");
-            return;
-        }
-
-        if (isPastBookingSlot(dateStr, end)) {
-            showAlert("This slot is already in the past on this device. Please choose another time.", "warning");
             return;
         }
 
@@ -1282,10 +1224,13 @@ document.addEventListener("DOMContentLoaded", function () {
         const openWizard = params.get("open") === "1";
         if (!openWizard) return true;
 
-        if (BOOKING_MODE !== "uthm") {
-            if (!showBookingModal()) {
-                showAlert("Online booking is only available for UTHM users. Please contact the PIC.", "warning");
-            }
+        if (BOOKING_MODE === "external") {
+            window.location.href = `/dashboard/external/request?lab_id=${LAB_ID}`;
+            return true;
+        }
+
+        if (BOOKING_MODE === "guest") {
+            showAlert("Login with an external account to submit a lab access request.", "warning");
             return true;
         }
 
@@ -1305,11 +1250,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     const qrApplied = applyQrSelectionFromQuery();
-    window.setInterval(() => {
-        if (!document.hidden) {
-            calendar.render();
-        }
-    }, DEVICE_CLOCK_REFRESH_MS);
     // Initial calendar load
     if (!qrApplied) {
         if (serviceButtons.length === 1) {

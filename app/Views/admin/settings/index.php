@@ -1,6 +1,14 @@
 <?= $this->extend('layouts/main_admin') ?>
 <?= $this->section('content') ?>
 
+<?php
+$settingMeta = [
+    'fkmp_faculty_id' => [
+        'label' => 'Direct Approval Faculty ID',
+        'hint' => 'Faculty ID that completes approval at the PIC stage. The legacy setting key is kept for backward compatibility.',
+    ],
+];
+?>
 
 <div class="settings-page">
     <!-- PAGE HEADER -->
@@ -75,7 +83,11 @@
 
                 <div class="row g-4">
                     <?php foreach ($settings as $key => $row): ?>
-                        <?php if ($key === 'booking_slots') continue; ?>
+                        <?php
+                        $meta = $settingMeta[$key] ?? null;
+                        $settingLabel = $meta['label'] ?? ucwords(str_replace('_', ' ', $key));
+                        $settingHint = $meta['hint'] ?? ($row['hint'] ?? null);
+                        ?>
                         <div class="col-md-6">
                             <div class="form-group-glass">
                                 <label for="<?= esc($key) ?>">
@@ -86,7 +98,7 @@
                                     <?php else: ?>
                                         <i class="bi bi-input-cursor-text"></i>
                                     <?php endif; ?>
-                                    <?= ucwords(str_replace('_', ' ', $key)) ?>
+                                    <?= esc($settingLabel) ?>
                                 </label>
 
                                 <?php if ($row['type'] === 'integer'): ?>
@@ -116,8 +128,8 @@
                                 <?php endif; ?>
                                 
                                 <div class="form-hint">
-                                    <?php if (!empty($row['hint'])): ?>
-                                        <?= esc($row['hint']) ?>
+                                    <?php if (!empty($settingHint)): ?>
+                                        <?= esc($settingHint) ?>
                                     <?php elseif ($row['type'] === 'integer'): ?>
                                         Numeric value
                                     <?php elseif ($row['type'] === 'bool'): ?>
@@ -137,6 +149,68 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <div class="glass-card mb-5">
+        <div class="settings-card-header">
+            <h5>
+                <i class="bi bi-phone-vibrate"></i>
+                Mobile Push Notifications
+            </h5>
+        </div>
+
+        <div class="card-body p-4">
+            <div class="info-box">
+                <p class="d-flex align-items-center mb-0">
+                    <i class="bi bi-info-circle-fill me-2" style="color: #3b82f6;"></i>
+                    Web push lets signed-in devices receive booking, external request, and maintenance alerts even when the app is not open.
+                </p>
+            </div>
+
+            <?php $webPush = $webPush ?? ['configured' => false, 'subject' => '', 'hasPublicKey' => false, 'hasPrivateKey' => false, 'defaultTtl' => 1800]; ?>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="form-group-glass h-100">
+                        <label><i class="bi bi-shield-check"></i> Status</label>
+                        <div class="pt-2">
+                            <?php if (! empty($webPush['configured'])): ?>
+                                <span class="badge bg-success fs-6">Configured</span>
+                                <div class="form-hint mt-2">Push delivery is ready on the server side.</div>
+                            <?php else: ?>
+                                <span class="badge bg-warning text-dark fs-6">Not Configured</span>
+                                <div class="form-hint mt-2">Add VAPID keys to `.env` before users can subscribe.</div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="form-group-glass h-100">
+                        <label><i class="bi bi-key"></i> Keys</label>
+                        <div class="pt-2 small text-muted">
+                            <div>Public key: <?= ! empty($webPush['hasPublicKey']) ? 'present' : 'missing' ?></div>
+                            <div>Private key: <?= ! empty($webPush['hasPrivateKey']) ? 'present' : 'missing' ?></div>
+                            <div class="mt-2">Default TTL: <?= esc((int) ($webPush['defaultTtl'] ?? 1800)) ?> seconds</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="form-group-glass h-100">
+                        <label><i class="bi bi-envelope-paper"></i> Subject</label>
+                        <div class="pt-2 small text-muted">
+                            <?= ! empty($webPush['subject']) ? esc($webPush['subject']) : 'Not set yet' ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-top pt-4 mt-4">
+                <div class="fw-semibold mb-2">Setup</div>
+                <div class="small text-muted mb-3">Run the key generator once, copy the output to `.env`, restart the app, then enable push from a signed-in device.</div>
+                <pre class="bg-dark text-light rounded-3 p-3 small mb-0"><code>php spark slams:generate-web-push-keys mailto:lab-admin@example.com</code></pre>
+            </div>
         </div>
     </div>
 

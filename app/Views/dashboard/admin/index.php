@@ -12,13 +12,10 @@
                 <p>System Overview & Real-time Analytics</p>
             </div>
             <div class="d-flex gap-3 flex-wrap align-items-center">
-                <a href="/admin/analytics" class="btn btn-glass">
-                    <i class="bi bi-graph-up-arrow me-1"></i> Analytics Hub
-                </a>
-                <a href="/dashboard/reports/pdf?type=summary" class="btn btn-glass">
+                <a href="/dashboard/reports/pdf" class="btn btn-glass">
                     <i class="bi bi-file-earmark-pdf me-1"></i> Download Report
                 </a>
-                <a href="/dashboard/reports/csv?type=summary" class="btn btn-glass">
+                <a href="/dashboard/reports/csv" class="btn btn-glass">
                     <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
                 </a>
                 <div class="quick-stat">

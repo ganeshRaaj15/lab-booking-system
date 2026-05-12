@@ -97,7 +97,7 @@ class Filters extends BaseFilters
     public array $globals = [
         'before' => [
             // 'honeypot',
-            'csrf',
+            'csrf' => ['except' => ['api/native/*']],
             // 'invalidchars',
         ],
         'after' => [
@@ -137,6 +137,7 @@ class Filters extends BaseFilters
                 'login',
                 'login/*',
                 'register',
+                'api/native/auth/token',
             ],
         ],
     ];

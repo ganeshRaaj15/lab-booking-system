@@ -20,9 +20,12 @@ if (function_exists('auth') && auth()->loggedIn()) {
             </div>
         </a>
 
-        <button class="navbar-toggler glass-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#userNavbar" aria-controls="userNavbar" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+        <div class="slams-navbar-app-shell">
+            <?= $this->include('components/navbar_app_controls') ?>
+            <button class="navbar-toggler glass-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#userNavbar" aria-controls="userNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
 
         <div class="collapse navbar-collapse" id="userNavbar">
             <ul class="navbar-nav ms-auto align-items-lg-center">
@@ -33,6 +36,11 @@ if (function_exists('auth') && auth()->loggedIn()) {
 
                 <?php if (auth()->loggedIn()): ?>
                     <?php $user = auth()->user(); ?>
+                    <?php if ($user->inGroup('external')): ?>
+                        <li class="nav-item me-2"><a class="nav-link position-relative" href="/dashboard/external"><i class="bi bi-clipboard-check me-1"></i> Requests<span class="nav-indicator"></span></a></li>
+                    <?php elseif ($user->inGroup('pic') || $user->inGroup('manager')): ?>
+                        <li class="nav-item me-2"><a class="nav-link position-relative" href="/dashboard/external-requests"><i class="bi bi-clipboard-data me-1"></i> External Requests<span class="nav-indicator"></span></a></li>
+                    <?php endif; ?>
                     <li class="nav-item me-2 dropdown notification-nav-item">
                         <a class="nav-link position-relative notification-nav-link" href="#" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-bell me-1"></i> Notifications

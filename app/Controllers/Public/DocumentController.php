@@ -3,6 +3,7 @@
 namespace App\Controllers\Public;
 
 use App\Controllers\BaseController;
+use App\Libraries\BookingDocumentLocator;
 use CodeIgniter\Exceptions\PageNotFoundException;
 
 class DocumentController extends BaseController
@@ -17,6 +18,14 @@ class DocumentController extends BaseController
         
         // Check if user is logged in
         if (!auth()->loggedIn()) {
+            if ($this->isNativeApiRequest()) {
+                return $this->response
+                    ->setStatusCode(401)
+                    ->setJSON([
+                        'status' => 'error',
+                        'message' => 'Unauthenticated.',
+                    ]);
+            }
             return redirect()->to('/login');
         }
         
@@ -24,28 +33,33 @@ class DocumentController extends BaseController
         
         $bookingModel = new \App\Models\BookingModel();
 
-        // Admins and managers may review all booking documents. PICs are scoped to their assigned labs.
-        if (! $user->inGroup('admin') && ! $user->inGroup('manager')) {
-            $builder = $bookingModel
-                ->select('bookings.id, bookings.user_id, laboratories.pic_email')
-                ->join('laboratories', 'laboratories.id = bookings.lab_id', 'left')
-                ->where('bookings.pdf_path', '/uploads/pdfs/' . $filename);
+        $builder = $bookingModel
+            ->select('bookings.id, bookings.user_id, laboratories.pic_email')
+            ->join('laboratories', 'laboratories.id = bookings.lab_id', 'left')
+            ->where('bookings.pdf_path', '/uploads/pdfs/' . $filename);
 
-            if ($user->inGroup('pic')) {
-                $builder->where('LOWER(TRIM(laboratories.pic_email)) =', strtolower(trim((string) $user->email)));
-            } else {
-                $builder->where('bookings.user_id', auth()->id());
-            }
+        if ($user->inGroup('pic')) {
+            $builder->where('LOWER(TRIM(laboratories.pic_email)) =', strtolower(trim((string) $user->email)));
+        } elseif (! $user->inGroup('admin') && ! $user->inGroup('manager')) {
+            $builder->where('bookings.user_id', auth()->id());
+        }
 
-            if (! $builder->first()) {
-                return redirect()->back()->with('error', 'Access denied.');
+        if (! $builder->first()) {
+            if ($this->isNativeApiRequest()) {
+                return $this->response
+                    ->setStatusCode(403)
+                    ->setJSON([
+                        'status' => 'error',
+                        'message' => 'Access denied.',
+                    ]);
             }
+            return redirect()->back()->with('error', 'Access denied.');
         }
         
-        $basePath = realpath(WRITEPATH . 'uploads/pdfs');
-        $filePath = realpath(WRITEPATH . 'uploads/pdfs/' . $filename);
-        
-        if (! $basePath || ! $filePath || ! is_file($filePath) || ! str_starts_with($filePath, $basePath . DIRECTORY_SEPARATOR)) {
+        $documentLocator = new BookingDocumentLocator();
+        $filePath = $documentLocator->resolvePdfPath($filename);
+
+        if ($filePath === null) {
             throw new PageNotFoundException('File not found');
         }
         
@@ -53,7 +67,13 @@ class DocumentController extends BaseController
         return $this->response
             ->setContentType('application/pdf')
             ->setHeader('X-Content-Type-Options', 'nosniff')
+            ->setHeader('Cache-Control', 'private, no-store, max-age=0')
             ->setHeader('Content-Disposition', 'inline; filename="' . $filename . '"')
             ->setBody(file_get_contents($filePath));
+    }
+
+    protected function isNativeApiRequest(): bool
+    {
+        return str_starts_with(trim((string) $this->request->getPath(), '/'), 'api/native/');
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Controllers\Dashboard;
 
 use App\Controllers\BaseController;
+use App\Libraries\UserRoleResolver;
 use App\Models\BookingModel;
 use App\Models\LaboratoryModel;
 
@@ -19,14 +20,8 @@ class ApprovalsController extends BaseController
 
         $user = auth()->user();
 
-        // Determine role
-        if ($user->inGroup('pic')) {
-            $role = 'pic';
-        } elseif ($user->inGroup('manager')) {
-            $role = 'manager';
-        } elseif ($user->inGroup('admin')) {
-            $role = 'admin';
-        } else {
+        $role = (new UserRoleResolver())->approvalRole($user);
+        if ($role === null) {
             return redirect()->to('/dashboard')
                 ->with('error', 'You do not have access to approvals.');
         }
@@ -86,9 +81,20 @@ class ApprovalsController extends BaseController
                 ->whereIn('bookings.lab_id', $labIds)
                 ->where('bookings.status', 'PENDING')
                 ->where('bookings.approved_by_pic', 0);
+        } elseif ($role === 'admin') {
+            // Admin: oversee both pending PIC and pending Manager stages.
+            $builder
+                ->where('bookings.status', 'PENDING')
+                ->groupStart()
+                    ->where('bookings.approved_by_pic', 0)
+                    ->orGroupStart()
+                        ->where('bookings.approved_by_pic', 1)
+                        ->where('bookings.approved_by_manager', 0)
+                        ->where('bookings.approval_flow !=', 'FKMP_APPROVAL')
+                    ->groupEnd()
+                ->groupEnd();
         } else {
-            // Manager or Admin: see only bookings that require manager approval
-            // i.e. non-FKMP bookings, PIC already approved, manager not yet
+            // Manager: see only bookings that require manager approval.
             $builder
                 ->where('bookings.status', 'PENDING')
                 ->where('bookings.approved_by_pic', 1)

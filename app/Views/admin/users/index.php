@@ -1,93 +1,5 @@
 <?= $this->extend('layouts/main_admin') ?>
 
-<?= $this->section('styles') ?>
-<style>
-.user-control-panel .card-body {
-    padding: 1rem 1.1rem;
-}
-
-.user-control-title {
-    color: var(--slams-heading);
-    font-family: var(--slams-font-display);
-    font-size: 1.08rem;
-    font-weight: 800;
-}
-
-.user-control-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.28rem 0.7rem;
-    border-radius: 999px;
-    background: var(--slams-primary-soft);
-    color: var(--slams-primary);
-    font-size: 0.78rem;
-    font-weight: 700;
-}
-
-.user-role-pills {
-    margin-bottom: 0;
-}
-
-.user-role-pills .nav-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.65rem;
-    border: 1px solid transparent;
-    border-radius: 999px;
-    color: var(--slams-heading);
-    font-weight: 600;
-    padding: 0.75rem 1rem;
-    background: transparent;
-}
-
-.user-role-pills .nav-link:hover {
-    background: var(--slams-surface-soft);
-    border-color: var(--slams-border);
-}
-
-.user-role-pills .nav-link.active {
-    background: var(--slams-primary-soft);
-    border-color: color-mix(in srgb, var(--slams-primary) 20%, transparent);
-    color: var(--slams-primary);
-}
-
-.user-role-pills .nav-link .badge {
-    font-size: 0.75rem;
-}
-
-.user-filter-strip {
-    padding-top: 1rem;
-    border-top: 1px solid var(--slams-border);
-}
-
-.user-filter-strip .form-label {
-    color: var(--slams-muted);
-    font-weight: 700;
-}
-
-.user-filter-actions {
-    display: flex;
-    gap: 0.75rem;
-    justify-content: flex-end;
-}
-
-.user-filter-actions .btn {
-    min-width: 56px;
-}
-
-@media (max-width: 991.98px) {
-    .user-filter-actions {
-        justify-content: stretch;
-    }
-
-    .user-filter-actions .btn {
-        flex: 1 1 auto;
-    }
-}
-</style>
-<?= $this->endSection() ?>
-
 <?= $this->section('content') ?>
 
 <?php
@@ -95,21 +7,6 @@ $filters = $filters ?? ['q' => '', 'role' => '', 'status' => '', 'per_page' => 1
 $pagination = $pagination ?? ['total' => count($users), 'page' => 1, 'per_page' => 10, 'page_count' => 1];
 $stats = $stats ?? ['total' => count($users), 'active' => count(array_filter($users, fn($u) => $u['active']))];
 $allRoles = $allRoles ?? [];
-$roleTabs = $roleTabs ?? $allRoles;
-$roleTabCounts = $roleTabCounts ?? ['all' => count($users)];
-$roleTabLabels = [
-    'all' => 'All Users',
-    'student' => 'Students',
-    'staff' => 'Staff',
-    'external' => 'External',
-    'pic' => 'PICs',
-    'technician' => 'Technicians',
-    'manager' => 'Managers',
-    'admin' => 'Admins',
-];
-$currentRoleLabel = $filters['role'] !== ''
-    ? ($roleTabLabels[$filters['role']] ?? ucfirst($filters['role']))
-    : $roleTabLabels['all'];
 $baseQuery = [
     'q' => $filters['q'],
     'role' => $filters['role'],
@@ -117,20 +14,6 @@ $baseQuery = [
     'per_page' => $filters['per_page'],
 ];
 $exportQuery = array_filter($baseQuery, static fn($value) => $value !== '' && $value !== null);
-$tabBaseQuery = [
-    'q' => $filters['q'],
-    'status' => $filters['status'],
-    'per_page' => $filters['per_page'],
-];
-$buildRoleUrl = static function (string $role = '') use ($tabBaseQuery): string {
-    $query = array_filter(
-        array_merge($tabBaseQuery, $role !== '' ? ['role' => $role] : []),
-        static fn($value) => $value !== '' && $value !== null
-    );
-
-    return '/admin/users' . ($query !== [] ? '?' . http_build_query($query) : '');
-};
-$hasActiveFilters = $filters['q'] !== '' || $filters['role'] !== '' || $filters['status'] !== '';
 ?>
 
 
@@ -161,76 +44,48 @@ $hasActiveFilters = $filters['q'] !== '' || $filters['role'] !== '' || $filters[
         </div>
     </div>
 
-    <div class="glass-card user-control-panel mb-4">
-        <div class="card-body p-3 p-lg-4">
-            <div class="d-flex flex-column gap-4">
-                <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-start gap-3">
-                    <div>
-                        <div class="small text-uppercase text-muted fw-semibold mb-1">User Categories</div>
-                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                            <div class="user-control-title">Filter and browse users from one place</div>
-                            <span class="user-control-chip">
-                                <i class="bi bi-sliders2-vertical"></i>
-                                <?= esc($currentRoleLabel) ?>
-                            </span>
-                        </div>
-                        <p class="text-muted mb-0">Use the role tabs as the primary switch, then refine the list with search and status filters below.</p>
-                    </div>
-                    <a href="/admin/users/create" class="btn btn-primary align-self-xl-center">
-                        <i class="bi bi-person-plus me-1"></i> Add New User
-                    </a>
-                </div>
-                <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3">
-                    <ul class="nav nav-pills user-role-pills flex-wrap gap-2">
-                        <?php foreach (array_merge(['all'], $roleTabs) as $roleKey): ?>
-                            <?php
-                            $roleValue = $roleKey === 'all' ? '' : $roleKey;
-                            $isActive = $roleKey === 'all'
-                                ? $filters['role'] === ''
-                                : $filters['role'] === $roleValue;
-                            $badgeClass = $isActive ? 'text-bg-light' : 'text-bg-secondary';
-                            ?>
-                            <li class="nav-item">
-                                <a class="nav-link <?= $isActive ? 'active' : '' ?>" href="<?= esc($buildRoleUrl($roleValue)) ?>">
-                                    <span><?= esc($roleTabLabels[$roleKey] ?? ucfirst($roleKey)) ?></span>
-                                    <span class="badge <?= esc($badgeClass) ?>"><?= esc($roleTabCounts[$roleKey] ?? 0) ?></span>
-                                </a>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
-                </div>
-
-                <div class="user-filter-strip">
-                    <form method="get" action="/admin/users" class="row g-3 align-items-end">
-                        <input type="hidden" name="role" value="<?= esc($filters['role']) ?>">
-                        <div class="col-xl-6 col-lg-6">
-                            <label class="form-label small text-muted">Search</label>
-                            <input type="text" name="q" class="form-control" value="<?= esc($filters['q']) ?>" placeholder="Name, username, email, or phone">
-                        </div>
-                        <div class="col-xl-2 col-md-4">
-                            <label class="form-label small text-muted">Status</label>
-                            <select name="status" class="form-select">
-                                <option value="">All statuses</option>
-                                <option value="active" <?= $filters['status'] === 'active' ? 'selected' : '' ?>>Active</option>
-                                <option value="inactive" <?= $filters['status'] === 'inactive' ? 'selected' : '' ?>>Inactive</option>
-                            </select>
-                        </div>
-                        <div class="col-xl-2 col-md-4">
-                            <label class="form-label small text-muted">Rows</label>
-                            <select name="per_page" class="form-select">
-                                <?php foreach ([10, 25, 50] as $perPage): ?>
-                                    <option value="<?= esc($perPage) ?>" <?= (int) $filters['per_page'] === $perPage ? 'selected' : '' ?>><?= esc($perPage) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-xl-2 col-12 user-filter-actions">
-                            <button type="submit" class="btn btn-primary flex-fill"><i class="bi bi-funnel me-1"></i>Filter</button>
-                            <a href="/admin/users" class="btn btn-outline-secondary"><i class="bi bi-x-lg"></i></a>
-                        </div>
-                    </form>
-                </div>
+    <!-- FILTER AND ACTION BAR -->
+    <div class="filter-bar mb-4">
+        <form method="get" action="/admin/users" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small text-muted">Search</label>
+                <input type="text" name="q" class="form-control" value="<?= esc($filters['q']) ?>" placeholder="Name, username, email, or phone">
             </div>
-        </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Role</label>
+                <select name="role" class="form-select">
+                    <option value="">All roles</option>
+                    <?php foreach ($allRoles as $role): ?>
+                        <option value="<?= esc($role) ?>" <?= $filters['role'] === $role ? 'selected' : '' ?>><?= esc(ucfirst($role)) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Status</label>
+                <select name="status" class="form-select">
+                    <option value="">All statuses</option>
+                    <option value="active" <?= $filters['status'] === 'active' ? 'selected' : '' ?>>Active</option>
+                    <option value="inactive" <?= $filters['status'] === 'inactive' ? 'selected' : '' ?>>Inactive</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Rows</label>
+                <select name="per_page" class="form-select">
+                    <?php foreach ([10, 25, 50] as $perPage): ?>
+                        <option value="<?= esc($perPage) ?>" <?= (int) $filters['per_page'] === $perPage ? 'selected' : '' ?>><?= esc($perPage) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-fill"><i class="bi bi-funnel me-1"></i>Filter</button>
+                <a href="/admin/users" class="btn btn-outline-secondary"><i class="bi bi-x-lg"></i></a>
+            </div>
+            <div class="col-12 text-md-end">
+                <a href="/admin/users/create" class="btn btn-primary">
+                    <i class="bi bi-person-plus me-1"></i> Add New User
+                </a>
+            </div>
+        </form>
     </div>
 
     <!-- FLASH MESSAGES -->
@@ -276,16 +131,15 @@ $hasActiveFilters = $filters['q'] !== '' || $filters['role'] !== '' || $filters[
                                     <div class="empty-state">
                                         <i class="bi bi-people"></i>
                                         <h4 class="text-muted mb-2">No Users Found</h4>
-                                        <p class="text-muted"><?= $hasActiveFilters ? 'Try a different role or clear the current filters.' : 'Start by adding your first user.' ?></p>
-                                        <a href="<?= $hasActiveFilters ? '/admin/users' : '/admin/users/create' ?>" class="btn <?= $hasActiveFilters ? 'btn-outline-secondary' : 'btn-primary' ?> mt-2">
-                                            <i class="bi <?= $hasActiveFilters ? 'bi-arrow-counterclockwise' : 'bi-person-plus' ?> me-1"></i>
-                                            <?= $hasActiveFilters ? 'Clear Filters' : 'Add User' ?>
+                                        <p class="text-muted">Start by adding your first user</p>
+                                        <a href="/admin/users/create" class="btn btn-primary mt-2">
+                                            <i class="bi bi-person-plus me-1"></i> Add User
                                         </a>
                                     </div>
                                 </td>
                             </tr>
                         <?php else: ?>
-                            <?php $i = (($pagination['page'] - 1) * $pagination['per_page']) + 1; foreach ($users as $u): ?>
+                            <?php $i = 1; foreach ($users as $u): ?>
                                 <tr class="user-row" data-username="<?= strtolower(esc($u['username'])) ?>" 
                                     data-email="<?= strtolower(esc($u['email'])) ?>" 
                                     data-roles="<?= strtolower(implode(',', $u['roles'])) ?>">

@@ -30,7 +30,6 @@ class UserManagementController extends BaseController
     public function index()
     {
         $filters = $this->userFilters();
-        $roleTabs = $this->allowedRoles;
         $allRows = $this->filteredUserRows($filters);
         $totalFiltered = count($allRows);
         $pageCount = max((int) ceil($totalFiltered / $filters['per_page']), 1);
@@ -47,8 +46,6 @@ class UserManagementController extends BaseController
             'users' => $userData,
             'filters' => array_merge($filters, ['page' => $page]),
             'allRoles' => $this->allowedRoles,
-            'roleTabs' => $roleTabs,
-            'roleTabCounts' => $this->quickRoleCounts($filters, $roleTabs),
             'stats' => $stats,
             'pagination' => [
                 'total' => $totalFiltered,
@@ -406,28 +403,6 @@ class UserManagementController extends BaseController
                 'phone' => (string) ($row['phone'] ?? ''),
             ];
         }, $rows);
-    }
-
-    protected function quickRoleCounts(array $filters, array $roles): array
-    {
-        $baseFilters = $filters;
-        $baseFilters['role'] = '';
-        $rows = $this->filteredUserRows($baseFilters);
-
-        $counts = ['all' => count($rows)];
-        foreach ($roles as $role) {
-            $counts[$role] = 0;
-        }
-
-        foreach ($rows as $row) {
-            foreach ($roles as $role) {
-                if (in_array($role, $row['roles'], true)) {
-                    $counts[$role]++;
-                }
-            }
-        }
-
-        return $counts;
     }
 
     protected function isPicEmailInUse(string $email): bool

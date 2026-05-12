@@ -1527,7 +1527,8 @@ input::placeholder {
 }
 
 .password-wrapper,
-.input-wrapper {
+.input-wrapper,
+.form-group-glass.password-toggle {
     position: relative;
 }
 
@@ -1536,15 +1537,37 @@ input::placeholder {
     padding-right: 42px;
 }
 
-.toggle-password,
-.password-toggle {
+.password-wrapper > .toggle-password,
+.input-wrapper > .password-toggle {
     position: absolute;
-    top: 50%;
-    right: 10px;
-    transform: translateY(-50%);
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 42px;
+    min-height: 0;
+    padding: 0;
     border: 0;
     background: transparent;
     color: var(--slams-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: none;
+    z-index: 1;
+    box-shadow: none !important;
+}
+
+.form-group-glass.password-toggle > .toggle-password {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--slams-muted);
+    transform: translateY(-50%);
+    box-shadow: none !important;
 }
 
 /* Public pages and booking */
@@ -1714,11 +1737,22 @@ input::placeholder {
     inset: 0;
 }
 
+.video-background {
+    background:
+        linear-gradient(135deg, rgba(15, 23, 42, 0.48), rgba(13, 148, 136, 0.22)),
+        url("/images/fkmp/FKMP.jpeg") center/cover no-repeat;
+}
+
 .video-background video {
     width: 100%;
     height: 100%;
     object-fit: cover;
     filter: var(--slams-hero-video-filter);
+}
+
+.video-background.is-video-fallback video {
+    opacity: 0;
+    visibility: hidden;
 }
 
 .hero-overlay {

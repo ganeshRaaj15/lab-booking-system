@@ -16,6 +16,26 @@ use App\Controllers\Public\AssetBrowseController;
 use App\Controllers\Public\DocumentController;
 use App\Controllers\Public\ChatbotController;
 use App\Controllers\Public\QrController;
+use App\Controllers\Public\AppLinkController;
+use App\Controllers\Api\NativeAuthController;
+use App\Controllers\Api\NativeBootstrapController;
+use App\Controllers\Api\NativeLaboratoryController;
+use App\Controllers\Api\NativeBookingController;
+use App\Controllers\Api\NativeNotificationController;
+use App\Controllers\Api\NativeExternalRequestController;
+use App\Controllers\Api\NativeExternalRequestReviewController;
+use App\Controllers\Api\NativeReferenceController;
+use App\Controllers\Api\NativeHealthController;
+use App\Controllers\Api\NativeApprovalQueueController;
+use App\Controllers\Api\NativePushController;
+use App\Controllers\Api\NativeIssueReportController;
+use App\Controllers\Api\NativeMaintenanceController;
+use App\Controllers\Api\NativeProfileController;
+use App\Controllers\Api\NativeReportController;
+use App\Controllers\Api\NativeAdminSettingsController;
+use App\Controllers\Api\NativeAdminUserController;
+use App\Controllers\Api\NativeAdminLaboratoryController;
+use App\Controllers\Api\NativeAdminAssetController;
 
 // ---------------------------------------------------------
 // DASHBOARD CONTROLLERS
@@ -33,6 +53,8 @@ use App\Controllers\Dashboard\ProfileController;
 use App\Controllers\Dashboard\ReportController;
 use App\Controllers\Dashboard\NotificationController;
 use App\Controllers\Dashboard\EmailInboxController;
+use App\Controllers\Dashboard\ExternalRequestsController;
+use App\Controllers\Dashboard\PushSubscriptionController;
 
 // ---------------------------------------------------------
 // BOOKING APPROVAL CONTROLLER
@@ -56,6 +78,92 @@ use App\Controllers\Technician\MaintenanceController;
 
 $routes->get('/', [HomeController::class, 'index']);
 $routes->get('/contact', [HomeController::class, 'contact']);
+$routes->get('open/booking/(:num)', [AppLinkController::class, 'booking/$1']);
+
+// ====================================================================
+// NATIVE APP API ROUTES
+// ====================================================================
+
+$routes->group('api/native', static function ($routes) {
+    $routes->get('health', [NativeHealthController::class, 'show']);
+    $routes->post('auth/token', [NativeAuthController::class, 'token']);
+    $routes->post('auth/register', [NativeAuthController::class, 'register']);
+
+    $routes->get('labs', [NativeLaboratoryController::class, 'index']);
+    $routes->get('labs/(:num)', [NativeLaboratoryController::class, 'show/$1']);
+    $routes->get('labs/(:num)/calendar', [NativeBookingController::class, 'calendarWithAssets/$1']);
+    $routes->get('labs/(:num)/day/(:segment)', [NativeBookingController::class, 'dayWithAssets/$1/$2']);
+    $routes->get('labs/(:num)/recommended-slots', [NativeBookingController::class, 'recommendedSlots/$1']);
+    $routes->get('references/faculties', [NativeReferenceController::class, 'faculties']);
+    $routes->post('bookings/check-slot', [NativeBookingController::class, 'checkSlot']);
+});
+
+$routes->group('api/native', ['filter' => 'tokens'], static function ($routes) {
+    $routes->get('auth/me', [NativeAuthController::class, 'me']);
+    $routes->post('auth/logout', [NativeAuthController::class, 'logout']);
+    $routes->get('bootstrap', [NativeBootstrapController::class, 'show']);
+    $routes->get('profile', [NativeProfileController::class, 'show']);
+    $routes->post('profile', [NativeProfileController::class, 'update']);
+    $routes->get('push', [NativePushController::class, 'show']);
+    $routes->post('push/register', [NativePushController::class, 'register']);
+    $routes->post('push/unregister', [NativePushController::class, 'unregister']);
+    $routes->get('reports', [NativeReportController::class, 'show']);
+    $routes->get('reports/export/pdf', [NativeReportController::class, 'downloadPdf']);
+    $routes->get('reports/export/csv', [NativeReportController::class, 'downloadCsv']);
+
+    $routes->get('bookings', [NativeBookingController::class, 'index']);
+    $routes->get('bookings/(:num)', [NativeBookingController::class, 'show/$1']);
+    $routes->post('bookings/submit', [NativeBookingController::class, 'submit']);
+    $routes->post('bookings/(:num)/cancel', [NativeBookingController::class, 'cancel/$1']);
+
+    $routes->get('issues', [NativeIssueReportController::class, 'index']);
+    $routes->post('issues', [NativeIssueReportController::class, 'store']);
+
+    $routes->get('notifications', [NativeNotificationController::class, 'index']);
+    $routes->post('notifications/read-all', [NativeNotificationController::class, 'markAllRead']);
+    $routes->post('notifications/(:num)/read', [NativeNotificationController::class, 'markRead/$1']);
+    $routes->post('notifications/(:num)/unread', [NativeNotificationController::class, 'markUnread/$1']);
+
+    $routes->get('approvals/queue', [NativeApprovalQueueController::class, 'index']);
+    $routes->get('approvals/queue/(:num)', [NativeApprovalQueueController::class, 'show/$1']);
+    $routes->post('approvals/queue/(:num)/approve', [BookingApprovalController::class, 'approve/$1']);
+    $routes->post('approvals/queue/(:num)/reject', [BookingApprovalController::class, 'reject/$1']);
+
+    $routes->get('external-requests', [NativeExternalRequestController::class, 'index']);
+    $routes->get('external-requests/(:num)', [NativeExternalRequestController::class, 'show/$1']);
+    $routes->post('external-requests', [NativeExternalRequestController::class, 'store']);
+    $routes->post('external-requests/(:num)', [NativeExternalRequestController::class, 'update/$1']);
+    $routes->get('external-requests/review', [NativeExternalRequestReviewController::class, 'index']);
+    $routes->get('external-requests/review/(:num)', [NativeExternalRequestReviewController::class, 'show/$1']);
+    $routes->post('external-requests/review/(:num)/status', [NativeExternalRequestReviewController::class, 'updateStatus/$1']);
+
+    $routes->get('maintenance', [NativeMaintenanceController::class, 'index']);
+    $routes->get('maintenance/(:num)', [NativeMaintenanceController::class, 'show/$1']);
+    $routes->post('maintenance', [NativeMaintenanceController::class, 'store']);
+    $routes->post('maintenance/(:num)', [NativeMaintenanceController::class, 'update/$1']);
+
+    $routes->get('documents/pdf/(:segment)', [DocumentController::class, 'viewPdf/$1']);
+    $routes->get('admin/settings', [NativeAdminSettingsController::class, 'show']);
+    $routes->post('admin/settings', [NativeAdminSettingsController::class, 'update']);
+    $routes->post('admin/settings/slots', [NativeAdminSettingsController::class, 'saveSlots']);
+    $routes->post('admin/settings/run-scheduled-tasks', [NativeAdminSettingsController::class, 'runScheduledTasks']);
+    $routes->get('admin/users', [NativeAdminUserController::class, 'index']);
+    $routes->get('admin/users/(:num)', [NativeAdminUserController::class, 'show/$1']);
+    $routes->post('admin/users', [NativeAdminUserController::class, 'store']);
+    $routes->post('admin/users/(:num)', [NativeAdminUserController::class, 'update/$1']);
+    $routes->post('admin/users/(:num)/send-recovery', [NativeAdminUserController::class, 'sendRecovery/$1']);
+    $routes->post('admin/users/(:num)/delete', [NativeAdminUserController::class, 'delete/$1']);
+    $routes->get('admin/labs', [NativeAdminLaboratoryController::class, 'index']);
+    $routes->get('admin/labs/(:num)', [NativeAdminLaboratoryController::class, 'show/$1']);
+    $routes->post('admin/labs', [NativeAdminLaboratoryController::class, 'store']);
+    $routes->post('admin/labs/(:num)', [NativeAdminLaboratoryController::class, 'update/$1']);
+    $routes->post('admin/labs/(:num)/delete', [NativeAdminLaboratoryController::class, 'delete/$1']);
+    $routes->get('admin/assets', [NativeAdminAssetController::class, 'index']);
+    $routes->get('admin/assets/(:num)', [NativeAdminAssetController::class, 'show/$1']);
+    $routes->post('admin/assets', [NativeAdminAssetController::class, 'store']);
+    $routes->post('admin/assets/(:num)', [NativeAdminAssetController::class, 'update/$1']);
+    $routes->post('admin/assets/(:num)/delete', [NativeAdminAssetController::class, 'delete/$1']);
+});
 
 // Laboratories
 $routes->get('/laboratories', [LaboratoryController::class, 'index']);
@@ -315,15 +423,14 @@ $routes->get('dashboard', [DashboardController::class, 'index'], ['filter' => 's
 $routes->group('dashboard', ['filter' => 'session'], function ($routes) {
     $routes->get('profile', [ProfileController::class, 'index']);
     $routes->post('profile/update', [ProfileController::class, 'update']);
-    $routes->get('analytics', [ReportController::class, 'analytics'], ['filter' => 'group:pic,manager,admin']);
     $routes->get('reports/pdf', [ReportController::class, 'download'], ['filter' => 'group:pic,manager,admin']);
     $routes->get('reports/csv', [ReportController::class, 'downloadCsv'], ['filter' => 'group:pic,manager,admin']);
-    $routes->get('reports/export/pdf/(:segment)', [ReportController::class, 'exportPdf/$1'], ['filter' => 'group:pic,manager,admin']);
-    $routes->get('reports/export/csv/(:segment)', [ReportController::class, 'exportCsv/$1'], ['filter' => 'group:pic,manager,admin']);
-    $routes->get('reports/(:segment)', [ReportController::class, 'show/$1'], ['filter' => 'group:pic,manager,admin']);
     $routes->get('notifications', [NotificationController::class, 'index']);
     $routes->post('notifications/read/(:num)', [NotificationController::class, 'markRead/$1']);
     $routes->post('notifications/mark-all-read', [NotificationController::class, 'markAllRead']);
+    $routes->post('push/subscribe', [PushSubscriptionController::class, 'subscribe']);
+    $routes->post('push/unsubscribe', [PushSubscriptionController::class, 'unsubscribe']);
+    $routes->post('push/test', [PushSubscriptionController::class, 'test']);
     $routes->get('emails', [EmailInboxController::class, 'index']);
     $routes->get('emails/(:num)', [EmailInboxController::class, 'show/$1']);
 
@@ -334,6 +441,10 @@ $routes->group('dashboard', ['filter' => 'session'], function ($routes) {
 
     // EXTERNAL DASHBOARD
     $routes->get('external', [ExternalDashboard::class, 'index'], ['filter' => 'group:external']);
+    $routes->get('external/request', [ExternalDashboard::class, 'createRequest'], ['filter' => 'group:external']);
+    $routes->post('external/request/store', [ExternalDashboard::class, 'storeRequest'], ['filter' => 'group:external']);
+    $routes->get('external/request/edit/(:num)', [ExternalDashboard::class, 'editRequest/$1'], ['filter' => 'group:external']);
+    $routes->post('external/request/update/(:num)', [ExternalDashboard::class, 'updateRequest/$1'], ['filter' => 'group:external']);
 
     // PIC DASHBOARD
     $routes->get('pic', [PicDashboard::class, 'index'], ['filter' => 'group:pic']);
@@ -355,6 +466,9 @@ $routes->group('dashboard', ['filter' => 'session'], function ($routes) {
 
     // APPROVAL UI PAGE (accessible to PIC/MANAGER/ADMIN)
     $routes->get('approvals', [ApprovalsController::class, 'index'], ['filter' => 'group:pic,manager,admin']);
+    $routes->get('external-requests', [ExternalRequestsController::class, 'index'], ['filter' => 'group:pic,manager,admin']);
+    $routes->get('external-requests/(:num)', [ExternalRequestsController::class, 'show/$1'], ['filter' => 'group:pic,manager,admin']);
+    $routes->post('external-requests/update/(:num)', [ExternalRequestsController::class, 'updateStatus/$1'], ['filter' => 'group:pic,manager,admin']);
 });
 
 
@@ -379,12 +493,6 @@ $routes->group('booking', ['filter' => 'session'], function ($routes) {
 // ====================================================================
 
 $routes->group('admin', ['filter' => 'group:admin'], function ($routes) {
-    $routes->get('analytics', [ReportController::class, 'analytics']);
-    $routes->get('reports/pdf', [ReportController::class, 'download']);
-    $routes->get('reports/csv', [ReportController::class, 'downloadCsv']);
-    $routes->get('reports/export/pdf/(:segment)', [ReportController::class, 'exportPdf/$1']);
-    $routes->get('reports/export/csv/(:segment)', [ReportController::class, 'exportCsv/$1']);
-    $routes->get('reports/(:segment)', [ReportController::class, 'show/$1']);
 
     // Settings
     $routes->get('settings', [SettingsController::class, 'index']);

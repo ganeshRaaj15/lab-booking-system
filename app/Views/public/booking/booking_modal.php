@@ -43,8 +43,7 @@ if ($picPhone === '') {
 
             <div class="modal-body">
                 <p class="small text-muted mb-3">
-                    You can browse laboratories and equipment, but to make a booking as an external user or a
-                    guest, please contact the Person-in-Charge (PIC) directly.
+                    You can browse laboratories and equipment here. External users should submit a lab access request after login, while guests should contact the Person-in-Charge (PIC) or register first.
                 </p>
 
                 <div class="card border-0 shadow-sm">
@@ -83,7 +82,7 @@ if ($picPhone === '') {
                 </div>
 
                 <p class="small text-muted mt-3 mb-0">
-                    External bookings must follow FKMP safety and procedural requirements as communicated by the PIC.
+                    External access still follows FKMP safety and procedural requirements as communicated by the PIC.
                 </p>
             </div>
 
@@ -210,30 +209,30 @@ if ($picPhone === '') {
 
                     <!-- ====================== STEP 2 ====================== -->
                     <div id="step2" class="wizard-step d-none">
-                        <h5 class="fw-semibold mb-3">Date &amp; Time</h5>
+                        <h5 class="fw-semibold mb-3">Date &amp; Session</h5>
 
                         <div class="row g-3 mb-3">
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <label class="small mb-1">Date *</label>
-                                <input type="text" id="selectedDate" name="date"
-                                       class="form-control required-field" readonly>
+                                <input type="date" id="selectedDate" name="date"
+                                       class="form-control required-field"
+                                       min="<?= esc(date('Y-m-d')) ?>">
                             </div>
 
-                            <div class="col-md-4">
-                                <label class="small mb-1">Start Time *</label>
-                                <input type="time" id="startTime" name="start_time"
-                                       class="form-control required-field">
-                            </div>
-
-                            <div class="col-md-4">
-                                <label class="small mb-1">End Time *</label>
-                                <input type="time" id="endTime" name="end_time"
-                                       class="form-control required-field">
+                            <div class="col-md-6">
+                                <label class="small mb-1">Selected Session *</label>
+                                <input type="text" id="selectedSessionLabel"
+                                       class="form-control"
+                                       placeholder="Choose one of the available sessions below"
+                                       readonly>
                             </div>
                         </div>
 
                         <div id="recommendedSlots" class="mb-2"></div>
+                        <div id="daySlotChoices" class="mb-2"></div>
                         <div id="slotConflictWarning"></div>
+                        <input type="hidden" id="startTime" name="start_time">
+                        <input type="hidden" id="endTime" name="end_time">
                     </div>
 
 
@@ -315,8 +314,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const dateField   = document.getElementById("selectedDate");
     const startField  = document.getElementById("startTime");
     const endField    = document.getElementById("endTime");
+    const sessionLabelField = document.getElementById("selectedSessionLabel");
     const conflictEl  = document.getElementById("slotConflictWarning");
     const recommendEl = document.getElementById("recommendedSlots");
+    const daySlotsEl = document.getElementById("daySlotChoices");
     const serviceField = document.getElementById("service_id_modal");
     const servicePanel = document.getElementById("selectedServicePanel");
     const serviceNameEl = document.getElementById("selectedServiceName");
@@ -328,67 +329,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const labels = {
         1: "Step 1 of 3 - Applicant Details",
-        2: "Step 2 of 3 - Date & Time",
+        2: "Step 2 of 3 - Date & Session",
         3: "Step 3 of 3 - Activity & Supervisor"
     };
 
     const widths = {1:33, 2:66, 3:100};
-    const DEVICE_CLOCK_REFRESH_MS = 30000;
     let slotConflict = null;
     let currentServiceContext = null;
-
-    function twoDigits(value) {
-        return String(value).padStart(2, "0");
-    }
-
-    function getLocalNow() {
-        return new Date();
-    }
-
-    function getLocalTodayStart(now = getLocalNow()) {
-        const next = new Date(now);
-        next.setHours(0, 0, 0, 0);
-        return next;
-    }
-
-    function toLocalDateString(date) {
-        return `${date.getFullYear()}-${twoDigits(date.getMonth() + 1)}-${twoDigits(date.getDate())}`;
-    }
-
-    function parseLocalDate(dateStr) {
-        const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec((dateStr || "").trim());
-        if (!match) return null;
-
-        return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 0, 0, 0, 0);
-    }
-
-    function parseLocalDateTime(dateStr, timeStr) {
-        const dateMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec((dateStr || "").trim());
-        const timeMatch = /^(\d{2}):(\d{2})$/.exec((timeStr || "").trim());
-        if (!dateMatch || !timeMatch) return null;
-
-        return new Date(
-            Number(dateMatch[1]),
-            Number(dateMatch[2]) - 1,
-            Number(dateMatch[3]),
-            Number(timeMatch[1]),
-            Number(timeMatch[2]),
-            0,
-            0
-        );
-    }
-
-    function isPastBookingDate(dateStr, now = getLocalNow()) {
-        const date = parseLocalDate(dateStr);
-        return !!date && date < getLocalTodayStart(now);
-    }
-
-    function isPastBookingSlot(dateStr, endTime, now = getLocalNow()) {
-        if (isPastBookingDate(dateStr, now)) return true;
-
-        const endAt = parseLocalDateTime(dateStr, endTime);
-        return !!endAt && endAt <= now;
-    }
 
     function shouldShowRecommendations() {
         return (!dateField.value && !startField.value && !endField.value);
@@ -453,8 +400,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function formatDateLabel(dateStr) {
-        const d = parseLocalDate(dateStr);
-        if (!d) return dateStr;
+        const d = new Date(dateStr + "T00:00:00");
         return d.toLocaleDateString("en-US", {
             weekday: "short",
             month: "short",
@@ -462,31 +408,96 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    function ensureCurrentSlotSelectionIsValid() {
-        if (!dateField?.value) {
-            return true;
+    function renderSelectedSessionLabel() {
+        if (!sessionLabelField) return;
+
+        if (!dateField.value || !startField.value || !endField.value) {
+            sessionLabelField.value = "";
+            return;
         }
 
-        if (isPastBookingDate(dateField.value)) {
-            dateField.value = "";
-            startField.value = "";
-            endField.value = "";
-            slotConflict = true;
-            renderConflictWarning("Selected booking date has already passed on this device. Please choose a new slot.");
-            refreshRecommendedSlots();
-            return false;
+        sessionLabelField.value = `${formatDateLabel(dateField.value)} | ${startField.value}-${endField.value}`;
+    }
+
+    function setSelectedSession(dateStr, start, end) {
+        dateField.value = dateStr || "";
+        startField.value = start || "";
+        endField.value = end || "";
+        renderSelectedSessionLabel();
+    }
+
+    async function refreshDaySlots() {
+        if (!daySlotsEl) return;
+
+        const assetString = document.getElementById("asset_selection_modal")?.value || "";
+        const labId = document.getElementById("labIdInput")?.value || "";
+        const serviceId = serviceField?.value || "";
+
+        if (!dateField.value) {
+            daySlotsEl.innerHTML = "";
+            return;
         }
 
-        if (startField.value && endField.value && isPastBookingSlot(dateField.value, endField.value)) {
-            startField.value = "";
-            endField.value = "";
-            slotConflict = true;
-            renderConflictWarning("Selected slot has already ended on this device. Please choose another time.");
-            refreshRecommendedSlots();
-            return false;
+        if (!serviceId || !assetString || !labId) {
+            daySlotsEl.innerHTML = "";
+            return;
         }
 
-        return true;
+        daySlotsEl.innerHTML = `
+            <div class="alert alert-info small mb-2">
+                <i class="bi bi-hourglass-split me-1"></i>
+                Loading booking sessions for the selected date...
+            </div>
+        `;
+
+        try {
+            const res = await fetch(`/api/bookings/day-with-assets/${labId}/${dateField.value}?service_id=${encodeURIComponent(serviceId)}&assets=${encodeURIComponent(assetString)}`);
+            const data = await res.json();
+            const slots = data.slots || [];
+
+            if (!slots.length) {
+                daySlotsEl.innerHTML = `
+                    <div class="alert alert-warning small mb-2">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        No booking sessions are available for this date.
+                    </div>
+                `;
+                return;
+            }
+
+            const buttons = slots.map(slot => {
+                const selected = startField.value === slot.start && endField.value === slot.end;
+                const buttonClass = slot.can_book
+                    ? (selected ? "btn-primary" : "btn-outline-success")
+                    : "btn-outline-secondary";
+                const disabledAttr = slot.can_book ? "" : "disabled";
+                const caption = slot.can_book ? `${slot.start} - ${slot.end}` : (slot.reason || "Unavailable");
+
+                return `
+                    <button type="button"
+                            class="btn ${buttonClass} btn-sm me-2 mb-2 day-slot-btn"
+                            data-date="${dateField.value}"
+                            data-start="${slot.start}"
+                            data-end="${slot.end}"
+                            ${disabledAttr}>
+                        <div class="fw-semibold">${slot.label || `${slot.start}-${slot.end}`}</div>
+                        <div class="small">${caption}</div>
+                    </button>
+                `;
+            }).join("");
+
+            daySlotsEl.innerHTML = `
+                <div class="small fw-semibold text-muted mb-2">Available sessions for ${formatDateLabel(dateField.value)}:</div>
+                ${buttons}
+            `;
+        } catch {
+            daySlotsEl.innerHTML = `
+                <div class="alert alert-warning small mb-2">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    Unable to load booking sessions for this date right now.
+                </div>
+            `;
+        }
     }
 
     async function checkSlotConflict() {
@@ -496,7 +507,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!serviceId) {
             slotConflict = null;
-            renderConflictWarning("Choose a service before checking slot availability.");
+            renderConflictWarning("Choose a service before checking booking session availability.");
             return false;
         }
 
@@ -507,15 +518,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (!labId || !dateField.value || !startField.value || !endField.value) {
-            if (slotConflict !== true) {
-                slotConflict = null;
-                renderConflictWarning("");
-            }
-            return slotConflict !== true;
-        }
-
-        if (!ensureCurrentSlotSelectionIsValid()) {
-            return false;
+            slotConflict = null;
+            renderConflictWarning("");
+            return true;
         }
 
         const fd = new FormData();
@@ -538,15 +543,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (slotConflict) {
                 const reason = data.reason ? ` ${data.reason}` : "";
-                renderConflictWarning(`Selected slot is not available.${reason}`);
+                renderConflictWarning(`Selected booking session is not available.${reason}`);
                 return false;
             }
 
-            renderConflictWarning("Selected slot is available.", "success");
+            renderConflictWarning("Selected booking session is available.", "success");
             return true;
         } catch {
             slotConflict = null;
-            renderConflictWarning("Unable to verify slot availability right now.");
+            renderConflictWarning("Unable to verify booking session availability right now.");
             return true;
         }
     }
@@ -571,26 +576,26 @@ document.addEventListener("DOMContentLoaded", () => {
         recommendEl.innerHTML = `
             <div class="alert alert-info small mb-2">
                 <i class="bi bi-hourglass-split me-1"></i>
-                Finding recommended slots...
+                Finding recommended booking sessions...
             </div>
         `;
 
         const results = [];
         const maxDays = 14;
         const limit = 3;
-        const today = getLocalNow();
+        const today = new Date();
 
         for (let i = 0; i < maxDays && results.length < limit; i++) {
             const d = new Date(today);
             d.setDate(today.getDate() + i);
-            const dateStr = toLocalDateString(d);
+            const dateStr = d.toISOString().slice(0, 10);
 
             try {
                 const res = await fetch(`/api/bookings/day-with-assets/${labId}/${dateStr}?service_id=${encodeURIComponent(serviceId)}&assets=${encodeURIComponent(assetString)}`);
                 const data = await res.json();
                 const slots = data.slots || [];
                 slots.forEach(slot => {
-                    if (slot.can_book && !isPastBookingSlot(dateStr, slot.end) && results.length < limit) {
+                    if (slot.can_book && results.length < limit) {
                         results.push({
                             date: dateStr,
                             start: slot.start,
@@ -627,7 +632,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }).join("");
 
         recommendEl.innerHTML = `
-            <div class="small fw-semibold text-muted mb-2">Recommended next slots:</div>
+            <div class="small fw-semibold text-muted mb-2">Recommended next sessions:</div>
             ${buttons}
         `;
     }
@@ -652,6 +657,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (step === 2) {
             refreshRecommendedSlots();
+            refreshDaySlots();
+            renderSelectedSessionLabel();
             checkSlotConflict();
         }
     }
@@ -661,6 +668,10 @@ document.addEventListener("DOMContentLoaded", () => {
         currentStep = 1;
         slotConflict = null;
         renderSelectedServiceSummary(currentServiceContext);
+        renderSelectedSessionLabel();
+        if (daySlotsEl && !dateField.value) {
+            daySlotsEl.innerHTML = "";
+        }
         renderConflictWarning("");
         showStep(1);
     };
@@ -670,8 +681,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (serviceField) {
             serviceField.value = currentServiceContext?.id ? String(currentServiceContext.id) : "";
         }
+        setSelectedSession(dateField.value, "", "");
         renderSelectedServiceSummary(currentServiceContext);
         refreshRecommendedSlots();
+        refreshDaySlots();
         checkSlotConflict();
     };
 
@@ -764,11 +777,11 @@ document.addEventListener("DOMContentLoaded", () => {
         // Step 2 - Date and time
         if (step === 2) {
             if (!serviceField?.value) {
-                showError("Please choose a service before confirming date and time.");
+                showError("Please choose a service before confirming a booking session.");
                 return false;
             }
             if (!dateField.value || !startField.value || !endField.value) {
-                showError("Please complete date and time.");
+                showError("Please choose a date and one of the available booking sessions.");
                 return false;
             }
             if (startField.value >= endField.value) {
@@ -776,7 +789,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 return false;
             }
             if (slotConflict === true) {
-                showError("Selected slot is not available. Please choose another time.");
+                showError("Selected booking session is not available. Please choose another session.");
                 return false;
             }
         }
@@ -806,7 +819,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (currentStep === 2) {
             const ok = await checkSlotConflict();
             if (!ok) {
-                showError("Selected slot is not available. Please choose another time.");
+                showError("Selected booking session is not available. Please choose another session.");
                 return;
             }
         }
@@ -822,57 +835,44 @@ document.addEventListener("DOMContentLoaded", () => {
     // ----------------------------
     // Slot availability listeners
     // ----------------------------
-    [dateField, startField, endField].forEach(field => {
-        if (!field) return;
-        field.addEventListener("change", () => {
-            const isCurrentSelectionValid = ensureCurrentSlotSelectionIsValid();
+    if (dateField) {
+        dateField.addEventListener("change", () => {
+            setSelectedSession(dateField.value, "", "");
             refreshRecommendedSlots();
-            if (isCurrentSelectionValid) {
-                checkSlotConflict();
-            }
+            refreshDaySlots();
+            checkSlotConflict();
         });
-    });
+    }
 
     if (recommendEl) {
         recommendEl.addEventListener("click", (e) => {
             const btn = e.target.closest(".recommend-slot-btn");
             if (!btn) return;
 
-            dateField.value = btn.dataset.date || "";
-            startField.value = btn.dataset.start || "";
-            endField.value = btn.dataset.end || "";
-
-            const isCurrentSelectionValid = ensureCurrentSlotSelectionIsValid();
+            setSelectedSession(btn.dataset.date || "", btn.dataset.start || "", btn.dataset.end || "");
             refreshRecommendedSlots();
-            if (isCurrentSelectionValid) {
-                checkSlotConflict();
-            }
+            refreshDaySlots();
+            checkSlotConflict();
+        });
+    }
+
+    if (daySlotsEl) {
+        daySlotsEl.addEventListener("click", (e) => {
+            const btn = e.target.closest(".day-slot-btn");
+            if (!btn || btn.disabled) return;
+
+            setSelectedSession(btn.dataset.date || dateField.value || "", btn.dataset.start || "", btn.dataset.end || "");
+            refreshRecommendedSlots();
+            refreshDaySlots();
+            checkSlotConflict();
         });
     }
 
     window.addEventListener("assetSelectionUpdated", () => {
-        const isCurrentSelectionValid = ensureCurrentSlotSelectionIsValid();
+        setSelectedSession(dateField.value, "", "");
         refreshRecommendedSlots();
-        if (isCurrentSelectionValid) {
-            checkSlotConflict();
-        }
-    });
-
-    const deviceClockInterval = window.setInterval(() => {
-        const modalIsOpen = document.getElementById("bookingModal")?.classList.contains("show");
-        if (!modalIsOpen || currentStep !== 2) {
-            return;
-        }
-
-        const isCurrentSelectionValid = ensureCurrentSlotSelectionIsValid();
-        refreshRecommendedSlots();
-        if (isCurrentSelectionValid) {
-            checkSlotConflict();
-        }
-    }, DEVICE_CLOCK_REFRESH_MS);
-
-    window.addEventListener("beforeunload", () => {
-        window.clearInterval(deviceClockInterval);
+        refreshDaySlots();
+        checkSlotConflict();
     });
 
 

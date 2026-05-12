@@ -38,20 +38,28 @@
                        placeholder="you@example.com" required>
             </div>
 
-            <div class="mb-3 input-wrapper">
+            <div class="mb-3">
                 <label class="form-label small fw-semibold">Password</label>
-                <input type="password" id="password" name="password"
-                       class="form-control form-control-lg"
-                       placeholder="Create a password" required>
-                <i class="bi bi-eye-slash password-toggle" onclick="togglePassword('password', this)"></i>
+                <div class="password-wrapper">
+                    <input type="password" id="password" name="password"
+                           class="form-control form-control-lg"
+                           placeholder="Create a password" required>
+                    <button type="button" class="toggle-password" id="togglePassword" aria-label="Show password">
+                        <i class="bi bi-eye-slash"></i>
+                    </button>
+                </div>
             </div>
 
-            <div class="mb-3 input-wrapper">
+            <div class="mb-3">
                 <label class="form-label small fw-semibold">Confirm Password</label>
-                <input type="password" id="pass_confirm" name="password_confirm"
-                       class="form-control form-control-lg"
-                       placeholder="Re-enter password" required>
-                <i class="bi bi-eye-slash password-toggle" onclick="togglePassword('pass_confirm', this)"></i>
+                <div class="password-wrapper">
+                    <input type="password" id="pass_confirm" name="password_confirm"
+                           class="form-control form-control-lg"
+                           placeholder="Re-enter password" required>
+                    <button type="button" class="toggle-password" id="togglePasswordConfirm" aria-label="Show password">
+                        <i class="bi bi-eye-slash"></i>
+                    </button>
+                </div>
             </div>
 
             <button type="submit" class="btn btn-fkmp-auth mb-3">
@@ -67,18 +75,28 @@
 </div>
 
 <script>
-function togglePassword(fieldId, iconEl) {
-    const input = document.getElementById(fieldId);
-    if (input.type === "password") {
-        input.type = "text";
-        iconEl.classList.remove("bi-eye-slash");
-        iconEl.classList.add("bi-eye");
-    } else {
-        input.type = "password";
-        iconEl.classList.remove("bi-eye");
-        iconEl.classList.add("bi-eye-slash");
+document.addEventListener("DOMContentLoaded", function () {
+    function setupPasswordToggle(toggleId, inputId) {
+        const toggle = document.getElementById(toggleId);
+        const input = document.getElementById(inputId);
+
+        if (!toggle || !input) {
+            return;
+        }
+
+        toggle.addEventListener("click", function () {
+            const isHidden = input.type === "password";
+            input.type = isHidden ? "text" : "password";
+            toggle.setAttribute("aria-label", isHidden ? "Hide password" : "Show password");
+            toggle.querySelector("i").classList.toggle("bi-eye", isHidden);
+            toggle.querySelector("i").classList.toggle("bi-eye-slash", !isHidden);
+            input.focus();
+        });
     }
-}
+
+    setupPasswordToggle("togglePassword", "password");
+    setupPasswordToggle("togglePasswordConfirm", "pass_confirm");
+});
 </script>
 
 <?= $this->endSection(); ?>
