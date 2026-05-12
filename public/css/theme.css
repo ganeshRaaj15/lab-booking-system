@@ -743,6 +743,11 @@ input::placeholder {
     color: var(--slams-nav-text) !important;
 }
 
+.glass-navbar .btn.btn-glow,
+.admin-glass-navbar .btn.btn-glow {
+    color: #ffffff !important;
+}
+
 .brand-name {
     color: var(--slams-nav-text);
 }
