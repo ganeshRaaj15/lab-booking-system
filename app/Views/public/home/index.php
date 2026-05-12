@@ -7,6 +7,7 @@ $labCount = (int) ($homeStats['lab_count'] ?? 0);
 $bookingCount = (int) ($homeStats['total_bookings'] ?? 0);
 $approvedCount = (int) ($homeStats['approved'] ?? 0);
 $heroPoster = base_url('images/fkmp/FKMP.jpeg');
+$campusVideoEmbedUrl = 'https://www.youtube-nocookie.com/embed/Car8y6iPSRg?autoplay=1&rel=0';
 ?>
 
 <!-- ============================================================
@@ -54,10 +55,45 @@ $heroPoster = base_url('images/fkmp/FKMP.jpeg');
                         Login to SLAMS
                     </a>
                 </div>
+                <div class="hero-video-link">
+                    <button type="button" class="hero-btn hero-btn-secondary" data-bs-toggle="modal" data-bs-target="#campusVideoModal">
+                        <i class="bi bi-play-circle"></i>
+                        Watch Campus Video
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 </section>
+
+<div class="modal fade campus-video-modal" id="campusVideoModal" tabindex="-1" aria-labelledby="campusVideoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <div>
+                    <div class="hero-eyebrow mb-2">
+                        <i class="bi bi-camera-reels"></i>
+                        Campus Story
+                    </div>
+                    <h2 class="h4 mb-0" id="campusVideoModalLabel">UTHM aerial footage</h2>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-3">
+                <div class="campus-video-frame-shell">
+                    <iframe
+                        data-campus-video-embed
+                        data-video-src="<?= esc($campusVideoEmbedUrl) ?>"
+                        title="UTHM aerial footage"
+                        src=""
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowfullscreen
+                    ></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 
 <div class="container">
@@ -198,6 +234,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const video = document.getElementById('uthmVideo');
     const videoBtn = document.getElementById('videoPauseBtn');
     const videoBackground = document.querySelector('.video-background');
+    const campusVideoModal = document.getElementById('campusVideoModal');
+    const campusVideoFrame = campusVideoModal ? campusVideoModal.querySelector('[data-campus-video-embed]') : null;
     let isPlaying = true;
 
     function setVideoIcon(iconClass) {
@@ -205,6 +243,18 @@ document.addEventListener('DOMContentLoaded', function() {
         if (icon) {
             icon.className = iconClass;
         }
+    }
+
+    if (campusVideoModal && campusVideoFrame) {
+        campusVideoModal.addEventListener('show.bs.modal', function() {
+            if (!campusVideoFrame.src) {
+                campusVideoFrame.src = campusVideoFrame.dataset.videoSrc || '';
+            }
+        });
+
+        campusVideoModal.addEventListener('hidden.bs.modal', function() {
+            campusVideoFrame.src = '';
+        });
     }
 
     function activateVideoFallback() {

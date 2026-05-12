@@ -51,6 +51,7 @@ $pushLoggedIn = function_exists('auth') && auth()->loggedIn();
     </div>
 
     <?= $this->include('components/chatbot') ?>
+    <?= $this->include('components/theme_toggle') ?>
     <?= $this->include('components/mobile_quick_actions') ?>
     <?= $this->include('components/mobile_bottom_nav') ?>
 

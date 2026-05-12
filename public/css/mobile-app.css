@@ -64,25 +64,6 @@ body.slams-mobile-app {
     -webkit-backdrop-filter: none;
 }
 
-.slams-mobile-app .theme-toggle,
-.slams-mobile-app .chatbot-toggle {
-    display: none;
-}
-
-.slams-mobile-app .slams-chatbot {
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-}
-
-.slams-mobile-app .chatbot-panel {
-    position: fixed;
-    right: 1rem;
-    bottom: 5.25rem;
-    width: min(340px, calc(100vw - 2rem));
-    pointer-events: auto;
-}
-
 .slams-mobile-bottom-nav,
 .slams-mobile-status-banner,
 .slams-mobile-update-banner {
@@ -173,9 +154,22 @@ body.slams-mobile-app {
     .slams-mobile-app .chatbot-panel {
         left: 0.75rem;
         right: 0.75rem;
-        bottom: calc(var(--slams-mobile-nav-height) + 0.85rem + env(safe-area-inset-bottom, 0px));
+        bottom: calc(var(--slams-mobile-nav-height) + 4.25rem + env(safe-area-inset-bottom, 0px));
         width: auto;
         max-height: min(64vh, 520px);
+    }
+
+    .slams-mobile-app .theme-toggle {
+        right: auto;
+        left: 0.75rem;
+        bottom: calc(var(--slams-mobile-nav-height) + 0.85rem + env(safe-area-inset-bottom, 0px));
+        z-index: 1046;
+    }
+
+    .slams-mobile-app .slams-chatbot {
+        right: 0.75rem;
+        bottom: calc(var(--slams-mobile-nav-height) + 0.85rem + env(safe-area-inset-bottom, 0px));
+        z-index: 1046;
     }
 
     .slams-mobile-app input,
