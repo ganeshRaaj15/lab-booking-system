@@ -186,9 +186,16 @@ class NativeProfileController extends BaseController
 
     protected function requestPayload(): array
     {
-        $json = $this->request->getJSON(true);
-        if (is_array($json) && $json !== []) {
-            return $json;
+        $contentType = strtolower((string) $this->request->getHeaderLine('Content-Type'));
+        if (str_contains($contentType, 'application/json')) {
+            try {
+                $json = $this->request->getJSON(true);
+                if (is_array($json) && $json !== []) {
+                    return $json;
+                }
+            } catch (Throwable) {
+                // Fall back to form fields when the request body is not valid JSON.
+            }
         }
 
         $post = $this->request->getPost();
