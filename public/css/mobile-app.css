@@ -101,22 +101,24 @@ body.slams-mobile-app {
 
     .slams-mobile-app .chatbot-panel {
         position: fixed;
-        left: 0.75rem;
-        right: 0.75rem;
-        bottom: calc(var(--slams-mobile-nav-height) + 4.25rem + env(safe-area-inset-bottom, 0px));
-        width: auto;
+        right: calc(0.75rem + var(--floating-control-size) + var(--floating-panel-gap));
+        left: auto;
+        bottom: calc(var(--slams-mobile-nav-height) + 0.85rem + env(safe-area-inset-bottom, 0px));
+        width: min(340px, calc(100vw - 112px));
+        max-width: calc(100vw - 112px);
         max-height: min(64vh, 520px);
-        max-width: min(420px, calc(100vw - 1.5rem));
-        margin-inline: auto;
+        margin-inline: 0;
     }
 
     .slams-mobile-app .theme-toggle {
+        right: auto;
+        left: 0.75rem;
         bottom: calc(var(--slams-mobile-nav-height) + 0.85rem + env(safe-area-inset-bottom, 0px));
         z-index: 1046;
     }
 
     .slams-mobile-app .slams-chatbot {
-        left: 0.75rem;
+        left: auto;
         right: 0.75rem;
         bottom: calc(var(--slams-mobile-nav-height) + 0.85rem + env(safe-area-inset-bottom, 0px));
         z-index: 1046;
@@ -297,15 +299,6 @@ body.slams-mobile-app {
 
     .slams-mobile-app .modal-dialog {
         margin: 0.5rem;
-    }
-
-    .slams-mobile-app .theme-toggle {
-        right: auto;
-        left: 0.75rem;
-    }
-
-    .slams-mobile-app .slams-chatbot {
-        right: 0.75rem;
     }
 
     .slams-mobile-app input,
