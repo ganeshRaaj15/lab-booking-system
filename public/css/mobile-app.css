@@ -100,11 +100,14 @@ body.slams-mobile-app {
     }
 
     .slams-mobile-app .chatbot-panel {
+        position: fixed;
         left: 0.75rem;
         right: 0.75rem;
         bottom: calc(var(--slams-mobile-nav-height) + 4.25rem + env(safe-area-inset-bottom, 0px));
         width: auto;
         max-height: min(64vh, 520px);
+        max-width: min(420px, calc(100vw - 1.5rem));
+        margin-inline: auto;
     }
 
     .slams-mobile-app .theme-toggle {
@@ -113,6 +116,8 @@ body.slams-mobile-app {
     }
 
     .slams-mobile-app .slams-chatbot {
+        left: 0.75rem;
+        right: 0.75rem;
         bottom: calc(var(--slams-mobile-nav-height) + 0.85rem + env(safe-area-inset-bottom, 0px));
         z-index: 1046;
     }
