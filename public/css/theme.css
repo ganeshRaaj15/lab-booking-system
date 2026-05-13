@@ -3298,9 +3298,16 @@ input::placeholder {
     .cta-buttons,
     .map-actions {
         flex-direction: column;
+        align-items: center;
     }
 
-    .hero-btn,
+    .hero-btn {
+        width: auto;
+        min-width: min(100%, 280px);
+        justify-content: center;
+        text-align: center;
+    }
+
     .map-btn {
         width: 100%;
     }
