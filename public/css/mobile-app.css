@@ -70,7 +70,7 @@ body.slams-mobile-app {
     display: none;
 }
 
-@media (max-width: 767.98px) {
+@media (max-width: 991.98px) {
     :root {
         --slams-mobile-nav-height: 72px;
     }
@@ -88,16 +88,6 @@ body.slams-mobile-app {
         margin-left: auto;
     }
 
-    .slams-navbar-app-actions {
-        gap: 0.36rem;
-    }
-
-    .slams-navbar-app-btn {
-        width: 38px;
-        height: 38px;
-        min-height: 38px;
-    }
-
     .slams-mobile-app .slams-main,
     .slams-mobile-app .content-area {
         padding-bottom: calc(var(--slams-mobile-nav-height) + 1.5rem) !important;
@@ -109,74 +99,18 @@ body.slams-mobile-app {
         z-index: 1000;
     }
 
-    .slams-mobile-app .admin-glass-navbar {
-        min-height: 60px;
-    }
-
-    .slams-mobile-app .navbar-title h4 {
-        max-width: 58vw;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .slams-mobile-app .navbar-actions {
-        gap: 0.35rem;
-    }
-
-    .slams-mobile-app .user-profile-glass .user-info {
-        display: none;
-    }
-
-    .slams-mobile-app .btn-logout-glass {
-        min-height: 38px;
-        padding-inline: 0.8rem;
-    }
-
-    .slams-mobile-app .card,
-    .slams-mobile-app .quick-action-card,
-    .slams-mobile-app .booking-card,
-    .slams-mobile-app .asset-card,
-    .slams-mobile-app .glass-card {
-        border-radius: 8px !important;
-    }
-
-    .slams-mobile-app .table-responsive {
-        border: 1px solid var(--slams-border);
-        border-radius: 8px;
-        background: var(--slams-surface);
-    }
-
-    .slams-mobile-app .modal-dialog {
-        margin: 0.5rem;
-    }
-
     .slams-mobile-app .chatbot-panel {
-        left: 0.75rem;
-        right: 0.75rem;
         bottom: calc(var(--slams-mobile-nav-height) + 4.25rem + env(safe-area-inset-bottom, 0px));
-        width: auto;
-        max-height: min(64vh, 520px);
     }
 
     .slams-mobile-app .theme-toggle {
-        right: auto;
-        left: 0.75rem;
         bottom: calc(var(--slams-mobile-nav-height) + 0.85rem + env(safe-area-inset-bottom, 0px));
         z-index: 1046;
     }
 
     .slams-mobile-app .slams-chatbot {
-        right: 0.75rem;
         bottom: calc(var(--slams-mobile-nav-height) + 0.85rem + env(safe-area-inset-bottom, 0px));
         z-index: 1046;
-    }
-
-    .slams-mobile-app input,
-    .slams-mobile-app select,
-    .slams-mobile-app textarea,
-    .slams-mobile-app .btn {
-        min-height: 44px;
     }
 
     .slams-mobile-status-banner,
@@ -300,6 +234,83 @@ body.slams-mobile-app {
         font-weight: 700;
         line-height: 18px;
         text-align: center;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .slams-navbar-app-actions {
+        gap: 0.36rem;
+    }
+
+    .slams-navbar-app-btn {
+        width: 38px;
+        height: 38px;
+        min-height: 38px;
+    }
+
+    .slams-mobile-app .admin-glass-navbar {
+        min-height: 60px;
+    }
+
+    .slams-mobile-app .navbar-title h4 {
+        max-width: 58vw;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .slams-mobile-app .navbar-actions {
+        gap: 0.35rem;
+    }
+
+    .slams-mobile-app .user-profile-glass .user-info {
+        display: none;
+    }
+
+    .slams-mobile-app .btn-logout-glass {
+        min-height: 38px;
+        padding-inline: 0.8rem;
+    }
+
+    .slams-mobile-app .card,
+    .slams-mobile-app .quick-action-card,
+    .slams-mobile-app .booking-card,
+    .slams-mobile-app .asset-card,
+    .slams-mobile-app .glass-card {
+        border-radius: 8px !important;
+    }
+
+    .slams-mobile-app .table-responsive {
+        border: 1px solid var(--slams-border);
+        border-radius: 8px;
+        background: var(--slams-surface);
+    }
+
+    .slams-mobile-app .modal-dialog {
+        margin: 0.5rem;
+    }
+
+    .slams-mobile-app .chatbot-panel {
+        left: 0.75rem;
+        right: 0.75rem;
+        width: auto;
+        max-height: min(64vh, 520px);
+    }
+
+    .slams-mobile-app .theme-toggle {
+        right: auto;
+        left: 0.75rem;
+    }
+
+    .slams-mobile-app .slams-chatbot {
+        right: 0.75rem;
+    }
+
+    .slams-mobile-app input,
+    .slams-mobile-app select,
+    .slams-mobile-app textarea,
+    .slams-mobile-app .btn {
+        min-height: 44px;
     }
 
 }
