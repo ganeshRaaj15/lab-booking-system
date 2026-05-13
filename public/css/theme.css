@@ -1748,25 +1748,12 @@ input::placeholder {
         url("/images/fkmp/FKMP.jpeg") center/cover no-repeat;
 }
 
-.video-background video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    filter: var(--slams-hero-video-filter);
-}
-
-.video-background.is-video-fallback video {
-    opacity: 0;
-    visibility: hidden;
-}
-
 .hero-overlay {
     z-index: 1;
     background: var(--slams-hero-overlay);
 }
 
 .hero-section .container,
-.video-controls,
 .campus-info {
     position: relative;
     z-index: 2;
@@ -2005,31 +1992,6 @@ input::placeholder {
     box-shadow:
         0 12px 26px rgba(0, 0, 0, 0.22),
         0 0 28px rgba(45, 212, 191, 0.16) !important;
-}
-
-.video-controls {
-    position: absolute;
-    right: 0.85rem;
-    top: 0.85rem;
-}
-
-.video-toggle {
-    display: grid;
-    place-items: center;
-    width: 36px;
-    height: 36px;
-    border-radius: var(--slams-radius);
-    border: 1px solid rgba(255, 255, 255, 0.28);
-    background: rgba(255, 255, 255, 0.16);
-    color: #ffffff;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
-}
-
-.video-toggle:hover {
-    transform: translateY(-1px);
-    background: rgba(255, 255, 255, 0.24);
 }
 
 .campus-info {

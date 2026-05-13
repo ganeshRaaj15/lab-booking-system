@@ -6,30 +6,17 @@ $homeStats = $stats ?? [];
 $labCount = (int) ($homeStats['lab_count'] ?? 0);
 $bookingCount = (int) ($homeStats['total_bookings'] ?? 0);
 $approvedCount = (int) ($homeStats['approved'] ?? 0);
-$heroPoster = base_url('images/fkmp/FKMP.jpeg');
 ?>
 
 <!-- ============================================================
-     HERO SECTION WITH AERIAL FOOTAGE
+     HERO SECTION
      ============================================================ -->
 <div class="home-page">
 <section class="hero-section">
-    <!-- Video Background -->
-    <div class="video-background">
-        <video id="uthmVideo" autoplay muted loop playsinline preload="metadata" poster="<?= esc($heroPoster) ?>">
-            <source src="<?= base_url('images/uthm-aerial.mp4') ?>" type="video/mp4">
-        </video>
-    </div>
+    <div class="video-background" aria-hidden="true"></div>
     
     <!-- Overlay for better text readability -->
     <div class="hero-overlay"></div>
-    
-    <!-- Video Controls -->
-    <div class="video-controls" id="videoControls" hidden>
-        <button class="video-toggle" id="videoPauseBtn" title="Pause Video">
-            <i class="bi bi-pause-fill"></i>
-        </button>
-    </div>
     
     <!-- Hero Content -->
     <div class="container">
@@ -195,90 +182,6 @@ $heroPoster = base_url('images/fkmp/FKMP.jpeg');
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const video = document.getElementById('uthmVideo');
-    const videoControls = document.getElementById('videoControls');
-    const videoBtn = document.getElementById('videoPauseBtn');
-    const videoBackground = document.querySelector('.video-background');
-    let isPlaying = true;
-
-    function setVideoIcon(iconClass) {
-        const icon = videoBtn ? videoBtn.querySelector('i') : null;
-        if (icon) {
-            icon.className = iconClass;
-        }
-    }
-
-    function setVideoControlsVisible(isVisible) {
-        if (videoControls) {
-            videoControls.hidden = !isVisible;
-        }
-    }
-
-    function activateVideoFallback() {
-        if (videoBackground) {
-            videoBackground.classList.add('is-video-fallback');
-        }
-
-        if (video) {
-            video.pause();
-            video.removeAttribute('autoplay');
-        }
-
-        setVideoControlsVisible(false);
-
-        isPlaying = false;
-    }
-    
-    // Optimize video for night footage
-    if (video && videoBtn) {
-        // Ensure video plays
-        video.play().catch(error => {
-            console.log('Autoplay prevented, showing play button');
-            setVideoControlsVisible(true);
-            setVideoIcon('bi bi-play-fill');
-            isPlaying = false;
-        });
-
-        video.addEventListener('error', activateVideoFallback);
-        
-        // Video controls
-        videoBtn.addEventListener('click', function() {
-            if (isPlaying) {
-                video.pause();
-                setVideoIcon('bi bi-play-fill');
-                videoBtn.title = 'Play Video';
-                isPlaying = false;
-            } else {
-                video.play();
-                setVideoIcon('bi bi-pause-fill');
-                videoBtn.title = 'Pause Video';
-                isPlaying = true;
-            }
-        });
-        
-        // Handle video loading states
-        video.addEventListener('waiting', function() {
-            video.style.opacity = '0.8';
-        });
-        
-        video.addEventListener('canplay', function() {
-            video.style.opacity = '1';
-            setVideoControlsVisible(true);
-        });
-        
-        // Restart video when it ends
-        video.addEventListener('ended', function() {
-            this.currentTime = 0;
-            this.play();
-        });
-
-        window.setTimeout(function() {
-            if (video.readyState === 0 || video.networkState === HTMLMediaElement.NETWORK_NO_SOURCE) {
-                activateVideoFallback();
-            }
-        }, 3500);
-    }
-    
     // Add smooth scroll for navigation
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function(e) {
