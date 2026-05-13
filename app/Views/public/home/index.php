@@ -25,7 +25,7 @@ $heroPoster = base_url('images/fkmp/FKMP.jpeg');
     <div class="hero-overlay"></div>
     
     <!-- Video Controls -->
-    <div class="video-controls">
+    <div class="video-controls" id="videoControls" hidden>
         <button class="video-toggle" id="videoPauseBtn" title="Pause Video">
             <i class="bi bi-pause-fill"></i>
         </button>
@@ -196,6 +196,7 @@ $heroPoster = base_url('images/fkmp/FKMP.jpeg');
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const video = document.getElementById('uthmVideo');
+    const videoControls = document.getElementById('videoControls');
     const videoBtn = document.getElementById('videoPauseBtn');
     const videoBackground = document.querySelector('.video-background');
     let isPlaying = true;
@@ -204,6 +205,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const icon = videoBtn ? videoBtn.querySelector('i') : null;
         if (icon) {
             icon.className = iconClass;
+        }
+    }
+
+    function setVideoControlsVisible(isVisible) {
+        if (videoControls) {
+            videoControls.hidden = !isVisible;
         }
     }
 
@@ -217,9 +224,7 @@ document.addEventListener('DOMContentLoaded', function() {
             video.removeAttribute('autoplay');
         }
 
-        if (videoBtn) {
-            videoBtn.hidden = true;
-        }
+        setVideoControlsVisible(false);
 
         isPlaying = false;
     }
@@ -229,6 +234,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Ensure video plays
         video.play().catch(error => {
             console.log('Autoplay prevented, showing play button');
+            setVideoControlsVisible(true);
             setVideoIcon('bi bi-play-fill');
             isPlaying = false;
         });
@@ -257,6 +263,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         video.addEventListener('canplay', function() {
             video.style.opacity = '1';
+            setVideoControlsVisible(true);
         });
         
         // Restart video when it ends
