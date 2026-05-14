@@ -309,7 +309,7 @@ class BookingApprovalController extends BaseController
             ->getResultArray();
 
         if ($assetRows === []) {
-            return 'This booking has no linked asset records.';
+            return null;
         }
 
         $assetIds = array_map(static fn(array $row): int => (int) $row['asset_id'], $assetRows);
