@@ -4,6 +4,7 @@ namespace App\Controllers\Dashboard;
 
 use App\Controllers\BaseController;
 use App\Models\BookingModel;
+use App\Models\ExternalRequestModel;
 use App\Models\LaboratoryModel;
 use App\Models\FacultyModel;
 use App\Models\BookingAssetModel;
@@ -23,10 +24,11 @@ class PicDashboard extends BaseController
         $user     = auth()->user();
         $picEmail = strtolower(trim((string) $user->email));
 
-        $labModel     = new LaboratoryModel();
-        $bookingModel = new BookingModel();
-        $facultyModel = new FacultyModel();
-        $bookingAssetModel = new BookingAssetModel();
+        $labModel            = new LaboratoryModel();
+        $bookingModel        = new BookingModel();
+        $facultyModel        = new FacultyModel();
+        $bookingAssetModel   = new BookingAssetModel();
+        $externalRequestModel = new ExternalRequestModel();
 
         // -----------------------------------------------------
         // 1. Labs owned by this PIC
@@ -39,19 +41,20 @@ class PicDashboard extends BaseController
 
         if (empty($labIds)) {
             return view('dashboard/pic/index', [
-                'user'          => $user,
-                'labs'          => [],
-                'pendingPic'    => [],
-                'pendingMgr'    => [],
-                'approved'      => [],
-                'rejected'      => [],
-                'widget'        => ['pending' => 0, 'pending_mgr' => 0, 'approved' => 0, 'rejected' => 0, 'cancelled' => 0, 'total' => 0],
-                'monthlyCounts' => [],
-                'facultyCounts' => [],
-                'labCounts'     => [],
-                'usageData'     => [],
-                'facultyData'   => [],
-                'maintenanceStats' => ['open' => 0, 'completed' => 0, 'upcoming' => 0],
+                'user'               => $user,
+                'labs'               => [],
+                'pendingPic'         => [],
+                'pendingExternalPic' => [],
+                'pendingMgr'         => [],
+                'approved'           => [],
+                'rejected'           => [],
+                'widget'             => ['pending' => 0, 'pending_mgr' => 0, 'approved' => 0, 'rejected' => 0, 'cancelled' => 0, 'total' => 0],
+                'monthlyCounts'      => [],
+                'facultyCounts'      => [],
+                'labCounts'          => [],
+                'usageData'          => [],
+                'facultyData'        => [],
+                'maintenanceStats'   => ['open' => 0, 'completed' => 0, 'upcoming' => 0],
             ]);
         }
 
@@ -80,6 +83,15 @@ class PicDashboard extends BaseController
                 ->where('booking_assets.booking_id', $booking['id'])
                 ->findAll();
         }
+
+        // External requests awaiting PIC approval for this PIC's labs
+        $pendingExternalPic = $externalRequestModel
+            ->select('external_requests.*, laboratories.name AS lab_name, laboratories.room AS lab_room')
+            ->join('laboratories', 'laboratories.id = external_requests.lab_id', 'left')
+            ->whereIn('external_requests.lab_id', $labIds)
+            ->where('external_requests.status', 'pending_pic_approval')
+            ->orderBy('external_requests.preferred_date', 'ASC')
+            ->findAll();
 
         // Stage 2: PIC approved, waiting Manager (non-FKMP only)
         $pendingMgr = $bookingModel
@@ -136,12 +148,12 @@ class PicDashboard extends BaseController
         // 3. Dashboard widget numbers
         // -----------------------------------------------------
         $widget = [
-            'pending'  => count($pendingPic),
-            'pending_mgr' => count($pendingMgr),
-            'approved' => $approvedCount,
-            'rejected' => $rejectedCount,
-            'cancelled' => $cancelledCount,
-            'total'    => count($pendingPic) + count($pendingMgr) + $approvedCount + $rejectedCount + $cancelledCount,
+            'pending'          => count($pendingPic) + count($pendingExternalPic),
+            'pending_mgr'      => count($pendingMgr),
+            'approved'         => $approvedCount,
+            'rejected'         => $rejectedCount,
+            'cancelled'        => $cancelledCount,
+            'total'            => count($pendingPic) + count($pendingExternalPic) + count($pendingMgr) + $approvedCount + $rejectedCount + $cancelledCount,
         ];
 
         // -----------------------------------------------------
@@ -156,17 +168,18 @@ class PicDashboard extends BaseController
         // 5. Render view
         // -----------------------------------------------------
         return view('dashboard/pic/index', [
-            'user'          => $user,
-            'labs'          => $labs,
-            'pendingPic'    => $pendingPic,
-            'pendingMgr'    => $pendingMgr,
-            'approved'      => $approved,
-            'rejected'      => $rejected,
-            'widget'        => $widget,
-            'monthlyCounts' => $monthlyCounts,
-            'facultyCounts' => $facultyCounts,
-            'usageData'     => $usageData,
-            'maintenanceStats' => $maintenanceStats,
+            'user'               => $user,
+            'labs'               => $labs,
+            'pendingPic'         => $pendingPic,
+            'pendingExternalPic' => $pendingExternalPic,
+            'pendingMgr'         => $pendingMgr,
+            'approved'           => $approved,
+            'rejected'           => $rejected,
+            'widget'             => $widget,
+            'monthlyCounts'      => $monthlyCounts,
+            'facultyCounts'      => $facultyCounts,
+            'usageData'          => $usageData,
+            'maintenanceStats'   => $maintenanceStats,
         ]);
     }
 

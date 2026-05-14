@@ -199,13 +199,13 @@
                  id="approvals" 
                  role="tabpanel">
                  
-                <?php if (empty($pendingMgr)): ?>
+                <?php if (empty($pendingMgr) && empty($pendingExternalMgr)): ?>
                     <div class="text-center py-5 px-4">
                         <div class="empty-state-icon mb-3">
                             <i class="bi bi-check-circle-fill text-success fs-1"></i>
                         </div>
                         <h5 class="fw-semibold text-dark mb-2">No pending approvals</h5>
-                        <p class="text-muted mb-4">All non-FKMP bookings have been processed.</p>
+                        <p class="text-muted mb-4">All bookings and external requests have been processed.</p>
                         <div class="d-inline-block bg-light rounded-3 p-3">
                             <div class="small text-muted">All clear! Check back later for new requests.</div>
                         </div>
@@ -215,21 +215,24 @@
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <div>
                                 <h6 class="fw-bold text-dark mb-0">Pending Approval Requests</h6>
-                                <p class="text-muted small mb-0"><?= count($pendingMgr) ?> non-FKMP bookings awaiting review</p>
+                                <p class="text-muted small mb-0">
+                                    <?= count($pendingMgr) ?> booking(s) &middot;
+                                    <?= count($pendingExternalMgr) ?> external request(s) awaiting review
+                                </p>
                             </div>
                             <a href="/dashboard/reports/csv" class="btn btn-outline-primary btn-sm">
                                 <i class="bi bi-download me-1"></i>Export CSV
                             </a>
                         </div>
-                        
+
                         <div class="table-responsive rounded-3 border">
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="table-light">
                                     <tr>
                                         <th width="20%" class="border-0 ps-4">Lab & Date</th>
-                                        <th width="15%" class="border-0">Faculty</th>
+                                        <th width="15%" class="border-0">Type / Faculty</th>
                                         <th width="15%" class="border-0">PIC</th>
-                                        <th width="25%" class="border-0">Assets Requested</th>
+                                        <th width="25%" class="border-0">Details</th>
                                         <th width="25%" class="border-0 pe-4 text-end">Actions</th>
                                     </tr>
                                 </thead>
@@ -245,18 +248,19 @@
                                                     <i class="bi bi-clock me-1"></i><?= esc($b['start_time']) ?>-<?= esc($b['end_time']) ?>
                                                 </div>
                                             </td>
-                                            
+
                                             <td>
-                                                <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 py-2 px-3">
+                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle mb-1">Student/Staff</span><br>
+                                                <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 py-1 px-2">
                                                     <?= esc($b['faculty_name'] ?? 'Other') ?>
                                                 </span>
                                             </td>
-                                            
+
                                             <td>
                                                 <div class="fw-medium small text-dark"><?= esc($b['pic_name'] ?? 'N/A') ?></div>
                                                 <div class="text-muted x-small"><?= esc($b['pic_email'] ?? '') ?></div>
                                             </td>
-                                            
+
                                             <td>
                                                 <?php if (!empty($b['assets'])): ?>
                                                     <div class="d-flex flex-wrap gap-2">
@@ -291,6 +295,48 @@
                                                         </button>
                                                     </div>
                                                 </div>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+
+                                    <?php foreach ($pendingExternalMgr as $er): ?>
+                                        <tr class="border-top">
+                                            <td class="ps-4">
+                                                <div class="fw-semibold text-dark"><?= esc($er['lab_name']) ?></div>
+                                                <div class="text-muted small">
+                                                    <i class="bi bi-calendar3 me-1"></i><?= esc($er['preferred_date']) ?>
+                                                </div>
+                                                <div class="text-muted small">
+                                                    <i class="bi bi-clock me-1"></i><?= esc($er['preferred_start_time']) ?>-<?= esc($er['preferred_end_time']) ?>
+                                                </div>
+                                            </td>
+
+                                            <td>
+                                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle mb-1">External</span><br>
+                                                <small class="text-muted"><?= esc($er['organization_name']) ?></small>
+                                            </td>
+
+                                            <td>
+                                                <div class="fw-medium small text-dark"><?= esc($er['pic_name'] ?? 'N/A') ?></div>
+                                                <div class="text-muted x-small"><?= esc($er['pic_email'] ?? '') ?></div>
+                                            </td>
+
+                                            <td>
+                                                <div class="small text-muted">
+                                                    <i class="bi bi-people me-1"></i><?= esc($er['participant_count']) ?> participant(s)
+                                                </div>
+                                                <div class="small text-muted text-truncate" style="max-width:180px;"
+                                                     title="<?= esc($er['purpose']) ?>">
+                                                    <?= esc($er['purpose']) ?>
+                                                </div>
+                                            </td>
+
+                                            <td class="pe-4 text-end">
+                                                <a href="/dashboard/external-requests/<?= $er['id'] ?>"
+                                                   class="btn btn-outline-warning btn-sm px-3"
+                                                   data-bs-toggle="tooltip" title="Review External Request">
+                                                    <i class="bi bi-eye me-1"></i>Review
+                                                </a>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>

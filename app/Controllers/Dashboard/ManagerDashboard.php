@@ -4,6 +4,7 @@ namespace App\Controllers\Dashboard;
 
 use App\Controllers\BaseController;
 use App\Models\BookingModel;
+use App\Models\ExternalRequestModel;
 use App\Models\LaboratoryModel;
 use App\Models\BookingAssetModel;
 
@@ -31,20 +32,22 @@ class ManagerDashboard extends BaseController
 
         if (empty($labIds)) {
             return view('dashboard/manager/index', [
-                'user' => $user,
-                'labs' => [],
-                'stats' => $this->emptyStats(),
-                'pendingMgr' => [],
-                'analytics' => $this->emptyAnalytics(),
-                'activeTab' => $this->request->getGet('tab') ?? 'approvals',
-                'insightPeriod' => $this->parseInsightWeeks($this->request->getGet('insight_period')),
+                'user'               => $user,
+                'labs'               => [],
+                'stats'              => $this->emptyStats(),
+                'pendingMgr'         => [],
+                'pendingExternalMgr' => [],
+                'analytics'          => $this->emptyAnalytics(),
+                'activeTab'          => $this->request->getGet('tab') ?? 'approvals',
+                'insightPeriod'      => $this->parseInsightWeeks($this->request->getGet('insight_period')),
             ]);
         }
 
         // ------------------------------------------------------------
-        // 2. PENDING MANAGER APPROVALS (Non-FKMP only)
+        // 2. PENDING MANAGER APPROVALS (Non-FKMP bookings + external requests)
         // ------------------------------------------------------------
-        $pendingMgr = $this->getPendingManagerApprovals($labIds);
+        $pendingMgr         = $this->getPendingManagerApprovals($labIds);
+        $pendingExternalMgr = $this->getPendingExternalApprovals();
 
         // ------------------------------------------------------------
         // 3. COMPREHENSIVE STATISTICS
@@ -71,13 +74,14 @@ class ManagerDashboard extends BaseController
         // 5. RENDER VIEW
         // ------------------------------------------------------------
         return view('dashboard/manager/index', [
-            'user' => $user,
-            'labs' => $labs,
-            'pendingMgr' => $pendingMgr,
-            'stats' => $stats,
-            'analytics' => $analytics,
-            'activeTab' => $this->request->getGet('tab') ?? 'approvals', // Default to approvals tab
-            'insightPeriod' => $this->parseInsightWeeks($this->request->getGet('insight_period')),
+            'user'               => $user,
+            'labs'               => $labs,
+            'pendingMgr'         => $pendingMgr,
+            'pendingExternalMgr' => $pendingExternalMgr,
+            'stats'              => $stats,
+            'analytics'          => $analytics,
+            'activeTab'          => $this->request->getGet('tab') ?? 'approvals',
+            'insightPeriod'      => $this->parseInsightWeeks($this->request->getGet('insight_period')),
         ]);
     }
 
@@ -117,6 +121,18 @@ class ManagerDashboard extends BaseController
         }
 
         return $pendingMgr;
+    }
+
+    private function getPendingExternalApprovals(): array
+    {
+        $externalRequestModel = new ExternalRequestModel();
+
+        return $externalRequestModel
+            ->select('external_requests.*, laboratories.name AS lab_name, laboratories.room AS lab_room, laboratories.pic_name, laboratories.pic_email')
+            ->join('laboratories', 'laboratories.id = external_requests.lab_id', 'left')
+            ->where('external_requests.status', 'pending_manager_approval')
+            ->orderBy('external_requests.preferred_date', 'ASC')
+            ->findAll();
     }
 
     private function emptyStats(): array

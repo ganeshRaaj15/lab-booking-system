@@ -202,7 +202,7 @@
     </div>
 
     <div class="card-body">
-        <?php if (empty($pendingPic)): ?>
+        <?php if (empty($pendingPic) && empty($pendingExternalPic)): ?>
             <div class="text-center py-5 text-muted">
                 <i class="bi bi-check-circle fs-1"></i>
                 <p class="mt-2">No pending PIC approval requests.</p>
@@ -214,9 +214,9 @@
                         <tr>
                             <th>Lab</th>
                             <th>Date & Time</th>
-                            <th>Activity</th>
-                            <th>Faculty</th>
-                            <th>Assets</th>
+                            <th>Activity / Purpose</th>
+                            <th>From</th>
+                            <th>Details</th>
                             <th class="text-end">Action</th>
                         </tr>
                     </thead>
@@ -233,22 +233,23 @@
                                     <div class="fw-semibold"><?= esc($b['date']) ?></div>
                                     <small class="text-muted"><?= esc($b['start_time']) ?> to <?= esc($b['end_time']) ?></small>
                                 </td>
-                                
+
                                 <td>
-                                    <div class="text-truncate" style="max-width: 200px;" 
+                                    <div class="text-truncate" style="max-width: 200px;"
                                          title="<?= esc($b['activity']) ?>">
                                         <?= esc($b['activity']) ?>
                                     </div>
                                 </td>
-                                
+
                                 <td>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Student/Staff</span><br>
                                     <?php if ($b['is_fkmp']): ?>
-                                        <span class="badge bg-success">FKMP</span>
+                                        <span class="badge bg-success mt-1">FKMP</span>
                                     <?php else: ?>
-                                        <span class="badge bg-info"><?= esc($b['faculty_name'] ?? 'Other') ?></span>
+                                        <span class="badge bg-info mt-1"><?= esc($b['faculty_name'] ?? 'Other') ?></span>
                                     <?php endif; ?>
                                 </td>
-                                
+
                                 <td>
                                     <?php if (!empty($b['assets'])): ?>
                                         <div class="d-flex flex-wrap gap-1">
@@ -269,7 +270,7 @@
                                             data-bs-toggle="tooltip" title="View Details">
                                         <i class="bi bi-eye me-1"></i>View
                                     </button>
-                                    
+
                                     <button class="btn btn-success btn-sm px-3"
                                             onclick="approveBooking(<?= $b['id'] ?>)"
                                             data-bs-toggle="tooltip" title="Approve">
@@ -281,6 +282,47 @@
                                             data-bs-toggle="tooltip" title="Reject">
                                         <i class="bi bi-x-lg"></i>
                                     </button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+
+                        <?php foreach ($pendingExternalPic as $er): ?>
+                            <tr>
+                                <td>
+                                    <strong><?= esc($er['lab_name']) ?></strong><br>
+                                    <small class="text-muted">Room <?= esc($er['lab_room']) ?></small>
+                                </td>
+
+                                <td>
+                                    <div class="fw-semibold"><?= esc($er['preferred_date']) ?></div>
+                                    <small class="text-muted"><?= esc($er['preferred_start_time']) ?> to <?= esc($er['preferred_end_time']) ?></small>
+                                </td>
+
+                                <td>
+                                    <div class="text-truncate" style="max-width: 200px;"
+                                         title="<?= esc($er['purpose']) ?>">
+                                        <?= esc($er['purpose']) ?>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle">External</span><br>
+                                    <small class="text-muted"><?= esc($er['organization_name']) ?></small>
+                                </td>
+
+                                <td>
+                                    <small class="text-muted">
+                                        <i class="bi bi-people me-1"></i><?= esc($er['participant_count']) ?> participant(s)
+                                    </small><br>
+                                    <small class="text-muted"><?= esc($er['contact_name']) ?></small>
+                                </td>
+
+                                <td class="text-end">
+                                    <a href="/dashboard/external-requests/<?= $er['id'] ?>"
+                                       class="btn btn-outline-warning btn-sm px-3"
+                                       data-bs-toggle="tooltip" title="Review External Request">
+                                        <i class="bi bi-eye me-1"></i>Review
+                                    </a>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
