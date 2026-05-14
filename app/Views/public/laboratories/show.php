@@ -1193,7 +1193,7 @@ document.addEventListener("DOMContentLoaded", function () {
             return false;
         }
 
-        const rowServiceId = row?.dataset.serviceId || "";
+        const rowServiceId = row?.dataset.serviceId || params.get("service") || "";
         if (!rowServiceId || !selectServiceById(rowServiceId)) {
             showAlert("Selected equipment is not linked to a bookable service.", "warning");
             return false;

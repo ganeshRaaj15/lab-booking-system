@@ -165,6 +165,29 @@
     (function () {
         const appUrl = <?= json_encode($appUrl, JSON_UNESCAPED_SLASHES) ?>;
         const webUrl = <?= json_encode($webUrl, JSON_UNESCAPED_SLASHES) ?>;
+
+        // Chrome on Android blocks slamsnative:// redirects from setTimeout (no user gesture).
+        // The intent:// format is honoured by Chrome without a gesture and includes a built-in
+        // fallback URL for when the app is not installed.
+        const isAndroid = /android/i.test(navigator.userAgent);
+
+        function toAndroidIntentUrl(schemeUrl, fallbackUrl) {
+            const withoutScheme = schemeUrl.replace(/^slamsnative:\/\//, '');
+            return (
+                'intent://' + withoutScheme +
+                '#Intent;scheme=slamsnative;package=com.slams.nativeapp' +
+                ';S.browser_fallback_url=' + encodeURIComponent(fallbackUrl) + ';end'
+            );
+        }
+
+        const redirectUrl = isAndroid ? toAndroidIntentUrl(appUrl, webUrl) : appUrl;
+
+        // Rewrite the primary button href so clicking it uses the same format.
+        const appBtn = document.querySelector('.btn-primary');
+        if (appBtn) {
+            appBtn.href = redirectUrl;
+        }
+
         let appOpened = false;
 
         function cancelFallback() {
@@ -186,7 +209,7 @@
         }, 1600);
 
         window.setTimeout(function () {
-            window.location.href = appUrl;
+            window.location.href = redirectUrl;
         }, 120);
     })();
     </script>

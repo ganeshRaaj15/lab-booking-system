@@ -43,42 +43,37 @@ class QrController extends BaseController
         $openParam = $this->request->getGet('open');
         $open = $openParam === '0' ? 0 : 1;
 
-        $queryParams = [
+        $serviceId = (int) ($asset['lab_service_id'] ?? 0);
+
+        $webQueryParams = [
             'asset' => (int) $asset['id'],
-            'open' => $open,
+            'open'  => $open,
         ];
 
-        if ($qty > 0) {
-            $queryParams['qty'] = $qty;
+        if ($serviceId > 0) {
+            $webQueryParams['service'] = $serviceId;
         }
 
-        $webUrl = qr_public_url('laboratories/' . $labId, $queryParams, $this->request);
+        $webUrl = qr_public_url('laboratories/' . $labId, $webQueryParams, $this->request);
 
-        if ($open !== 1) {
-            return redirect()->to($webUrl);
-        }
-
-        $serviceId = (int) ($asset['lab_service_id'] ?? 0);
-        $userAgent = $this->request->getUserAgent();
-        $isMobile = $userAgent && $userAgent->isMobile();
-
-        if (! $isMobile || $serviceId <= 0) {
+        // Without a service ID we cannot build a valid app deep link; fall back to web.
+        if ($open !== 1 || $serviceId <= 0) {
             return redirect()->to($webUrl);
         }
 
         $appQuery = http_build_query([
-            'labId' => $labId,
+            'labId'     => $labId,
             'serviceId' => $serviceId,
-            'assetId' => (int) $asset['id'],
-            'qty' => $qty > 0 ? $qty : 1,
+            'assetId'   => (int) $asset['id'],
+            'qty'       => $qty > 0 ? $qty : 1,
         ]);
 
         return view('public/qr/asset_redirect', [
-            'asset' => $asset,
-            'labId' => $labId,
+            'asset'    => $asset,
+            'labId'    => $labId,
             'serviceId' => $serviceId,
-            'appUrl' => 'slamsnative://booking' . ($appQuery !== '' ? '?' . $appQuery : ''),
-            'webUrl' => $webUrl,
+            'appUrl'   => 'slamsnative://booking' . ($appQuery !== '' ? '?' . $appQuery : ''),
+            'webUrl'   => $webUrl,
         ]);
     }
 }
