@@ -198,10 +198,11 @@ class BookingApprovalController extends BaseController
 
             $bookingModel->update($id, [
                 'status' => 'REJECTED',
+                'approved_by_pic' => 0,
                 'approved_by_manager' => 0,
                 'updated_at' => date('Y-m-d H:i:s'),
             ]);
-            $updated = $bookingModel->find($id) ?: array_merge($booking, ['status' => 'REJECTED', 'approved_by_manager' => 0]);
+            $updated = $bookingModel->find($id) ?: array_merge($booking, ['status' => 'REJECTED', 'approved_by_pic' => 0, 'approved_by_manager' => 0]);
             NotificationService::dispatchSafely(
                 fn(NotificationService $notifications) => $notifications->notifyBookingRejected($updated, 'Lab Manager'),
                 'booking rejected by manager'
