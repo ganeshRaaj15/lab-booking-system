@@ -119,7 +119,8 @@ class NativeAdminUserController extends BaseController
         $roles = $this->normalizedRoles($payload['roles'] ?? []);
         $facultyId = ($payload['faculty_id'] ?? '') !== '' ? (int) $payload['faculty_id'] : null;
 
-        $this->db->transStart();
+        $userId = 0;
+        $this->db->transBegin();
         try {
             $this->db->table('users')->insert([
                 'username' => $username,
@@ -153,10 +154,7 @@ class NativeAdminUserController extends BaseController
                 ]);
             }
 
-            $this->db->transComplete();
-            if ($this->db->transStatus() === false) {
-                throw new \RuntimeException('Transaction failed.');
-            }
+            $this->db->transCommit();
         } catch (\Throwable $e) {
             $this->db->transRollback();
 
@@ -310,9 +308,22 @@ class NativeAdminUserController extends BaseController
                 ]);
         }
 
-        $this->db->table('auth_identities')->where('user_id', $target->id)->delete();
-        $this->db->table('auth_groups_users')->where('user_id', $target->id)->delete();
-        $this->users->delete($target->id, true);
+        $this->db->transBegin();
+        try {
+            $this->db->table('auth_identities')->where('user_id', $target->id)->delete();
+            $this->db->table('auth_groups_users')->where('user_id', $target->id)->delete();
+            $this->users->delete($target->id, true);
+            $this->db->transCommit();
+        } catch (\Throwable $e) {
+            $this->db->transRollback();
+
+            return $this->response
+                ->setStatusCode(500)
+                ->setJSON([
+                    'status' => 'error',
+                    'message' => 'Failed to delete user: ' . $e->getMessage(),
+                ]);
+        }
 
         return $this->response->setJSON([
             'status' => 'success',
