@@ -252,10 +252,7 @@ class NativeBookingController extends WebBookingController
             return '';
         }
 
-        $scheme = $this->request->getUri()->getScheme();
-        $host = $this->request->getHeaderLine('Host');
-
-        return rtrim($scheme . '://' . $host, '/') . '/' . ltrim($path, '/');
+        return rtrim(base_url(), '/') . '/' . ltrim($path, '/');
     }
 
     protected function documentUrl(string $pdfPath): string

@@ -200,10 +200,7 @@ class NativeIssueReportController extends WebIssueReportController
             return '';
         }
 
-        $scheme = $this->request->getUri()->getScheme();
-        $host = $this->request->getHeaderLine('Host');
-
-        return rtrim($scheme . '://' . $host, '/') . '/' . ltrim($path, '/');
+        return rtrim(base_url(), '/') . '/' . ltrim($path, '/');
     }
 
     private function validationError()
