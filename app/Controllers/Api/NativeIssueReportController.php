@@ -14,6 +14,9 @@ class NativeIssueReportController extends WebIssueReportController
         if (! $user instanceof User) {
             return $this->unauthenticated();
         }
+        if (! $this->isAllowedReporter($user)) {
+            return $this->forbidden('Issue reporting is only available to students, staff, and lab PICs.');
+        }
 
         $assets = $this->availableAssetsForReporter($user);
         $recentReports = $this->maintenanceModel->withRelations()
@@ -62,6 +65,9 @@ class NativeIssueReportController extends WebIssueReportController
         $user = $this->reporterUser();
         if (! $user instanceof User) {
             return $this->unauthenticated();
+        }
+        if (! $this->isAllowedReporter($user)) {
+            return $this->forbidden('Issue reporting is only available to students, staff, and lab PICs.');
         }
 
         $rules = [
@@ -178,15 +184,13 @@ class NativeIssueReportController extends WebIssueReportController
     {
         helper('auth');
         $user = auth()->user();
-        if (! $user instanceof User) {
-            return null;
-        }
 
-        if (! $user->inGroup('student') && ! $user->inGroup('staff') && ! $user->inGroup('pic')) {
-            return null;
-        }
+        return $user instanceof User ? $user : null;
+    }
 
-        return $user;
+    private function isAllowedReporter(User $user): bool
+    {
+        return $user->inGroup('student') || $user->inGroup('staff') || $user->inGroup('pic');
     }
 
     private function mediaUrl(string $path): string
