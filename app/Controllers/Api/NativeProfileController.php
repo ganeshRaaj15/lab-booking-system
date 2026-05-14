@@ -142,13 +142,23 @@ class NativeProfileController extends BaseController
             'updated_at' => date('Y-m-d H:i:s'),
         ];
 
+        $oldProfilePhoto = null;
         if ($photoPath !== null) {
+            $row = $db->table('users')->select('profile_photo')->where('id', $user->id)->get()->getRowArray();
+            $oldProfilePhoto = trim((string) ($row['profile_photo'] ?? ''));
             $updateData['profile_photo'] = $photoPath;
         }
 
         $db->table('users')
             ->where('id', $user->id)
             ->update($updateData);
+
+        if ($oldProfilePhoto !== null && $oldProfilePhoto !== '') {
+            $oldFile = FCPATH . ltrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $oldProfilePhoto), '/\\');
+            if (is_file($oldFile)) {
+                @unlink($oldFile);
+            }
+        }
 
         $db->table('auth_identities')
             ->where('user_id', $user->id)
