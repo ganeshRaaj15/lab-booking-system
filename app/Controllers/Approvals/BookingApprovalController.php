@@ -272,15 +272,10 @@ class BookingApprovalController extends BaseController
     {
         $updates = [
             'status' => 'REJECTED',
+            'approved_by_pic' => 0,
+            'approved_by_manager' => 0,
             'updated_at' => date('Y-m-d H:i:s'),
         ];
-
-        if ((int) ($booking['approved_by_pic'] ?? 0) === 0) {
-            $updates['approved_by_pic'] = 0;
-            $updates['approved_by_manager'] = 0;
-        } else {
-            $updates['approved_by_manager'] = 0;
-        }
 
         $bookingModel->update($id, $updates);
         $updated = $bookingModel->find($id) ?: array_merge($booking, $updates);
