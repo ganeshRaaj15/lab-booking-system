@@ -8,6 +8,7 @@ class ApprovalFlowResolver
 {
     public const DIRECT_APPROVAL = 'FKMP_APPROVAL';
     public const TWO_STAGE_APPROVAL = 'FACULTY_APPROVAL';
+    public const EXTERNAL_APPROVAL = 'EXTERNAL_APPROVAL';
 
     protected FacultyModel $facultyModel;
 

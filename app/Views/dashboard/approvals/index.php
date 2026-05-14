@@ -82,6 +82,8 @@
                         <td>
                             <?php if ($b['approval_flow'] === 'FKMP_APPROVAL'): ?>
                                 <span class="badge bg-success">FKMP (PIC Final)</span>
+                            <?php elseif ($b['approval_flow'] === 'EXTERNAL_APPROVAL'): ?>
+                                <span class="badge bg-secondary">External Request</span>
                             <?php else: ?>
                                 <span class="badge bg-info">PIC to Manager</span>
                             <?php endif; ?>

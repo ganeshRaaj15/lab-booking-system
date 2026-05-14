@@ -48,7 +48,7 @@ class ExternalRequestBookingService
             'service_id' => null,
             'user_type' => 'EXTERNAL',
             'faculty_id' => null,
-            'approval_flow' => ApprovalFlowResolver::TWO_STAGE_APPROVAL,
+            'approval_flow' => ApprovalFlowResolver::EXTERNAL_APPROVAL,
             'approved_by_pic' => 1,
             'approved_by_manager' => 1,
             'date' => $date,
