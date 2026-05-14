@@ -1,3 +1,11 @@
+<?php
+/** @var array $stats */
+/** @var array $recentRecords */
+/** @var array $statusLabels */
+$stats         = $stats ?? [];
+$recentRecords = $recentRecords ?? [];
+$statusLabels  = $statusLabels ?? [];
+?>
 <?= $this->extend('layouts/main_technician') ?>
 <?= $this->section('content') ?>
 <div class="container-fluid">

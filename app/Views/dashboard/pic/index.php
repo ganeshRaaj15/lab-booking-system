@@ -1,3 +1,23 @@
+<?php
+/** @var array $stats */
+/** @var array $widget */
+/** @var array $labs */
+/** @var array $monthlyCounts */
+/** @var array $usageData */
+/** @var array $facultyCounts */
+/** @var array $maintenanceStats */
+/** @var array $pendingPic */
+/** @var array $pendingExternalPic */
+$stats            = $stats ?? [];
+$widget           = $widget ?? [];
+$labs             = $labs ?? [];
+$monthlyCounts    = $monthlyCounts ?? [];
+$usageData        = $usageData ?? [];
+$facultyCounts    = $facultyCounts ?? [];
+$maintenanceStats = $maintenanceStats ?? [];
+$pendingPic       = $pendingPic ?? [];
+$pendingExternalPic = $pendingExternalPic ?? [];
+?>
 <?= $this->extend('layouts/main_user') ?>
 <?= $this->section('content') ?>
 
@@ -400,7 +420,9 @@ function viewBookingDetails(id) {
     `;
     
     // Fetch booking details
-    fetch(`/dashboard/pic/booking/${id}`)
+    fetch(`/dashboard/pic/booking/${id}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        })
         .then(r => r.json())
         .then(data => {
             if (data.status === 'success') {

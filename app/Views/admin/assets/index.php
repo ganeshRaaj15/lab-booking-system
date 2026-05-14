@@ -1,9 +1,16 @@
+<?php
+/** @var array $assets */
+/** @var array $filters */
+/** @var array $labs */
+/** @var array $statusOptions */
+?>
 <?= $this->extend('layouts/main_admin') ?>
 <?= $this->section('content') ?>
 
 <?php
-$filters = $filters ?? ['q' => '', 'lab_id' => 0, 'status' => ''];
-$labs = $labs ?? [];
+$assets        = $assets ?? [];
+$filters       = $filters ?? ['q' => '', 'lab_id' => 0, 'status' => ''];
+$labs          = $labs ?? [];
 $statusOptions = $statusOptions ?? ['available', 'maintenance', 'faulty'];
 ?>
 

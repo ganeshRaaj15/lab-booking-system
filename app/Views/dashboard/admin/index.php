@@ -1,3 +1,19 @@
+<?php
+/** @var array $stats */
+/** @var array $trends */
+/** @var array $facultyBreakdown */
+/** @var array $pendingPic */
+/** @var array $pendingMgr */
+/** @var array $approved */
+/** @var array $rejected */
+$stats            = $stats ?? [];
+$trends           = $trends ?? [];
+$facultyBreakdown = $facultyBreakdown ?? [];
+$pendingPic       = $pendingPic ?? [];
+$pendingMgr       = $pendingMgr ?? [];
+$approved         = $approved ?? [];
+$rejected         = $rejected ?? [];
+?>
 <?= $this->extend('layouts/main_admin') ?>
 
 <?= $this->section('content') ?>

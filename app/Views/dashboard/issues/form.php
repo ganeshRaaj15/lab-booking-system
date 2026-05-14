@@ -1,3 +1,11 @@
+<?php
+/** @var array $assets */
+/** @var array $priorities */
+/** @var array $recentReports */
+$assets        = $assets ?? [];
+$priorities    = $priorities ?? [];
+$recentReports = $recentReports ?? [];
+?>
 <?= $this->extend('layouts/main_user') ?>
 <?= $this->section('content') ?>
 

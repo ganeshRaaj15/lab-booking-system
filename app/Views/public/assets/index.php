@@ -1,3 +1,7 @@
+<?php
+/** @var array $assets */
+/** @var string $search */
+?>
 <?= $this->extend('layouts/main_user') ?>
 <?= $this->section('content') ?>
 <?php

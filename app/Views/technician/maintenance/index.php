@@ -1,3 +1,19 @@
+<?php
+/** @var array $assets */
+/** @var array $records */
+/** @var array $filters */
+/** @var array $statusLabels */
+/** @var array $statusOptions */
+/** @var array $modelSummary */
+/** @var array $upcomingForecasts */
+$assets           = $assets ?? [];
+$records          = $records ?? [];
+$filters          = $filters ?? [];
+$statusLabels     = $statusLabels ?? [];
+$statusOptions    = $statusOptions ?? [];
+$modelSummary     = $modelSummary ?? [];
+$upcomingForecasts = $upcomingForecasts ?? [];
+?>
 <?= $this->extend('layouts/main_technician') ?>
 <?= $this->section('content') ?>
 <div class="container-fluid">

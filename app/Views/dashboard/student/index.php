@@ -1,7 +1,25 @@
+<?php
+/** @var \CodeIgniter\Shield\Entities\User $user */
+/** @var array $stats */
+/** @var array $bookings */
+/** @var array $upcomingBookings */
+/** @var array $monthlyCounts */
+/** @var array|null $nextBooking */
+/** @var array $personalizedHints */
+/** @var array $filters */
+/** @var string $dashboardLabel */
+$user              = $user ?? null;
+$stats             = $stats ?? [];
+$bookings          = $bookings ?? [];
+$upcomingBookings  = $upcomingBookings ?? [];
+$monthlyCounts     = $monthlyCounts ?? [];
+$nextBooking       = $nextBooking ?? null;
+$personalizedHints = $personalizedHints ?? [];
+$dashboardLabel    = $dashboardLabel ?? 'Student Dashboard';
+$filters           = $filters ?? ['q' => '', 'status' => '', 'date_from' => '', 'date_to' => ''];
+?>
 <?= $this->extend('layouts/main_user') ?>
 <?= $this->section('content') ?>
-
-<?php $filters = $filters ?? ['q' => '', 'status' => '', 'date_from' => '', 'date_to' => '']; ?>
 
 
 <div class="container py-4">
@@ -476,7 +494,9 @@ document.querySelectorAll(".booking-row").forEach(row => {
         body.innerHTML = "<p class='text-center text-muted'>Loading...</p>";
         modal.show();
 
-        fetch(`/dashboard/student/booking-details/${id}`)
+        fetch(`/dashboard/student/booking-details/${id}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            })
             .then(r => r.json())
             .then(res => {
 

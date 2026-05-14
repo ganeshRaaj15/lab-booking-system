@@ -1,10 +1,20 @@
+<?php
+/** @var array $stats */
+/** @var array $requests */
+/** @var array $labs */
+/** @var array $filters */
+/** @var array $statusLabels */
+/** @var mixed $requestModel */
+?>
 <?= $this->extend('layouts/main_user') ?>
 
 <?= $this->section('content') ?>
 
 <?php
-$filters = $filters ?? ['q' => '', 'status' => '', 'lab_id' => 0];
-$stats = $stats ?? [];
+$requests     = $requests ?? [];
+$labs         = $labs ?? [];
+$filters      = $filters ?? ['q' => '', 'status' => '', 'lab_id' => 0];
+$stats        = $stats ?? [];
 $statusLabels = $statusLabels ?? [];
 $requestModel = $requestModel ?? null;
 ?>

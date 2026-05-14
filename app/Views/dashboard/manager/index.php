@@ -1,3 +1,17 @@
+<?php
+/** @var array $stats */
+/** @var array $analytics */
+/** @var string $activeTab */
+/** @var string $insightPeriod */
+/** @var array $pendingMgr */
+/** @var array $pendingExternalMgr */
+$stats             = $stats ?? [];
+$analytics         = $analytics ?? [];
+$activeTab         = $activeTab ?? 'overview';
+$insightPeriod     = $insightPeriod ?? '30d';
+$pendingMgr        = $pendingMgr ?? [];
+$pendingExternalMgr = $pendingExternalMgr ?? [];
+?>
 <?= $this->extend('layouts/main_user') ?>
 <?= $this->section('content') ?>
 
@@ -1060,7 +1074,9 @@ function viewBookingDetails(id) {
         </div>
     `;
     
-    fetch(`/dashboard/manager/booking/${id}`)
+    fetch(`/dashboard/manager/booking/${id}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        })
         .then(r => r.json())
         .then(data => {
             if (data.status === 'success') {

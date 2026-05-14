@@ -217,7 +217,9 @@ document.addEventListener("DOMContentLoaded", () => {
         slotChoicesEl.innerHTML = "";
 
         try {
-            const response = await fetch(`/dashboard/external/request/slots/${encodeURIComponent(labId)}/${encodeURIComponent(preferredDate)}`);
+            const response = await fetch(`/dashboard/external/request/slots/${encodeURIComponent(labId)}/${encodeURIComponent(preferredDate)}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            });
             const data = await response.json();
             const slots = Array.isArray(data.slots) ? data.slots : [];
 
