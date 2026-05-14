@@ -303,6 +303,7 @@ class NativeBootstrapController extends BaseController
                 ->orGroupStart()
                     ->where('approved_by_pic', 1)
                     ->where('approved_by_manager', 0)
+                    ->where('approval_flow !=', 'FKMP_APPROVAL')
                 ->groupEnd()
             ->groupEnd()
             ->countAllResults();
