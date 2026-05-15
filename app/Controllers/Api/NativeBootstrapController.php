@@ -129,23 +129,22 @@ class NativeBootstrapController extends BaseController
 
     protected function studentSummary(User $user, int $notificationCount): array
     {
+        $countsRow = db_connect()
+            ->table('bookings')
+            ->select("
+                SUM(CASE WHEN status = 'PENDING' THEN 1 ELSE 0 END) AS pending,
+                SUM(CASE WHEN status = 'APPROVED' THEN 1 ELSE 0 END) AS approved
+            ")
+            ->where('user_id', $user->id)
+            ->get()
+            ->getRowArray() ?? [];
+
+        $pending        = (int) ($countsRow['pending'] ?? 0);
+        $approved       = (int) ($countsRow['approved'] ?? 0);
+        $activeBookings = $pending + $approved;
+
         $bookingModel = new BookingModel();
-        $activeBookings = (int) $bookingModel
-            ->where('user_id', $user->id)
-            ->whereIn('status', BookingModel::ACTIVE_STATUSES)
-            ->countAllResults();
-
-        $pending = (int) (new BookingModel())
-            ->where('user_id', $user->id)
-            ->where('status', 'PENDING')
-            ->countAllResults();
-
-        $approved = (int) (new BookingModel())
-            ->where('user_id', $user->id)
-            ->where('status', 'APPROVED')
-            ->countAllResults();
-
-        $nextBooking = $bookingModel
+        $nextBooking  = $bookingModel
             ->select('bookings.id, bookings.date, bookings.start_time, bookings.end_time, bookings.status, laboratories.name AS lab_name, laboratories.room AS lab_room')
             ->join('laboratories', 'laboratories.id = bookings.lab_id', 'left')
             ->where('bookings.user_id', $user->id)
@@ -266,6 +265,7 @@ class NativeBootstrapController extends BaseController
             ->where('status', 'PENDING')
             ->where('approved_by_pic', 1)
             ->where('approved_by_manager', 0)
+            ->where('approval_flow !=', 'FKMP_APPROVAL')
             ->countAllResults();
 
         $externalReview = (int) (new ExternalRequestModel())
