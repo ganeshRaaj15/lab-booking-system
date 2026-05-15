@@ -71,7 +71,7 @@ class MaintenanceRecordModel extends Model
     public function nextStatuses(?string $currentStatus): array
     {
         return match ($currentStatus) {
-            'reported' => ['scheduled', 'cancelled'],
+            'reported' => ['scheduled', 'in_progress', 'cancelled'],
             'scheduled' => ['in_progress', 'cancelled'],
             'in_progress' => ['testing', 'cancelled'],
             'testing' => ['completed', 'in_progress'],
