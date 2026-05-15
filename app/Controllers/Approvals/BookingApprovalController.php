@@ -195,6 +195,9 @@ class BookingApprovalController extends BaseController
             if ($isFkmpBooking) {
                 return $this->respondForbidden('Manager cannot reject FKMP bookings - only PIC can handle them.');
             }
+            if (! (int) $booking['approved_by_pic']) {
+                return $this->respondForbidden('PIC must approve before the Manager can reject.');
+            }
 
             $bookingModel->update($id, [
                 'status' => 'REJECTED',
