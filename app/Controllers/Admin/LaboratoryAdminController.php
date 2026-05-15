@@ -160,10 +160,10 @@ class LaboratoryAdminController extends BaseController
         return [
             'name' => 'required|min_length[3]|max_length[255]',
             'room' => 'required|max_length[50]',
-            'description' => 'permit_empty|string',
+            'description' => 'permit_empty|string|max_length[2000]',
             'capacity' => 'permit_empty|integer|greater_than[0]',
             'availability_note' => 'permit_empty|max_length[255]',
-            'safety_note' => 'permit_empty|string',
+            'safety_note' => 'permit_empty|string|max_length[2000]',
             'pic_name' => 'required|min_length[3]|max_length[255]',
             'pic_email' => 'permit_empty|valid_email|max_length[255]',
             'pic_phone' => 'permit_empty|max_length[30]',

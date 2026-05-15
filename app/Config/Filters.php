@@ -96,14 +96,14 @@ class Filters extends BaseFilters
      */
     public array $globals = [
         'before' => [
-            // 'honeypot',
-            'csrf' => ['except' => ['api/native/*']],
-            // 'invalidchars',
+            'honeypot'     => ['except' => ['api/*']],
+            'csrf'         => ['except' => ['api/native/*']],
+            'invalidchars',
         ],
         'after' => [
-            // 'honeypot',
+            'honeypot'     => ['except' => ['api/*']],
             // 'secureheaders',
-            'toolbar' => ['except' => ['api/*']],
+            'toolbar'      => ['except' => ['api/*']],
         ],
     ];
 
@@ -137,7 +137,11 @@ class Filters extends BaseFilters
                 'login',
                 'login/*',
                 'register',
-                'api/native/auth/token',
+                'api/native/auth/*',
+                'api/native/bookings/submit',
+                'api/native/issues',
+                'api/native/external-requests',
+                'api/native/maintenance',
             ],
         ],
     ];
