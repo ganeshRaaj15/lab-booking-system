@@ -220,6 +220,10 @@ class LaboratoryAdminController extends BaseController
             return $current;
         }
 
+        if (! in_array($file->getMimeType(), ['image/jpeg', 'image/png', 'image/gif'], true)) {
+            return $current;
+        }
+
         if ($current && is_file(FCPATH . $current)) {
             unlink(FCPATH . $current);
         }

@@ -305,6 +305,10 @@ class AssetController extends BaseController
             return $currentImage;
         }
 
+        if (! in_array($file->getMimeType(), ['image/jpeg', 'image/png', 'image/gif'], true)) {
+            return $currentImage;
+        }
+
         if ($currentImage && is_file(FCPATH . $currentImage)) {
             unlink(FCPATH . $currentImage);
         }
