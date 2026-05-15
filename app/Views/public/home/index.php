@@ -13,7 +13,11 @@ $approvedCount = (int) ($homeStats['approved'] ?? 0);
      ============================================================ -->
 <div class="home-page">
 <section class="hero-section">
-    <div class="video-background" aria-hidden="true"></div>
+    <div class="video-background" aria-hidden="true">
+        <video class="hero-video" autoplay muted loop playsinline preload="auto">
+            <source src="<?= base_url('images/uthm-aerial-compressed.mp4') ?>" type="video/mp4">
+        </video>
+    </div>
     
     <!-- Overlay for better text readability -->
     <div class="hero-overlay"></div>

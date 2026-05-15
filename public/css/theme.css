@@ -1748,6 +1748,15 @@ input::placeholder {
         url("/images/fkmp/FKMP.jpeg") center/cover no-repeat;
 }
 
+.hero-video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: var(--slams-hero-video-filter);
+}
+
 .hero-overlay {
     z-index: 1;
     background: var(--slams-hero-overlay);
