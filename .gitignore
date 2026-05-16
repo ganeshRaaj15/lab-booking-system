@@ -82,9 +82,12 @@ user_guide_src/cilexer/pycilexer.egg-info/*
 # Test Files
 #-------------------------
 tests/coverage*
+tests/*Test.php
+tests/Support/
 
 # Don't save phpunit under version control.
 phpunit
+phpunit.xml.dist
 
 #-------------------------
 # Composer

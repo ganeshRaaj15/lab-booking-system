@@ -439,6 +439,10 @@ class NativeApprovalQueueController extends BaseController
 
     protected function unauthenticated()
     {
+        if ($this->requestWantsHtml()) {
+            return redirect()->to('/login');
+        }
+
         return $this->response
             ->setStatusCode(401)
             ->setJSON([
@@ -449,6 +453,10 @@ class NativeApprovalQueueController extends BaseController
 
     protected function forbidden(string $message)
     {
+        if ($this->requestWantsHtml()) {
+            return redirect()->to('/dashboard')->with('error', $message);
+        }
+
         return $this->response
             ->setStatusCode(403)
             ->setJSON([
@@ -459,11 +467,20 @@ class NativeApprovalQueueController extends BaseController
 
     protected function notFound(string $message)
     {
+        if ($this->requestWantsHtml()) {
+            return redirect()->to('/dashboard')->with('error', $message);
+        }
+
         return $this->response
             ->setStatusCode(404)
             ->setJSON([
                 'status' => 'error',
                 'message' => $message,
             ]);
+    }
+
+    private function requestWantsHtml(): bool
+    {
+        return str_contains($this->request->getHeaderLine('Accept'), 'text/html');
     }
 }
