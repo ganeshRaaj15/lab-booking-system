@@ -232,12 +232,27 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    const initialSearch = searchInput.value.trim();
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialSearch = (urlParams.get('q') || '').trim();
+    searchInput.value = initialSearch;
+
     if (initialSearch) {
         filterAssets(initialSearch);
     } else {
         updateResults(assetItems.length, '');
     }
+
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted) {
+            const restoredQuery = (new URLSearchParams(window.location.search).get('q') || '').trim();
+            searchInput.value = restoredQuery;
+            if (restoredQuery) {
+                filterAssets(restoredQuery);
+            } else {
+                updateResults(assetItems.length, '');
+            }
+        }
+    });
 });
 </script>
 

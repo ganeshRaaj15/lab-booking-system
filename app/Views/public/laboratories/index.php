@@ -350,11 +350,30 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Initialize with any existing search term
-    const initialSearch = searchInput.value.trim();
+    // Use URL params as the source of truth for the initial search term,
+    // not the DOM input value. Browsers can restore a stale input value
+    // from history even when the server rendered it as empty, which causes
+    // filterLabs to fire with an old term and show zero results.
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialSearch = (urlParams.get('q') || '').trim();
+
+    // Sync the input to the URL param so the DOM is always consistent.
+    searchInput.value = initialSearch;
+
     if (initialSearch) {
         filterLabs(initialSearch);
     }
+
+    // Handle back/forward cache (bfcache) restoration. The browser replays the
+    // preserved DOM state (possibly with labs hidden and noResults visible) but
+    // does NOT re-fire DOMContentLoaded, so we reset the filter ourselves.
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted) {
+            const restoredQuery = (new URLSearchParams(window.location.search).get('q') || '').trim();
+            searchInput.value = restoredQuery;
+            filterLabs(restoredQuery);
+        }
+    });
 });
 </script>
 
