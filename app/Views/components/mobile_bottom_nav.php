@@ -8,13 +8,22 @@ $dashboardHref = $mobileExperience['dashboardHref'] ?? '/dashboard';
 $dashboardLabel = $mobileExperience['dashboardLabel'] ?? 'Dashboard';
 $alertsBadge = (int) ($mobileExperience['alertsBadge'] ?? 0);
 
-$mobileNavItems = [
-    [
-        'href' => '/',
-        'icon' => 'bi-house-door',
-        'label' => 'Home',
+$homeItem = $mobileNavLoggedIn
+    ? [
+        'href'   => $dashboardHref,
+        'icon'   => 'bi-house-door',
+        'label'  => 'Home',
+        'active' => url_is('/') || url_is('dashboard*') || url_is('admin*') || url_is('technician*'),
+    ]
+    : [
+        'href'   => '/',
+        'icon'   => 'bi-house-door',
+        'label'  => 'Home',
         'active' => url_is('/'),
-    ],
+    ];
+
+$mobileNavItems = [
+    $homeItem,
     [
         'href' => '/laboratories',
         'icon' => 'bi-building',
@@ -30,12 +39,6 @@ $mobileNavItems = [
 ];
 
 if ($mobileNavLoggedIn) {
-    $mobileNavItems[] = [
-        'href' => $dashboardHref,
-        'icon' => 'bi-speedometer2',
-        'label' => $dashboardLabel,
-        'active' => url_is('dashboard*') || url_is('admin*') || url_is('technician*'),
-    ];
     $mobileNavItems[] = [
         'href' => '/dashboard/notifications',
         'icon' => 'bi-bell',
