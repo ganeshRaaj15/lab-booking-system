@@ -141,21 +141,32 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchIndicator = document.getElementById('searchIndicator');
     const searchForm = document.getElementById('searchForm');
 
-    if (!searchInput || assetItems.length === 0) {
-        return;
-    }
+    if (!searchInput) return;
 
     let filterTimeout;
+    let filterGeneration = 0;
+
+    const indicatorSpan = searchIndicator ? searchIndicator.querySelector('span') : null;
+
+    // Synchronous reset to "show all" state — no async setTimeout so no stale
+    // callback can overwrite this state after it runs.
+    function resetToAll() {
+        assetItems.forEach(item => item.classList.remove('asset-hidden'));
+        noResults.style.display = assetItems.length === 0 ? 'block' : 'none';
+        if (clearFilterBtn) clearFilterBtn.style.display = 'none';
+        if (indicatorSpan) indicatorSpan.textContent = 'Search by equipment name or laboratory';
+        assetCount.textContent = `${assetItems.length} ${assetItems.length === 1 ? 'Asset' : 'Assets'} Available`;
+    }
 
     function updateResults(count, searchTerm) {
         assetCount.textContent = `${count} ${count === 1 ? 'Asset' : 'Assets'} Available`;
 
         if (searchTerm.trim()) {
-            searchIndicator.innerHTML = `<span>Showing results for: <strong>${searchTerm}</strong></span>`;
-            clearFilterBtn.style.display = 'inline-flex';
+            if (indicatorSpan) indicatorSpan.innerHTML = `Showing results for: <strong>${searchTerm}</strong>`;
+            if (clearFilterBtn) clearFilterBtn.style.display = 'inline-flex';
         } else {
-            searchIndicator.innerHTML = '<span>Search by equipment name or laboratory</span>';
-            clearFilterBtn.style.display = 'none';
+            if (indicatorSpan) indicatorSpan.textContent = 'Search by equipment name or laboratory';
+            if (clearFilterBtn) clearFilterBtn.style.display = 'none';
         }
 
         if (count === 0 && searchTerm.trim()) {
@@ -170,6 +181,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function filterAssets(searchTerm) {
+        const gen = ++filterGeneration;
         const searchLower = searchTerm.toLowerCase();
         let visibleCount = 0;
 
@@ -198,12 +210,18 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
+        if (gen !== filterGeneration) return;
         updateResults(visibleCount, searchTerm);
     }
 
-    searchInput.addEventListener('input', function() {
-        const searchTerm = this.value.trim();
+    // Delay input listener by 400 ms to block browser form-restore / autofill
+    // events that fire at page load from triggering filterAssets with a stale value.
+    let inputListenerActive = false;
+    setTimeout(() => { inputListenerActive = true; }, 400);
 
+    searchInput.addEventListener('input', function() {
+        if (!inputListenerActive) return;
+        const searchTerm = this.value.trim();
         clearTimeout(filterTimeout);
         filterTimeout = setTimeout(() => {
             filterAssets(searchTerm);
@@ -239,7 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (initialSearch) {
         filterAssets(initialSearch);
     } else {
-        updateResults(assetItems.length, '');
+        resetToAll();
     }
 
     window.addEventListener('pageshow', function(event) {
@@ -249,7 +267,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (restoredQuery) {
                 filterAssets(restoredQuery);
             } else {
-                updateResults(assetItems.length, '');
+                resetToAll();
             }
         }
     });

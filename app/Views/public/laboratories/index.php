@@ -148,10 +148,8 @@
 </div>
 
 <script>
-// Real-time search filtering
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('searchInput');
-    const labsGrid = document.getElementById('labsGrid');
     const labItems = document.querySelectorAll('.lab-item');
     const labCount = document.getElementById('labCount');
     const noResults = document.getElementById('noResults');
@@ -161,57 +159,65 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchIndicator = document.getElementById('searchIndicator');
     const searchIndicatorText = searchIndicator ? searchIndicator.querySelector('span') : null;
     const loadingSpinner = document.getElementById('loadingSpinner');
-    
+
     let filterTimeout;
     let isFiltering = false;
+    let filterGeneration = 0;
 
-    // Function to filter labs
+    // Synchronously reset to "show all" state without any async setTimeout.
+    // Used on init and on bfcache restoration when there is no search term,
+    // so a stale filterLabs setTimeout can never overwrite the clean state.
+    function resetToAll() {
+        labItems.forEach(item => item.classList.remove('lab-hidden'));
+        noResults.style.display = 'none';
+        if (clearFilterBtn) clearFilterBtn.style.display = 'none';
+        if (clearFilterBtnAlt) clearFilterBtnAlt.style.display = 'none';
+        labCount.innerHTML = `<i class="bi bi-building me-2"></i>${labItems.length} ${labItems.length === 1 ? 'Laboratory' : 'Laboratories'} Available`;
+        if (searchIndicatorText) {
+            searchIndicatorText.textContent = 'Search by laboratory name, room, or PIC';
+        }
+    }
+
     function filterLabs(searchTerm) {
+        const gen = ++filterGeneration;
         isFiltering = true;
         loadingSpinner.style.display = 'block';
-        
-        // Hide all labs initially
+
         labItems.forEach(item => {
             item.classList.add('lab-hidden');
         });
-        
-        // Show matching labs
+
         let visibleCount = 0;
         labItems.forEach(item => {
             const name = item.dataset.name || '';
             const room = item.dataset.room || '';
             const pic = item.dataset.pic || '';
             const capacity = item.dataset.capacity || '';
-            
+
             const searchLower = searchTerm.toLowerCase();
-            const matches = name.includes(searchLower) || 
-                          room.includes(searchLower) || 
+            const matches = name.includes(searchLower) ||
+                          room.includes(searchLower) ||
                           pic.includes(searchLower) ||
                           capacity.includes(searchTerm);
-            
+
             if (matches || searchTerm === '') {
                 item.classList.remove('lab-hidden');
                 visibleCount++;
             }
         });
-        
-        // Update count and show/hide no results
+
         setTimeout(() => {
+            if (gen !== filterGeneration) return;
             updateResults(visibleCount, searchTerm);
             isFiltering = false;
             loadingSpinner.style.display = 'none';
-            
-            // Animate visible cards
             animateVisibleCards();
         }, 300);
     }
-    
-        // Update results display
+
     function updateResults(count, searchTerm) {
-        // Update count badge
         labCount.innerHTML = `<i class="bi bi-building me-2"></i>${count} ${count === 1 ? 'Laboratory' : 'Laboratories'} Available`;
 
-        // Update search indicator
         if (searchIndicatorText) {
             if (searchTerm.trim()) {
                 searchIndicatorText.innerHTML = `Showing results for: <strong>${searchTerm}</strong>`;
@@ -223,70 +229,54 @@ document.addEventListener('DOMContentLoaded', function() {
             searchIndicator.style.display = 'block';
         }
 
-        // Show/hide no results message
         if (count === 0 && searchTerm.trim()) {
             noResultsText.textContent = `No laboratories found for "${searchTerm}". Try different keywords.`;
             noResults.style.display = 'block';
-            if (clearFilterBtn) {
-                clearFilterBtn.style.display = 'inline-flex';
-            }
-            if (clearFilterBtnAlt) {
-                clearFilterBtnAlt.style.display = 'inline-flex';
-            }
+            if (clearFilterBtn) clearFilterBtn.style.display = 'inline-flex';
+            if (clearFilterBtnAlt) clearFilterBtnAlt.style.display = 'inline-flex';
         } else if (count === 0) {
             noResultsText.textContent = 'No laboratories available.';
             noResults.style.display = 'block';
-            if (clearFilterBtn) {
-                clearFilterBtn.style.display = 'none';
-            }
-            if (clearFilterBtnAlt) {
-                clearFilterBtnAlt.style.display = 'none';
-            }
+            if (clearFilterBtn) clearFilterBtn.style.display = 'none';
+            if (clearFilterBtnAlt) clearFilterBtnAlt.style.display = 'none';
         } else {
             noResults.style.display = 'none';
-            if (clearFilterBtn) {
-                clearFilterBtn.style.display = searchTerm.trim() ? 'inline-flex' : 'none';
-            }
-            if (clearFilterBtnAlt) {
-                clearFilterBtnAlt.style.display = searchTerm.trim() ? 'inline-flex' : 'none';
-            }
+            if (clearFilterBtn) clearFilterBtn.style.display = searchTerm.trim() ? 'inline-flex' : 'none';
+            if (clearFilterBtnAlt) clearFilterBtnAlt.style.display = searchTerm.trim() ? 'inline-flex' : 'none';
         }
     }
 
-    // Animate visible cards
     function animateVisibleCards() {
         document.querySelectorAll('.lab-item').forEach(card => {
             card.style.opacity = '';
             card.style.transition = '';
         });
     }
-    
-    // Initial animation
+
     animateVisibleCards();
-    
-    // Search input event listener with debouncing
+
+    // Delay input listener by 400 ms so browser form-restore / autofill events
+    // that fire at page load cannot trigger filterLabs with a stale value.
+    let inputListenerActive = false;
+    setTimeout(() => { inputListenerActive = true; }, 400);
+
     searchInput.addEventListener('input', function() {
+        if (!inputListenerActive) return;
         const searchTerm = this.value.trim();
-        
-        // Clear previous timeout
+
         clearTimeout(filterTimeout);
-        
-        // Show loading spinner for searches longer than 1 character
+
         if (searchTerm.length > 1 && !isFiltering) {
             loadingSpinner.style.display = 'block';
         }
-        
-        // Set timeout for debouncing (300ms delay)
+
         filterTimeout = setTimeout(() => {
             filterLabs(searchTerm);
         }, 300);
     });
-    
-            // Clear filter button
+
     [clearFilterBtn, clearFilterBtnAlt].forEach(function(button) {
-        if (!button) {
-            return;
-        }
+        if (!button) return;
         button.addEventListener('click', function() {
             searchInput.value = '';
             filterLabs('');
@@ -294,16 +284,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Form submission handling
     document.getElementById('searchForm').addEventListener('submit', function(e) {
         e.preventDefault();
         const searchTerm = searchInput.value.trim();
-        
+
         if (searchTerm) {
-            // If there's a search term, filter immediately
             filterLabs(searchTerm);
-            
-            // Smooth scroll to results
+
             setTimeout(() => {
                 window.scrollTo({
                     top: document.querySelector('.container.pb-5').offsetTop - 100,
@@ -312,16 +299,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 100);
         }
     });
-    
-    // Add keyboard shortcuts
+
     searchInput.addEventListener('keydown', function(e) {
-        // Clear search with Escape key
         if (e.key === 'Escape') {
             this.value = '';
             filterLabs('');
         }
-        
-        // Focus on first result with Enter (when results are filtered)
+
         if (e.key === 'Enter' && this.value.trim()) {
             const firstVisibleLab = document.querySelector('.lab-item:not(.lab-hidden)');
             if (firstVisibleLab) {
@@ -333,45 +317,37 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
-    
-    // Add click effect to lab cards
+
     document.querySelectorAll('.lab-item').forEach(card => {
         card.addEventListener('click', function(e) {
-            // Don't trigger if clicking the view button
-            if (e.target.closest('.view-btn')) {
-                return;
-            }
-            
-            // Navigate to lab detail page
+            if (e.target.closest('.view-btn')) return;
             const link = this.querySelector('.view-btn');
-            if (link) {
-                window.location.href = link.href;
-            }
+            if (link) window.location.href = link.href;
         });
     });
-    
-    // Use URL params as the source of truth for the initial search term,
-    // not the DOM input value. Browsers can restore a stale input value
-    // from history even when the server rendered it as empty, which causes
-    // filterLabs to fire with an old term and show zero results.
+
     const urlParams = new URLSearchParams(window.location.search);
     const initialSearch = (urlParams.get('q') || '').trim();
-
-    // Sync the input to the URL param so the DOM is always consistent.
     searchInput.value = initialSearch;
 
     if (initialSearch) {
         filterLabs(initialSearch);
+    } else {
+        // Synchronous reset ensures no stale setTimeout can overwrite this state.
+        resetToAll();
     }
 
-    // Handle back/forward cache (bfcache) restoration. The browser replays the
-    // preserved DOM state (possibly with labs hidden and noResults visible) but
-    // does NOT re-fire DOMContentLoaded, so we reset the filter ourselves.
+    // bfcache restoration: browser replays preserved DOM (possibly filtered state)
+    // without re-firing DOMContentLoaded, so reset the filter from URL params.
     window.addEventListener('pageshow', function(event) {
         if (event.persisted) {
             const restoredQuery = (new URLSearchParams(window.location.search).get('q') || '').trim();
             searchInput.value = restoredQuery;
-            filterLabs(restoredQuery);
+            if (restoredQuery) {
+                filterLabs(restoredQuery);
+            } else {
+                resetToAll();
+            }
         }
     });
 });
