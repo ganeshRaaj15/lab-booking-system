@@ -293,6 +293,19 @@ class NotificationService
         ));
 
         $this->createUserNotifications($otherTechnicianIds, 'maintenance', 'Maintenance Case Claimed', $message, $link, 'maintenance', $maintenanceId);
+
+        $this->sendEmail(
+            $this->emailsForUserIds($otherTechnicianIds),
+            'FKMP Smart Lab: Maintenance Case Claimed',
+            $this->emailTemplate('Maintenance Case Claimed', [
+                $message,
+                'Case: ' . ($context['title'] ?? 'Maintenance Issue'),
+                'Laboratory: ' . ($context['lab_name'] ?? '-'),
+                'Equipment: ' . ($context['asset_name'] ?? '-'),
+            ], site_url($link), 'Open Maintenance Case'),
+            null,
+            ['entity_type' => 'maintenance', 'entity_id' => $maintenanceId, 'notification_type' => 'maintenance']
+        );
     }
 
     public function notifyMaintenanceScheduled(int $maintenanceId): void
