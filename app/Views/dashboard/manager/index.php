@@ -20,12 +20,14 @@ $pendingExternalMgr = $pendingExternalMgr ?? [];
         <h2 class="fw-bold text-primary mb-0">Lab Manager Dashboard</h2>
         <p class="text-muted small">Comprehensive overview and management tools for all laboratories.</p>
     </div>
-    <a href="/dashboard/reports/pdf" class="btn btn-outline-primary btn-sm">
-        <i class="bi bi-file-earmark-pdf me-1"></i> Download Report
-    </a>
-    <a href="/dashboard/reports/csv" class="btn btn-outline-success btn-sm">
-        <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
-    </a>
+    <div class="d-flex gap-2">
+        <a href="/dashboard/reports/pdf" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-file-earmark-pdf me-1"></i> Download Report
+        </a>
+        <a href="/dashboard/reports/csv" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
+        </a>
+    </div>
 </div>
 
 <!-- QUICK STATS CARDS -->
