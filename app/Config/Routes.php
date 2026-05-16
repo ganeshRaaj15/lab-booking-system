@@ -142,6 +142,7 @@ $routes->group('api/native', ['filter' => 'tokens'], static function ($routes) {
     $routes->get('maintenance/(:num)', [NativeMaintenanceController::class, 'show/$1']);
     $routes->post('maintenance', [NativeMaintenanceController::class, 'store']);
     $routes->post('maintenance/(:num)', [NativeMaintenanceController::class, 'update/$1']);
+    $routes->post('maintenance/(:num)/claim', [NativeMaintenanceController::class, 'claim/$1']);
 
     $routes->get('documents/pdf/(:segment)', [DocumentController::class, 'viewPdf/$1']);
     $routes->get('admin/settings', [NativeAdminSettingsController::class, 'show']);

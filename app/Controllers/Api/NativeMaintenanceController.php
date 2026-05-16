@@ -307,6 +307,55 @@ class NativeMaintenanceController extends WebMaintenanceController
         return $user->inGroup('technician') ? $user : null;
     }
 
+    public function claim(int $id)
+    {
+        $user = $this->technicianUser();
+        if (! $user instanceof User) {
+            return $this->unauthenticatedOrForbidden();
+        }
+
+        $record = $this->maintenanceModel->find($id);
+        if (! $record) {
+            return $this->notFound('Maintenance record not found.');
+        }
+
+        if ($record['status'] !== 'reported') {
+            return $this->unprocessable('Only unscheduled reported cases can be claimed.');
+        }
+
+        if (! empty($record['assigned_technician_id'])) {
+            return $this->unprocessable('This case has already been claimed by another technician.');
+        }
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+        $this->maintenanceModel->update($id, ['assigned_technician_id' => $user->id]);
+        $this->logModel->insert([
+            'maintenance_id' => $id,
+            'changed_by' => $user->id,
+            'from_status' => 'reported',
+            'to_status' => 'reported',
+            'notes' => 'Technician claimed ownership of this case.',
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+        $db->transComplete();
+
+        if (! $db->transStatus()) {
+            return $this->unprocessable('Unable to claim this case at the moment.');
+        }
+
+        NotificationService::dispatchSafely(
+            fn(NotificationService $notifications) => $notifications->notifyMaintenanceClaimed($id, (int) $user->id),
+            'maintenance claimed'
+        );
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'message' => 'You have claimed this maintenance case. Other technicians have been notified.',
+            'maintenance_id' => $id,
+        ]);
+    }
+
     private function serializeRecord(array $record): array
     {
         return [
@@ -331,6 +380,8 @@ class NativeMaintenanceController extends WebMaintenanceController
             'created_at' => (string) ($record['created_at'] ?? ''),
             'updated_at' => (string) ($record['updated_at'] ?? ''),
             'is_locked' => in_array((string) ($record['status'] ?? ''), ['completed', 'cancelled'], true),
+            'assigned_technician_id' => (int) ($record['assigned_technician_id'] ?? 0),
+            'technician_name' => (string) ($record['technician_name'] ?? $record['technician_username'] ?? ''),
         ];
     }
 
