@@ -274,6 +274,27 @@ class NotificationService
         );
     }
 
+    public function notifyMaintenanceClaimed(int $maintenanceId, int $claimingUserId): void
+    {
+        $context = $this->maintenanceContext($maintenanceId);
+        if (! $context) {
+            return;
+        }
+
+        $claimer = $this->db->table('users')->select('full_name, username')->where('id', $claimingUserId)->get()->getRowArray();
+        $claimerName = ($claimer['full_name'] ?? '') ?: ($claimer['username'] ?? 'A technician');
+
+        $link = '/technician/maintenance/edit/' . $maintenanceId;
+        $message = $claimerName . ' has claimed the maintenance case for ' . ($context['asset_name'] ?? 'an asset') . ' in ' . ($context['lab_name'] ?? 'the lab') . '. No action is needed from you.';
+
+        $otherTechnicianIds = array_values(array_filter(
+            $this->groupUserIds('technician'),
+            static fn(int $id): bool => $id !== $claimingUserId
+        ));
+
+        $this->createUserNotifications($otherTechnicianIds, 'maintenance', 'Maintenance Case Claimed', $message, $link, 'maintenance', $maintenanceId);
+    }
+
     public function notifyMaintenanceScheduled(int $maintenanceId): void
     {
         $context = $this->maintenanceContext($maintenanceId);

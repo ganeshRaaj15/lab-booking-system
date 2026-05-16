@@ -542,6 +542,7 @@ $routes->group('technician', ['filter' => 'group:technician'], function ($routes
     $routes->post('maintenance/store', [MaintenanceController::class, 'store']);
     $routes->get('maintenance/edit/(:num)', [MaintenanceController::class, 'edit/$1']);
     $routes->post('maintenance/update/(:num)', [MaintenanceController::class, 'update/$1']);
+    $routes->post('maintenance/claim/(:num)', [MaintenanceController::class, 'claim/$1']);
 });
 
 

@@ -338,6 +338,52 @@ class MaintenanceController extends BaseController
             ->with('success', 'Maintenance case moved to ' . $this->maintenanceModel->statusLabel($targetStatus) . '.');
     }
 
+    public function claim(int $id)
+    {
+        if ($redirect = $this->ensureTechnician()) {
+            return $redirect;
+        }
+
+        $user = auth()->user();
+        $record = $this->maintenanceModel->find($id);
+        if (! $record) {
+            return redirect()->to('/technician/maintenance')->with('error', 'Maintenance record not found.');
+        }
+
+        if ($record['status'] !== 'reported') {
+            return redirect()->to('/technician/maintenance/edit/' . $id)->with('error', 'Only unscheduled reported cases can be claimed.');
+        }
+
+        if (! empty($record['assigned_technician_id'])) {
+            return redirect()->to('/technician/maintenance/edit/' . $id)->with('error', 'This case has already been claimed by another technician.');
+        }
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+        $this->maintenanceModel->update($id, ['assigned_technician_id' => $user->id]);
+        $this->logModel->insert([
+            'maintenance_id' => $id,
+            'changed_by' => $user->id,
+            'from_status' => 'reported',
+            'to_status' => 'reported',
+            'notes' => 'Technician claimed ownership of this case.',
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+        $db->transComplete();
+
+        if (! $db->transStatus()) {
+            return redirect()->to('/technician/maintenance/edit/' . $id)->with('error', 'Unable to claim this case at the moment.');
+        }
+
+        NotificationService::dispatchSafely(
+            fn(NotificationService $notifications) => $notifications->notifyMaintenanceClaimed($id, (int) $user->id),
+            'maintenance claimed'
+        );
+
+        return redirect()->to('/technician/maintenance/edit/' . $id)
+            ->with('success', 'You have claimed this maintenance case. Other technicians have been notified.');
+    }
+
     protected function ensureTechnician()
     {
         helper('auth');

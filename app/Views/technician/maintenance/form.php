@@ -401,6 +401,32 @@ $stageChecklist = match ($stageMode) {
                 </div>
             <?php endif; ?>
 
+            <?php if ($isEdit): ?>
+                <?php
+                    $assignedName = $record['technician_name'] ?? $record['technician_username'] ?? null;
+                    $isUnclaimed = empty($record['assigned_technician_id']);
+                    $canClaim = $isUnclaimed && $record['status'] === 'reported';
+                ?>
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white"><h6 class="mb-1 fw-bold"><i class="bi bi-person-check me-2 text-primary"></i>Assignment</h6></div>
+                    <div class="card-body small">
+                        <?php if ($assignedName): ?>
+                            <div class="text-muted mb-1">Claimed by</div>
+                            <div class="fw-semibold text-dark"><?= esc($assignedName) ?></div>
+                        <?php elseif ($canClaim): ?>
+                            <div class="text-muted mb-2">No technician has claimed this case yet.</div>
+                            <form method="post" action="/technician/maintenance/claim/<?= esc($record['id']) ?>">
+                                <?= csrf_field() ?>
+                                <button type="submit" class="btn btn-sm btn-success w-100">Claim This Case</button>
+                            </form>
+                            <div class="text-muted mt-2">Claiming notifies other technicians not to duplicate the work.</div>
+                        <?php else: ?>
+                            <span class="stat-badge stat-badge-neutral">Unassigned</span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white"><h6 class="mb-1 fw-bold"><i class="bi bi-clipboard-data me-2 text-primary"></i>Case Summary</h6></div>
                 <div class="card-body small text-muted">
