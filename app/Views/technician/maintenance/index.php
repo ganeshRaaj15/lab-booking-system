@@ -13,6 +13,21 @@ $statusLabels     = $statusLabels ?? [];
 $statusOptions    = $statusOptions ?? [];
 $modelSummary     = $modelSummary ?? [];
 $upcomingForecasts = $upcomingForecasts ?? [];
+
+$statusBadgeClass = [
+    'reported'    => 'text-bg-danger',
+    'scheduled'   => 'text-bg-primary',
+    'in_progress' => 'text-bg-warning',
+    'testing'     => 'text-bg-info',
+    'completed'   => 'text-bg-success',
+    'cancelled'   => 'text-bg-secondary',
+];
+$priorityBadgeClass = [
+    'low'      => 'stat-badge stat-badge-success',
+    'medium'   => 'stat-badge stat-badge-warning',
+    'high'     => 'stat-badge stat-badge-danger',
+    'critical' => 'badge text-bg-danger',
+];
 ?>
 <?= $this->extend('layouts/main_technician') ?>
 <?= $this->section('content') ?>
@@ -20,46 +35,64 @@ $upcomingForecasts = $upcomingForecasts ?? [];
     <?php if (session()->getFlashdata('success')): ?><div class="alert alert-success border-0 shadow-sm"><?= esc(session()->getFlashdata('success')) ?></div><?php endif; ?>
     <?php if (session()->getFlashdata('error')): ?><div class="alert alert-danger border-0 shadow-sm"><?= esc(session()->getFlashdata('error')) ?></div><?php endif; ?>
 
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-primary mb-0">Maintenance Workflow</h2>
+            <p class="text-muted small">Track, schedule, and resolve equipment maintenance cases across all laboratories.</p>
+        </div>
+        <a href="/technician/maintenance/create" class="btn btn-success btn-sm px-3 shadow-sm">
+            <i class="bi bi-plus-circle me-1"></i> New Planned Maintenance
+        </a>
+    </div>
+
     <?php if (! empty($modelSummary['available'])): ?>
         <?php
             $metrics = $modelSummary['metrics'] ?? [];
             $dataset = $modelSummary['dataset'] ?? [];
             $trainedAt = ! empty($modelSummary['trained_at']) ? date('d M Y H:i', strtotime((string) $modelSummary['trained_at'])) : '-';
         ?>
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-body d-flex flex-column flex-lg-row justify-content-between gap-3">
+        <div class="card border-0 shadow-sm mb-4 overflow-hidden">
+            <div class="card-header border-0 d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 py-3"
+                 style="background: var(--slams-primary-soft); border-left: 4px solid var(--slams-primary) !important;">
                 <div>
-                    <h6 class="mb-1">Local Predictive Maintenance Model</h6>
+                    <h6 class="fw-bold mb-1" style="color: var(--slams-primary);">
+                        <i class="bi bi-cpu me-2"></i>Local Predictive Maintenance Model
+                    </h6>
                     <small class="text-muted">Runs entirely on the server using local maintenance history. Last trained: <?= esc($trainedAt) ?></small>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
-                    <span class="badge text-bg-light border">Accuracy <?= esc(number_format(((float) ($metrics['accuracy'] ?? 0.0)) * 100, 1)) ?>%</span>
-                    <span class="badge text-bg-light border">Precision <?= esc(number_format(((float) ($metrics['precision'] ?? 0.0)) * 100, 1)) ?>%</span>
-                    <span class="badge text-bg-light border">Recall <?= esc(number_format(((float) ($metrics['recall'] ?? 0.0)) * 100, 1)) ?>%</span>
-                    <span class="badge text-bg-light border">Samples <?= esc((int) ($dataset['samples_total'] ?? 0)) ?></span>
+                    <span class="stat-badge stat-badge-primary">Accuracy <?= esc(number_format(((float) ($metrics['accuracy'] ?? 0.0)) * 100, 1)) ?>%</span>
+                    <span class="stat-badge stat-badge-primary">Precision <?= esc(number_format(((float) ($metrics['precision'] ?? 0.0)) * 100, 1)) ?>%</span>
+                    <span class="stat-badge stat-badge-primary">Recall <?= esc(number_format(((float) ($metrics['recall'] ?? 0.0)) * 100, 1)) ?>%</span>
+                    <span class="stat-badge stat-badge-neutral">Samples <?= esc((int) ($dataset['samples_total'] ?? 0)) ?></span>
                 </div>
             </div>
         </div>
     <?php endif; ?>
 
     <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body">
+        <div class="card-header bg-white border-0 py-3">
+            <h6 class="fw-bold text-dark mb-0"><i class="bi bi-funnel me-2 text-primary"></i>Filter Cases</h6>
+        </div>
+        <div class="card-body pt-0">
             <form method="get" class="row g-3 align-items-end">
                 <div class="col-md-3"><label class="form-label">Workflow Stage</label><select name="status" class="form-select"><option value="">All stages</option><?php foreach ($statusOptions as $status): ?><option value="<?= esc($status) ?>" <?= $filters['status'] === $status ? 'selected' : '' ?>><?= esc($statusLabels[$status] ?? ucwords(str_replace('_', ' ', $status))) ?></option><?php endforeach; ?></select></div>
                 <div class="col-md-4"><label class="form-label">Asset</label><select name="asset_id" class="form-select"><option value="0">All assets</option><?php foreach ($assets as $asset): ?><option value="<?= esc($asset['id']) ?>" <?= (int) $filters['asset_id'] === (int) $asset['id'] ? 'selected' : '' ?>><?= esc($asset['name']) ?><?= !empty($asset['lab_name']) ? ' - ' . esc($asset['lab_name']) : '' ?></option><?php endforeach; ?></select></div>
                 <div class="col-md-3"><label class="form-label">Scope</label><select name="scope" class="form-select"><option value="">All records</option><option value="mine" <?= $filters['scope'] === 'mine' ? 'selected' : '' ?>>Assigned to me</option></select></div>
-                <div class="col-md-2 d-grid"><button type="submit" class="btn btn-success">Filter</button></div>
+                <div class="col-md-2 d-grid"><button type="submit" class="btn btn-primary">Filter</button></div>
             </form>
         </div>
     </div>
 
     <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
             <div>
-                <h6 class="mb-1">Predictive Maintenance Decisions</h6>
+                <h6 class="fw-bold text-dark mb-0">
+                    <i class="bi bi-graph-up-arrow me-2 text-warning"></i>Predictive Maintenance Decisions
+                </h6>
                 <small class="text-muted">Risk scores and recommended actions based on the local maintenance model and completed planned-maintenance history.</small>
             </div>
-            <span class="badge text-bg-light border">Next 90 days</span>
+            <span class="stat-badge stat-badge-neutral">Next 90 days</span>
         </div>
         <div class="card-body p-0">
             <?php if (empty($upcomingForecasts)): ?>
@@ -146,26 +179,40 @@ $upcomingForecasts = $upcomingForecasts ?? [];
             <?php endif; ?>
         </div>
     </div>
+
     <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <div><h5 class="mb-1">Maintenance Workflow</h5><small class="text-muted">Each case is completed step by step: first schedule and diagnose, then record repair work, then test and close with evidence.</small></div>
-            <a href="/technician/maintenance/create" class="btn btn-success btn-sm"><i class="bi bi-plus-circle"></i> New Planned Maintenance</a>
+        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+            <div>
+                <h5 class="fw-bold text-dark mb-1">
+                    <i class="bi bi-tools me-2 text-primary"></i>Maintenance Workflow
+                </h5>
+                <small class="text-muted">Each case is completed step by step: first schedule and diagnose, then record repair work, then test and close with evidence.</small>
+            </div>
+            <a href="/technician/maintenance/create" class="btn btn-success btn-sm">
+                <i class="bi bi-plus-circle me-1"></i> New Planned Maintenance
+            </a>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table align-middle mb-0">
-                    <thead class="table-light"><tr><th>Case</th><th>Asset</th><th>Stage</th><th>Priority</th><th>Reporter / Unit</th><th>Updated</th><th class="text-end">Action</th></tr></thead>
+                    <thead class="table-light">
+                        <tr><th>Case</th><th>Asset</th><th>Stage</th><th>Priority</th><th>Reporter / Unit</th><th>Updated</th><th class="text-end">Action</th></tr>
+                    </thead>
                     <tbody>
                         <?php if (empty($records)): ?>
                             <tr><td colspan="7" class="text-center py-5 text-muted">No maintenance records matched the selected filters.</td></tr>
                         <?php else: ?>
                             <?php foreach ($records as $record): ?>
-                                <?php $label = $statusLabels[$record['status']] ?? ucwords(str_replace('_', ' ', $record['status'])); ?>
+                                <?php
+                                $label  = $statusLabels[$record['status']] ?? ucwords(str_replace('_', ' ', $record['status']));
+                                $sBadge = $statusBadgeClass[$record['status']] ?? 'text-bg-secondary';
+                                $pBadge = $priorityBadgeClass[$record['priority']] ?? 'stat-badge stat-badge-neutral';
+                                ?>
                                 <tr>
                                     <td><div class="fw-semibold"><?= esc($record['title']) ?></div><small class="text-muted">#<?= esc($record['id']) ?> | <?= esc(ucfirst($record['issue_type'])) ?></small></td>
                                     <td><div><?= esc($record['asset_name'] ?? '-') ?></div><small class="text-muted"><?= esc($record['laboratory_name'] ?? '-') ?></small></td>
-                                    <td><span class="badge text-bg-secondary"><?= esc($label) ?></span></td>
-                                    <td><span class="badge text-bg-light border text-uppercase"><?= esc($record['priority']) ?></span></td>
+                                    <td><span class="badge <?= esc($sBadge) ?>"><?= esc($label) ?></span></td>
+                                    <td><span class="<?= esc($pBadge) ?> text-uppercase"><?= esc($record['priority']) ?></span></td>
                                     <td>
                                         <div class="small"><?= esc($record['reported_by_name'] ?: $record['reported_by_username'] ?: 'System') ?></div>
                                         <div class="small text-muted"><?= esc($record['unit_reference'] ?: 'No unit reference') ?></div>

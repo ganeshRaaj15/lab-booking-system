@@ -65,6 +65,33 @@ if ($selectedAsset) {
 }
 $currentIssueType = old('issue_type', $record['issue_type'] ?? '');
 $currentPriority = old('priority', $record['priority'] ?? '');
+$statusBadgeClass = [
+    'reported'    => 'text-bg-danger',
+    'scheduled'   => 'text-bg-primary',
+    'in_progress' => 'text-bg-warning',
+    'testing'     => 'text-bg-info',
+    'completed'   => 'text-bg-success',
+    'cancelled'   => 'text-bg-secondary',
+];
+$currentStatusBadge = $statusBadgeClass[$record['status'] ?? 'reported'] ?? 'text-bg-secondary';
+
+$stageAccentColor = match ($stageMode) {
+    'pre', 'reported'  => 'var(--slams-primary)',
+    'scheduled'        => 'var(--slams-info)',
+    'in_progress'      => 'var(--slams-warning)',
+    'testing'          => 'var(--slams-info)',
+    'completed'        => 'var(--slams-success)',
+    default            => 'var(--slams-neutral)',
+};
+$stageAccentSoft = match ($stageMode) {
+    'pre', 'reported'  => 'var(--slams-primary-soft)',
+    'scheduled'        => 'var(--slams-info-soft)',
+    'in_progress'      => 'var(--slams-warning-soft)',
+    'testing'          => 'var(--slams-info-soft)',
+    'completed'        => 'var(--slams-success-soft)',
+    default            => 'var(--slams-neutral-soft)',
+};
+
 $stageChecklist = match ($stageMode) {
     'pre' => [
         'Fill the case basics so the system knows which equipment and units are involved.',
@@ -102,12 +129,13 @@ $stageChecklist = match ($stageMode) {
     <div class="row g-4">
         <div class="col-lg-8">
             <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center"
+                     style="border-left: 4px solid <?= esc($stageAccentColor) ?> !important;">
                     <div>
-                        <h5 class="mb-1"><?= esc($stageTitle) ?></h5>
+                        <h5 class="mb-1 fw-bold" style="color: <?= esc($stageAccentColor) ?>;"><?= esc($stageTitle) ?></h5>
                         <small class="text-muted"><?= esc($stageHelp) ?></small>
                     </div>
-                    <span class="badge text-bg-secondary"><?= esc($statusLabel) ?></span>
+                    <span class="badge <?= esc($currentStatusBadge) ?>"><?= esc($statusLabel) ?></span>
                 </div>
                 <div class="card-body">
                     <form method="post" action="<?= $actionUrl ?>" class="row g-3" enctype="multipart/form-data">
@@ -125,8 +153,8 @@ $stageChecklist = match ($stageMode) {
                         </div>
 
                         <div class="col-12">
-                            <div class="border rounded-3 p-3 bg-light-subtle">
-                                <div class="fw-semibold text-dark mb-1">Case Basics</div>
+                            <div class="rounded-3 p-3" style="background: <?= esc($stageAccentSoft) ?>; border-left: 3px solid <?= esc($stageAccentColor) ?>;">
+                                <div class="fw-semibold mb-1" style="color: <?= esc($stageAccentColor) ?>;">Case Basics</div>
                                 <div class="small text-muted mb-0">
                                     <?= $readOnlyDetails ? 'These details are locked after scheduling so the maintenance history stays consistent.' : 'These details identify the equipment, the affected units, and what this maintenance case is about.' ?>
                                 </div>
@@ -230,8 +258,8 @@ $stageChecklist = match ($stageMode) {
 
                         <?php if (in_array($stageMode, ['pre', 'reported'], true)): ?>
                             <div class="col-12">
-                                <div class="border rounded-3 p-3 bg-light-subtle">
-                                    <div class="fw-semibold text-dark mb-1">Step 1: Plan And Schedule</div>
+                                <div class="rounded-3 p-3" style="background: <?= esc($stageAccentSoft) ?>; border-left: 3px solid <?= esc($stageAccentColor) ?>;">
+                                    <div class="fw-semibold mb-1" style="color: <?= esc($stageAccentColor) ?>;">Step 1: Plan And Schedule</div>
                                     <div class="small text-muted mb-0">Set when the maintenance will happen and record the initial diagnosis or planned reason before moving the case forward.</div>
                                 </div>
                             </div>
@@ -249,8 +277,8 @@ $stageChecklist = match ($stageMode) {
                             <input type="hidden" name="scheduled_for" value="<?= esc(old('scheduled_for', !empty($record['scheduled_for']) ? date('Y-m-d\TH:i', strtotime($record['scheduled_for'])) : '')) ?>">
                             <input type="hidden" name="diagnosis_notes" value="<?= esc(old('diagnosis_notes', $record['diagnosis_notes'] ?? '')) ?>">
                             <div class="col-12">
-                                <div class="border rounded-3 p-3 bg-light-subtle">
-                                    <div class="fw-semibold text-dark mb-1">Step 2: Start Repair</div>
+                                <div class="rounded-3 p-3" style="background: <?= esc($stageAccentSoft) ?>; border-left: 3px solid <?= esc($stageAccentColor) ?>;">
+                                    <div class="fw-semibold mb-1" style="color: <?= esc($stageAccentColor) ?>;">Step 2: Start Repair</div>
                                     <div class="small text-muted mb-0">No new notes are required yet. Review the schedule and diagnosis, then start repair when the technician begins work.</div>
                                 </div>
                             </div>
@@ -266,8 +294,8 @@ $stageChecklist = match ($stageMode) {
                             <input type="hidden" name="scheduled_for" value="<?= esc(old('scheduled_for', !empty($record['scheduled_for']) ? date('Y-m-d\TH:i', strtotime($record['scheduled_for'])) : '')) ?>">
                             <input type="hidden" name="diagnosis_notes" value="<?= esc(old('diagnosis_notes', $record['diagnosis_notes'] ?? '')) ?>">
                             <div class="col-12">
-                                <div class="border rounded-3 p-3 bg-light-subtle">
-                                    <div class="fw-semibold text-dark mb-1">Step 3: Record Repair Work</div>
+                                <div class="rounded-3 p-3" style="background: <?= esc($stageAccentSoft) ?>; border-left: 3px solid <?= esc($stageAccentColor) ?>;">
+                                    <div class="fw-semibold mb-1" style="color: <?= esc($stageAccentColor) ?>;">Step 3: Record Repair Work</div>
                                     <div class="small text-muted mb-0">Describe what was repaired, replaced, cleaned, calibrated, or otherwise serviced before you move the case to testing.</div>
                                 </div>
                             </div>
@@ -288,8 +316,8 @@ $stageChecklist = match ($stageMode) {
                             <input type="hidden" name="scheduled_for" value="<?= esc(old('scheduled_for', !empty($record['scheduled_for']) ? date('Y-m-d\TH:i', strtotime($record['scheduled_for'])) : '')) ?>">
                             <input type="hidden" name="diagnosis_notes" value="<?= esc(old('diagnosis_notes', $record['diagnosis_notes'] ?? '')) ?>">
                             <div class="col-12">
-                                <div class="border rounded-3 p-3 bg-light-subtle">
-                                    <div class="fw-semibold text-dark mb-1">Step 4: Test And Close</div>
+                                <div class="rounded-3 p-3" style="background: <?= esc($stageAccentSoft) ?>; border-left: 3px solid <?= esc($stageAccentColor) ?>;">
+                                    <div class="fw-semibold mb-1" style="color: <?= esc($stageAccentColor) ?>;">Step 4: Test And Close</div>
                                     <div class="small text-muted mb-0">Confirm what work was done, explain how the equipment was tested, summarize the final condition, and attach proof before closing the case.</div>
                                 </div>
                             </div>
@@ -352,7 +380,7 @@ $stageChecklist = match ($stageMode) {
                     };
                 ?>
                 <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-white"><h6 class="mb-1">Predictive Maintenance Decision</h6></div>
+                    <div class="card-header bg-white"><h6 class="mb-1 fw-bold"><i class="bi bi-cpu me-2 text-primary"></i>Predictive Maintenance Decision</h6></div>
                     <div class="card-body small text-muted">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="fw-semibold text-dark">Risk Score</span>
@@ -374,7 +402,7 @@ $stageChecklist = match ($stageMode) {
             <?php endif; ?>
 
             <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white"><h6 class="mb-1">Case Summary</h6></div>
+                <div class="card-header bg-white"><h6 class="mb-1 fw-bold"><i class="bi bi-clipboard-data me-2 text-primary"></i>Case Summary</h6></div>
                 <div class="card-body small text-muted">
                     <div class="mb-2"><strong>Reporter:</strong> <?= esc($reporterName) ?></div>
                     <div class="mb-2"><strong>Current Step:</strong> <?= esc($statusLabel) ?></div>
@@ -390,7 +418,7 @@ $stageChecklist = match ($stageMode) {
 
             <?php if ($issuePhoto || $completionPhoto): ?>
                 <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-white"><h6 class="mb-1">Evidence</h6></div>
+                    <div class="card-header bg-white"><h6 class="mb-1 fw-bold"><i class="bi bi-camera me-2 text-primary"></i>Evidence</h6></div>
                     <div class="card-body small text-muted d-flex flex-column gap-3">
                         <?php if ($issuePhoto): ?><div><div class="fw-semibold mb-2">Reported Issue Photo</div><img src="<?= esc($issuePhoto) ?>" alt="Issue evidence" class="img-fluid rounded-3 border"></div><?php endif; ?>
                         <?php if ($completionPhoto): ?><div><div class="fw-semibold mb-2">Completion Photo</div><img src="<?= esc($completionPhoto) ?>" alt="Completion evidence" class="img-fluid rounded-3 border"></div><?php endif; ?>
@@ -399,7 +427,7 @@ $stageChecklist = match ($stageMode) {
             <?php endif; ?>
 
             <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white"><h6 class="mb-1">Simple Workflow</h6></div>
+                <div class="card-header bg-white"><h6 class="mb-1 fw-bold"><i class="bi bi-diagram-3 me-2 text-primary"></i>Simple Workflow</h6></div>
                 <div class="card-body small text-muted">
                     <p class="mb-2"><strong>1. Reported / Planned</strong>: the issue or planned maintenance work is recorded.</p>
                     <p class="mb-2"><strong>2. Scheduled</strong>: the technician adds diagnosis and sets the maintenance time.</p>
@@ -409,7 +437,7 @@ $stageChecklist = match ($stageMode) {
             </div>
 
             <?php if ($isEdit): ?>
-                <div class="card border-0 shadow-sm"><div class="card-header bg-white"><h6 class="mb-1">Activity Log</h6></div><div class="card-body"><?php if (empty($logs)): ?><p class="text-muted small mb-0">No activity logged for this case yet.</p><?php else: ?><div class="d-flex flex-column gap-3"><?php foreach ($logs as $log): ?><div class="border rounded-3 p-3 bg-light-subtle"><div class="fw-semibold small text-dark"><?= esc($statusLabels[$log['to_status']] ?? ucwords(str_replace('_', ' ', $log['to_status'] ?? 'updated'))) ?></div><div class="small text-muted"><?= esc($log['full_name'] ?: $log['username'] ?: 'System') ?> | <?= esc(!empty($log['created_at']) ? date('d M Y H:i', strtotime($log['created_at'])) : '-') ?></div><?php if (!empty($log['notes'])): ?><div class="small mt-2"><?= esc($log['notes']) ?></div><?php endif; ?></div><?php endforeach; ?></div><?php endif; ?></div></div>
+                <div class="card border-0 shadow-sm"><div class="card-header bg-white"><h6 class="mb-1 fw-bold"><i class="bi bi-journal-text me-2 text-primary"></i>Activity Log</h6></div><div class="card-body"><?php if (empty($logs)): ?><p class="text-muted small mb-0">No activity logged for this case yet.</p><?php else: ?><div class="d-flex flex-column gap-3"><?php foreach ($logs as $log): ?><div class="rounded-3 p-3" style="background: var(--slams-primary-soft); border-left: 3px solid var(--slams-primary);"><div class="fw-semibold small" style="color: var(--slams-primary);"><?= esc($statusLabels[$log['to_status']] ?? ucwords(str_replace('_', ' ', $log['to_status'] ?? 'updated'))) ?></div><div class="small text-muted"><?= esc($log['full_name'] ?: $log['username'] ?: 'System') ?> | <?= esc(!empty($log['created_at']) ? date('d M Y H:i', strtotime($log['created_at'])) : '-') ?></div><?php if (!empty($log['notes'])): ?><div class="small mt-2"><?= esc($log['notes']) ?></div><?php endif; ?></div><?php endforeach; ?></div><?php endif; ?></div></div>
             <?php endif; ?>
         </div>
     </div>
