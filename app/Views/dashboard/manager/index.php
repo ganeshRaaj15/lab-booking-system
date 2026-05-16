@@ -632,11 +632,11 @@ $pendingExternalMgr = $pendingExternalMgr ?? [];
                                                 </td>
                                                 <td class="text-center">
                                                     <div class="d-flex justify-content-center gap-2">
-                                                        <span class="badge bg-primary bg-opacity-10 text-primary border-0 py-2 px-3" data-bs-toggle="tooltip" title="Total"><?= esc($lab['total']) ?></span>
-                                                        <span class="badge bg-success bg-opacity-10 text-success border-0 py-2 px-3" data-bs-toggle="tooltip" title="Approved"><?= esc($lab['approved']) ?></span>
-                                                        <span class="badge bg-warning bg-opacity-10 text-warning border-0 py-2 px-3" data-bs-toggle="tooltip" title="Pending"><?= esc($lab['pending']) ?></span>
-                                                        <span class="badge bg-danger bg-opacity-10 text-danger border-0 py-2 px-3" data-bs-toggle="tooltip" title="Rejected"><?= esc($lab['rejected']) ?></span>
-                                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border-0 py-2 px-3" data-bs-toggle="tooltip" title="Cancelled"><?= esc($lab['cancelled'] ?? 0) ?></span>
+                                                        <span class="stat-badge stat-badge-primary" data-bs-toggle="tooltip" title="Total"><?= esc($lab['total']) ?></span>
+                                                        <span class="stat-badge stat-badge-success" data-bs-toggle="tooltip" title="Approved"><?= esc($lab['approved']) ?></span>
+                                                        <span class="stat-badge stat-badge-warning" data-bs-toggle="tooltip" title="Pending"><?= esc($lab['pending']) ?></span>
+                                                        <span class="stat-badge stat-badge-danger" data-bs-toggle="tooltip" title="Rejected"><?= esc($lab['rejected']) ?></span>
+                                                        <span class="stat-badge stat-badge-neutral" data-bs-toggle="tooltip" title="Cancelled"><?= esc($lab['cancelled'] ?? 0) ?></span>
                                                     </div>
                                                 </td>
                                                 <td class="text-center">

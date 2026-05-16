@@ -1194,6 +1194,44 @@ input::placeholder {
     border-color: color-mix(in srgb, var(--slams-neutral) 30%, transparent);
 }
 
+.stat-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.28rem 0.6rem;
+    border-radius: 0.4rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    border: 1px solid;
+    line-height: 1;
+    white-space: nowrap;
+}
+.stat-badge-primary {
+    color: var(--slams-primary);
+    background: var(--slams-primary-soft);
+    border-color: color-mix(in srgb, var(--slams-primary) 30%, transparent);
+}
+.stat-badge-success {
+    color: var(--slams-success);
+    background: var(--slams-success-soft);
+    border-color: color-mix(in srgb, var(--slams-success) 30%, transparent);
+}
+.stat-badge-warning {
+    color: var(--slams-warning);
+    background: var(--slams-warning-soft);
+    border-color: color-mix(in srgb, var(--slams-warning) 30%, transparent);
+}
+.stat-badge-danger {
+    color: var(--slams-danger);
+    background: var(--slams-danger-soft);
+    border-color: color-mix(in srgb, var(--slams-danger) 30%, transparent);
+}
+.stat-badge-neutral {
+    color: var(--slams-neutral);
+    background: var(--slams-neutral-soft);
+    border-color: color-mix(in srgb, var(--slams-neutral) 30%, transparent);
+}
+
 /* ── Skeleton / shimmer loading ─────────────────────────────────────────── */
 @keyframes slams-shimmer {
     0%   { background-position: -200% 0; }
