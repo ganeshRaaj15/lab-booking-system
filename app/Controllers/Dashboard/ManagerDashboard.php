@@ -468,15 +468,17 @@ private function getFacultyDistribution(array $labIds): array
     
     $result = $db->table('bookings b')
         ->select('f.name_en as faculty, f.is_fkmp, COUNT(*) as count')
-        ->join('faculties f', 'f.id = b.faculty_id', 'left')
+        ->join('faculties f', 'f.id = b.faculty_id', 'inner')
         ->whereIn('b.lab_id', $labIds)
         ->where('b.status', 'APPROVED')
-        ->groupBy('b.faculty_id, f.name_en, f.is_fkmp')  // Include all non-aggregated columns
+        ->where('b.faculty_id IS NOT NULL')
+        ->where('f.name_en IS NOT NULL')
+        ->groupBy('b.faculty_id, f.name_en, f.is_fkmp')
         ->orderBy('count', 'DESC')
         ->limit(5)
         ->get()
         ->getResultArray();
-        
+
     return $result;
 }
     

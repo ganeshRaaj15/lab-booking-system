@@ -487,7 +487,7 @@ $pendingExternalMgr = $pendingExternalMgr ?? [];
                             <?php else: ?>
                                 <div class="d-flex flex-wrap gap-2 mb-2">
                                     <?php foreach ($demand['top_slots'] as $slot): ?>
-                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 py-2 px-3">
+                                        <span class="booking-pattern-pill">
                                             <?= esc($slot['label']) ?> (<?= esc($slot['count']) ?>)
                                         </span>
                                     <?php endforeach; ?>
@@ -525,7 +525,7 @@ $pendingExternalMgr = $pendingExternalMgr ?? [];
                                     </div>
                                 </div>
                                 <div class="card-body pt-0">
-                                    <canvas id="weeklyUtilizationChart" height="150"></canvas>
+                                    <canvas id="weeklyUtilizationChart" height="100"></canvas>
                                 </div>
                             </div>
                         </div>
@@ -539,7 +539,7 @@ $pendingExternalMgr = $pendingExternalMgr ?? [];
                                     <p class="text-muted small mb-0">Booking frequency by time slot</p>
                                 </div>
                                 <div class="card-body">
-                                    <canvas id="peakHoursPieChart" height="200"></canvas>
+                                    <canvas id="peakHoursPieChart" height="150"></canvas>
                                 </div>
                             </div>
                         </div>
@@ -556,7 +556,7 @@ $pendingExternalMgr = $pendingExternalMgr ?? [];
                                     <p class="text-muted small mb-0">Booking distribution across faculties</p>
                                 </div>
                                 <div class="card-body">
-                                    <canvas id="facultyPieChart" height="250"></canvas>
+                                    <canvas id="facultyPieChart" height="170"></canvas>
                                 </div>
                             </div>
                         </div>
@@ -570,7 +570,7 @@ $pendingExternalMgr = $pendingExternalMgr ?? [];
                                     <p class="text-muted small mb-0">Most requested equipment & tools</p>
                                 </div>
                                 <div class="card-body">
-                                    <canvas id="assetRadarChart" height="250"></canvas>
+                                    <canvas id="assetRadarChart" height="170"></canvas>
                                 </div>
                             </div>
                         </div>
@@ -697,7 +697,7 @@ $pendingExternalMgr = $pendingExternalMgr ?? [];
                             </div>
                         </div>
                         <div class="card-body">
-                            <canvas id="monthlyTrendsChart" height="150"></canvas>
+                            <canvas id="monthlyTrendsChart" height="100"></canvas>
                         </div>
                     </div>
                 </div>

@@ -155,7 +155,7 @@ $pendingExternalPic = $pendingExternalPic ?? [];
                 </h6>
             </div>
             <div class="card-body">
-                <canvas id="monthlyChart" height="250"></canvas>
+                <canvas id="monthlyChart" height="130"></canvas>
             </div>
         </div>
     </div>
@@ -170,7 +170,7 @@ $pendingExternalPic = $pendingExternalPic ?? [];
                 </h6>
             </div>
             <div class="card-body">
-                <canvas id="facultyChart" height="250"></canvas>
+                <canvas id="facultyChart" height="130"></canvas>
             </div>
         </div>
     </div>
@@ -189,7 +189,7 @@ $pendingExternalPic = $pendingExternalPic ?? [];
                 </h6>
             </div>
             <div class="card-body">
-                <canvas id="dayChart" height="200"></canvas>
+                <canvas id="dayChart" height="120"></canvas>
             </div>
         </div>
     </div>
@@ -204,7 +204,7 @@ $pendingExternalPic = $pendingExternalPic ?? [];
                 </h6>
             </div>
             <div class="card-body">
-                <canvas id="timeChart" height="200"></canvas>
+                <canvas id="timeChart" height="120"></canvas>
             </div>
         </div>
     </div>
