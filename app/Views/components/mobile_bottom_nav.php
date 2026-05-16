@@ -46,6 +46,11 @@ if ($mobileNavLoggedIn) {
         'active' => url_is('dashboard/notifications*'),
         'badge' => $alertsBadge,
     ];
+    $mobileNavItems[] = [
+        'logout' => true,
+        'icon'   => 'bi-box-arrow-right',
+        'label'  => 'Logout',
+    ];
 } else {
     $mobileNavItems[] = [
         'href' => '/contact',
@@ -64,12 +69,22 @@ if ($mobileNavLoggedIn) {
 
 <nav class="slams-mobile-bottom-nav" aria-label="Mobile app navigation">
     <?php foreach ($mobileNavItems as $item): ?>
-        <a href="<?= esc($item['href']) ?>" class="slams-mobile-nav-item <?= $item['active'] ? 'active' : '' ?>">
-            <i class="bi <?= esc($item['icon']) ?>" aria-hidden="true"></i>
-            <span><?= esc($item['label']) ?></span>
-            <?php if (! empty($item['badge'])): ?>
-                <span class="slams-mobile-nav-badge"><?= esc($item['badge'] > 99 ? '99+' : (string) $item['badge']) ?></span>
-            <?php endif; ?>
-        </a>
+        <?php if (! empty($item['logout'])): ?>
+            <form action="/logout" method="post" class="slams-mobile-nav-item slams-mobile-nav-logout">
+                <?= csrf_field() ?>
+                <button type="submit" aria-label="Logout">
+                    <i class="bi <?= esc($item['icon']) ?>" aria-hidden="true"></i>
+                    <span><?= esc($item['label']) ?></span>
+                </button>
+            </form>
+        <?php else: ?>
+            <a href="<?= esc($item['href']) ?>" class="slams-mobile-nav-item <?= $item['active'] ? 'active' : '' ?>">
+                <i class="bi <?= esc($item['icon']) ?>" aria-hidden="true"></i>
+                <span><?= esc($item['label']) ?></span>
+                <?php if (! empty($item['badge'])): ?>
+                    <span class="slams-mobile-nav-badge"><?= esc($item['badge'] > 99 ? '99+' : (string) $item['badge']) ?></span>
+                <?php endif; ?>
+            </a>
+        <?php endif; ?>
     <?php endforeach; ?>
 </nav>

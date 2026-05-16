@@ -246,6 +246,42 @@ body.slams-mobile-app {
         line-height: 18px;
         text-align: center;
     }
+
+    .slams-mobile-nav-logout {
+        padding: 0;
+        background: none;
+        border: none;
+    }
+
+    .slams-mobile-nav-logout button {
+        display: flex;
+        width: 100%;
+        height: 100%;
+        min-height: 56px;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 0.2rem;
+        border-radius: 8px;
+        padding: 0;
+        background: none;
+        border: none;
+        color: var(--slams-muted);
+        font-size: 0.72rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .slams-mobile-nav-logout button:hover,
+    .slams-mobile-nav-logout button:focus {
+        color: var(--slams-primary);
+        background: color-mix(in srgb, var(--slams-primary) 12%, transparent);
+    }
+
+    .slams-mobile-nav-logout button i {
+        font-size: 1.15rem;
+        line-height: 1;
+    }
 }
 
 @media (max-width: 767.98px) {
