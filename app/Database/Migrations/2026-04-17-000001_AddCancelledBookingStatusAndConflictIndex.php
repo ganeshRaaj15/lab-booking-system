@@ -28,6 +28,11 @@ class AddCancelledBookingStatusAndConflictIndex extends Migration
         }
 
         if ($this->indexExists('bookings', $this->bookingConflictIndex)) {
+            // MySQL needs at least one index starting with lab_id to uphold the FK constraint.
+            // Add a plain lab_id index first so dropping the composite index is allowed.
+            if (! $this->indexExists('bookings', 'idx_bookings_lab_id')) {
+                $this->db->query("ALTER TABLE `bookings` ADD INDEX `idx_bookings_lab_id` (`lab_id`)");
+            }
             $this->db->query("ALTER TABLE `bookings` DROP INDEX `{$this->bookingConflictIndex}`");
         }
 

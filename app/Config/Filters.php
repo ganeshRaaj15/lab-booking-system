@@ -30,6 +30,10 @@ class Filters extends BaseFilters
         if (! $debugUiEnabled) {
             unset($this->globals['after']['toolbar']);
         }
+
+        if (ENVIRONMENT === 'testing') {
+            unset($this->globals['before']['csrf']);
+        }
     }
 
     /**

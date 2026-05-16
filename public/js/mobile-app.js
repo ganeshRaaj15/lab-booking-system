@@ -481,9 +481,6 @@
             updatePushButtons("unsupported");
         } else if (!appConfig.pushConfigured) {
             updatePushButtons("unavailable");
-            pushControls.forEach(function (button) {
-                button.hidden = false;
-            });
         } else if (Notification.permission === "denied") {
             updatePushButtons("blocked");
             pushControls.forEach(function (button) {
