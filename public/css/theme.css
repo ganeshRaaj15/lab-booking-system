@@ -1173,6 +1173,27 @@ input::placeholder {
     border-color: color-mix(in srgb, var(--slams-neutral) 28%, transparent);
 }
 
+/* ── Booking-pattern hint pills ─────────────────────────────────────────── */
+/* Larger, theme-aware pills for the "Your Booking Patterns" card.           */
+.booking-pattern-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.38rem 0.8rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--slams-primary) 30%, transparent);
+    background: var(--slams-primary-soft);
+    color: var(--slams-primary);
+    font-size: var(--slams-text-sm);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.booking-pattern-pill.booking-pattern-neutral {
+    background: var(--slams-neutral-soft);
+    color: var(--slams-neutral);
+    border-color: color-mix(in srgb, var(--slams-neutral) 30%, transparent);
+}
+
 /* ── Skeleton / shimmer loading ─────────────────────────────────────────── */
 @keyframes slams-shimmer {
     0%   { background-position: -200% 0; }

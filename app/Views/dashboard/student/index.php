@@ -229,12 +229,12 @@ $filters           = $filters ?? ['q' => '', 'status' => '', 'date_from' => '', 
                 </div>
                 <div class="d-flex flex-wrap gap-2">
                     <?php if (!empty($personalizedHints['lab_name'])): ?>
-                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 py-2 px-3">
+                        <span class="booking-pattern-pill">
                             Most booked lab: <?= esc($personalizedHints['lab_name']) ?>
                         </span>
                     <?php endif; ?>
                     <?php if (!empty($personalizedHints['slot'])): ?>
-                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 py-2 px-3">
+                        <span class="booking-pattern-pill booking-pattern-neutral">
                             Most booked slot: <?= esc($personalizedHints['slot']) ?>
                         </span>
                     <?php endif; ?>
