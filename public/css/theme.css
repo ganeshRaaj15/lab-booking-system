@@ -80,6 +80,32 @@
     --admin-navbar-height: 64px;
     --admin-sidebar-width: 252px;
     --slams-focus: 0 0 0 4px rgba(15, 118, 110, 0.18);
+
+    /* ── Type scale ──────────────────────────────────────────────────── */
+    --slams-text-xs:   0.72rem;   /* 11.2px — overline, labels           */
+    --slams-text-sm:   0.82rem;   /* 12.7px — captions, table meta       */
+    --slams-text-base: 0.9rem;    /* 14px   — small body                 */
+    --slams-text-md:   1rem;      /* 15.5px — body (matches base size)   */
+    --slams-text-lg:   1.08rem;   /* 16.7px — sub-headings               */
+    --slams-text-xl:   1.22rem;   /* 18.9px — section titles             */
+    --slams-text-2xl:  1.48rem;   /* 23px   — page headings              */
+    --slams-text-3xl:  1.86rem;   /* 28.8px — display / hero             */
+    --slams-text-4xl:  2.28rem;   /* 35.3px — large display              */
+
+    /* ── Line-height scale ───────────────────────────────────────────── */
+    --slams-leading-none:    1;
+    --slams-leading-tight:   1.2;
+    --slams-leading-snug:    1.35;
+    --slams-leading-normal:  1.52;   /* matches body default */
+    --slams-leading-relaxed: 1.66;
+    --slams-leading-loose:   1.8;
+
+    /* ── Letter-spacing scale ────────────────────────────────────────── */
+    --slams-tracking-tight:  -0.02em;
+    --slams-tracking-normal:  0;
+    --slams-tracking-wide:    0.02em;
+    --slams-tracking-wider:   0.05em;
+    --slams-tracking-widest:  0.1em;  /* overlines */
 }
 
 :root[data-theme="dark"] {
@@ -204,7 +230,28 @@ h1, h2, h3, h4, h5, h6,
     color: var(--slams-heading);
     font-family: var(--slams-font-display);
     font-weight: 700;
-    letter-spacing: 0;
+    letter-spacing: var(--slams-tracking-tight);
+    line-height: var(--slams-leading-snug);
+}
+
+/* Type scale utilities */
+.slams-text-xs   { font-size: var(--slams-text-xs);   }
+.slams-text-sm   { font-size: var(--slams-text-sm);   }
+.slams-text-base { font-size: var(--slams-text-base); }
+.slams-text-md   { font-size: var(--slams-text-md);   }
+.slams-text-lg   { font-size: var(--slams-text-lg);   }
+.slams-text-xl   { font-size: var(--slams-text-xl);   }
+.slams-text-2xl  { font-size: var(--slams-text-2xl);  }
+.slams-text-3xl  { font-size: var(--slams-text-3xl);  }
+
+/* Overline / eyebrow label */
+.slams-overline {
+    font-size: var(--slams-text-xs);
+    font-weight: 800;
+    letter-spacing: var(--slams-tracking-widest);
+    text-transform: uppercase;
+    color: var(--slams-primary);
+    line-height: var(--slams-leading-normal);
 }
 
 p,
@@ -526,6 +573,10 @@ select {
     background-color: var(--slams-surface-solid) !important;
     color: var(--slams-text) !important;
     box-shadow: none !important;
+    transition:
+        border-color 0.16s ease,
+        box-shadow 0.16s ease,
+        background-color 0.16s ease !important;
 }
 
 .form-control:focus,
@@ -536,6 +587,7 @@ input:focus,
 select:focus {
     border-color: var(--slams-primary) !important;
     box-shadow: var(--slams-focus) !important;
+    background-color: var(--slams-surface-solid) !important;
     outline: none;
 }
 
@@ -1073,12 +1125,101 @@ input::placeholder {
     align-items: center;
     gap: 0.35rem;
     padding: 0.26rem 0.58rem;
-    border: 1px solid var(--slams-border);
+    border-radius: 999px;
+    border: 1px solid transparent;
     background: var(--slams-primary-soft);
     color: var(--slams-primary);
     font-weight: 800;
-    font-size: 0.74rem;
+    font-size: var(--slams-text-xs);
+    line-height: var(--slams-leading-normal);
+    white-space: nowrap;
 }
+
+/* Semantic status badge variants — use alongside .status-badge */
+.status-badge-pending {
+    background: var(--slams-warning-soft);
+    color: var(--slams-warning);
+    border-color: color-mix(in srgb, var(--slams-warning) 28%, transparent);
+}
+
+.status-badge-approved,
+.status-badge-completed,
+.status-badge-available {
+    background: var(--slams-success-soft);
+    color: var(--slams-success);
+    border-color: color-mix(in srgb, var(--slams-success) 28%, transparent);
+}
+
+.status-badge-rejected,
+.status-badge-cancelled,
+.status-badge-faulty {
+    background: var(--slams-danger-soft);
+    color: var(--slams-danger);
+    border-color: color-mix(in srgb, var(--slams-danger) 28%, transparent);
+}
+
+.status-badge-review,
+.status-badge-in-progress,
+.status-badge-scheduled {
+    background: var(--slams-info-soft);
+    color: var(--slams-info);
+    border-color: color-mix(in srgb, var(--slams-info) 28%, transparent);
+}
+
+.status-badge-neutral,
+.status-badge-maintenance {
+    background: var(--slams-neutral-soft);
+    color: var(--slams-neutral);
+    border-color: color-mix(in srgb, var(--slams-neutral) 28%, transparent);
+}
+
+/* ── Skeleton / shimmer loading ─────────────────────────────────────────── */
+@keyframes slams-shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position:  200% 0; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .skeleton-pulse,
+    .skeleton-row,
+    .skeleton-card {
+        animation: slams-shimmer 1.6s ease-in-out infinite;
+    }
+}
+
+.skeleton-pulse,
+.skeleton-row,
+.skeleton-card {
+    border-radius: var(--slams-radius);
+    background: linear-gradient(
+        90deg,
+        var(--slams-bg-muted) 25%,
+        color-mix(in srgb, var(--slams-bg-muted) 60%, var(--slams-surface-solid)) 50%,
+        var(--slams-bg-muted) 75%
+    );
+    background-size: 200% 100%;
+}
+
+.skeleton-row {
+    display: block;
+    height: 0.9rem;
+    border-radius: 999px;
+    margin-bottom: 0.55rem;
+}
+
+.skeleton-row:last-child { margin-bottom: 0; }
+
+.skeleton-card {
+    padding: 1rem;
+    border: 1px solid var(--slams-border);
+    box-shadow: var(--slams-shadow-soft);
+    margin-bottom: 0.85rem;
+}
+
+/* Convenience widths for skeleton rows */
+.skeleton-row-60 { width: 60%; }
+.skeleton-row-80 { width: 80%; }
+.skeleton-row-full { width: 100%; }
 
 .legend-dot {
     width: 0.75rem;
@@ -1275,6 +1416,48 @@ input::placeholder {
 .empty-state,
 .empty-state-icon {
     text-align: center;
+}
+
+/* ── Enhanced empty state component ─────────────────────────────────────── */
+.slams-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 2.25rem 1.5rem;
+    text-align: center;
+    background: var(--slams-surface);
+    border: 1px solid var(--slams-border);
+    border-radius: var(--slams-radius);
+    box-shadow: var(--slams-shadow-soft);
+}
+
+.slams-empty-state-icon {
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    margin-bottom: 0.25rem;
+    border-radius: 16px;
+    background: var(--slams-primary-soft);
+    color: var(--slams-primary);
+    font-size: 1.75rem;
+}
+
+.slams-empty-state-title {
+    margin: 0;
+    color: var(--slams-heading);
+    font-size: var(--slams-text-lg);
+    font-weight: 700;
+    line-height: var(--slams-leading-snug);
+}
+
+.slams-empty-state-message {
+    margin: 0;
+    color: var(--slams-muted);
+    font-size: var(--slams-text-sm);
+    line-height: var(--slams-leading-relaxed);
+    max-width: 38ch;
 }
 
 .stat-label,
@@ -1872,6 +2055,115 @@ input::placeholder {
     gap: 0.68rem;
     justify-content: center;
     margin-top: 1.05rem;
+}
+
+/* ── Reduced-motion overrides ────────────────────────────────────────────
+   All transform-based hover lifts and animated effects are suppressed
+   for users who prefer reduced motion. Color/opacity transitions remain.
+───────────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .btn:hover,
+    .btn-glow:hover,
+    .btn-glass:hover,
+    .btn-fkmp:hover,
+    .btn-fkmp-auth:hover,
+    .login-btn:hover,
+    .booking-btn:hover,
+    .btn-logout-glass:hover,
+    .nav-link:hover,
+    .sidebar-link:hover,
+    .notification-trigger:hover,
+    .user-profile-glass:hover,
+    .theme-toggle-btn:hover,
+    .kpi-glass-card:hover,
+    .widget-card:hover,
+    .stats-card:hover,
+    .quick-stat:hover,
+    .quick-action-card:hover,
+    .feature-card:hover,
+    .home-flow-card:hover,
+    .home-stat:hover {
+        transform: none !important;
+    }
+}
+
+/* ── Staggered list-item fade-in for web content lists ───────────────────
+   Apply .slams-list-animated to a <ul> or container; children get
+   the fade/slide treatment with index-based delay via CSS custom property.
+   Usage: <li style="--i:0">, <li style="--i:1">, etc.
+───────────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+    .slams-list-animated > * {
+        animation: slams-list-item-in 0.22s ease both;
+        animation-delay: calc(var(--i, 0) * 50ms);
+    }
+}
+
+@keyframes slams-list-item-in {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ── Active nav indicator ────────────────────────────────────────────────
+   Sidebar and nav links get a left-edge accent bar on active state,
+   matching the tab-bar active fill pattern from the mobile app.
+───────────────────────────────────────────────────────────────────────── */
+.sidebar-link.active {
+    background: var(--slams-primary-soft) !important;
+    color: var(--slams-primary) !important;
+    position: relative;
+}
+
+.sidebar-link.active::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.25rem;
+    bottom: 0.25rem;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--slams-primary);
+}
+
+/* ── Responsive utility ──────────────────────────────────────────────────
+   Sidebar collapses on mobile; restore original layout at md breakpoint.
+───────────────────────────────────────────────────────────────────────── */
+@media (max-width: 991.98px) {
+    .admin-layout,
+    .technician-layout {
+        padding-left: 0;
+    }
+
+    .glass-sidebar {
+        transform: translateX(-100%);
+    }
+
+    body.sidebar-open .glass-sidebar {
+        transform: translateX(0);
+    }
+
+    .sidebar-toggle {
+        display: inline-flex;
+    }
+
+    .admin-glass-navbar {
+        left: 0;
+    }
 }
 
 .hero-btn,
@@ -3347,4 +3639,228 @@ input::placeholder {
         gap: 0.5rem;
         padding: 0.68rem;
     }
+}
+
+/* ============================================================
+   PHASE 1H — Typography Scale
+   ============================================================ */
+:root {
+    /* Font sizes */
+    --text-xs: 0.75rem;
+    --text-sm: 0.8125rem;
+    --text-base: 0.9375rem;
+    --text-md: 1rem;
+    --text-lg: 1.0625rem;
+    --text-xl: 1.25rem;
+    --text-2xl: 1.5rem;
+    --text-3xl: 1.875rem;
+    --text-4xl: 2.25rem;
+
+    /* Line heights */
+    --leading-tight: 1.2;
+    --leading-snug: 1.35;
+    --leading-normal: 1.5;
+    --leading-relaxed: 1.7;
+
+    /* Letter spacing */
+    --tracking-tight: -0.02em;
+    --tracking-normal: 0;
+    --tracking-wide: 0.02em;
+    --tracking-wider: 0.05em;
+
+    /* Font weights */
+    --font-regular: 400;
+    --font-medium: 500;
+    --font-semibold: 600;
+    --font-bold: 700;
+    --font-extrabold: 800;
+
+    /* Shadow lift for card hover */
+    --shadow-lift: var(--slams-shadow-lift);
+
+    /* Soft primary alias for components */
+    --color-primary: var(--slams-primary);
+    --color-primary-soft: var(--slams-primary-soft);
+    --color-surface-muted: var(--slams-bg-muted);
+    --color-border: var(--slams-border);
+    --color-text-muted: var(--slams-muted);
+
+    /* Radius alias */
+    --radius-sm: var(--slams-radius-sm);
+    --spacing-md: 1rem;
+    --spacing-xl: 2rem;
+}
+
+h1, .h1 { font-size: var(--text-4xl); line-height: var(--leading-tight); font-weight: var(--font-bold); }
+h2, .h2 { font-size: var(--text-3xl); line-height: var(--leading-tight); font-weight: var(--font-bold); }
+h3, .h3 { font-size: var(--text-2xl); line-height: var(--leading-snug); font-weight: var(--font-bold); }
+h4, .h4 { font-size: var(--text-xl);  line-height: var(--leading-snug); font-weight: var(--font-bold); }
+h5, .h5 { font-size: var(--text-lg);  line-height: var(--leading-normal); font-weight: var(--font-semibold); }
+h6, .h6 { font-size: var(--text-md);  line-height: var(--leading-normal); font-weight: var(--font-semibold); }
+
+body.slams-app {
+    font-size: var(--text-base);
+    line-height: var(--leading-normal);
+}
+
+.text-muted,
+.small.text-muted,
+.small { font-size: var(--text-sm); }
+
+/* ============================================================
+   PHASE 1I — Card hover lift
+   ============================================================ */
+.card {
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lift) !important;
+}
+
+/* Stat / KPI card icon blob */
+.icon-container {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--color-primary-soft);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+}
+
+/* ============================================================
+   PHASE 1J — Form focus transitions (supplements existing styles)
+   ============================================================ */
+.form-control,
+.form-select {
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* ============================================================
+   PHASE 1K — Loading skeleton
+   ============================================================ */
+@keyframes shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position:  200% 0; }
+}
+
+.skeleton {
+    background: linear-gradient(
+        90deg,
+        var(--color-surface-muted, #e8eae9) 25%,
+        var(--color-border, #d4d8d6) 50%,
+        var(--color-surface-muted, #e8eae9) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+    border-radius: var(--radius-sm);
+}
+
+:root[data-theme="dark"] .skeleton {
+    background: linear-gradient(
+        90deg,
+        rgba(255,255,255,0.05) 25%,
+        rgba(255,255,255,0.10) 50%,
+        rgba(255,255,255,0.05) 75%
+    );
+    background-size: 200% 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .skeleton { animation: none; opacity: 0.5; }
+}
+
+.skeleton-text       { height: 1em;   margin-bottom: 0.5em; }
+.skeleton-text.skeleton-title { height: 1.4em; width: 60%; }
+.skeleton-card       { height: 120px; }
+
+/* ============================================================
+   PHASE 1L — Navigation active indicators
+   ============================================================ */
+
+/* Sidebar active link: left border accent + tonal fill */
+.sidebar-link.active {
+    position: relative;
+    background: var(--color-primary-soft, rgba(15, 118, 110, 0.12)) !important;
+    color: var(--color-primary, var(--slams-primary)) !important;
+    font-weight: var(--font-semibold);
+    border-radius: var(--radius-sm, var(--slams-radius-sm));
+}
+
+.sidebar-link.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 20%;
+    height: 60%;
+    width: 3px;
+    background: var(--color-primary, var(--slams-primary));
+    border-radius: 0 2px 2px 0;
+}
+
+/* Top navbar underline indicator */
+.navbar .nav-link {
+    position: relative;
+}
+.navbar .nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 10%;
+    width: 80%;
+    height: 2px;
+    background: var(--color-primary, var(--slams-primary));
+    border-radius: 2px;
+    transition: width 0.2s ease;
+}
+
+/* ============================================================
+   PHASE 2D — Button press/hover feedback (enhances existing)
+   ============================================================ */
+.btn:active:not(:disabled) {
+    transform: translateY(0px) scale(0.98) !important;
+}
+
+.btn-primary:hover:not(:disabled),
+.btn-fkmp:hover:not(:disabled),
+.btn-glow:hover:not(:disabled) {
+    box-shadow: 0 4px 14px rgba(15, 118, 110, 0.35) !important;
+}
+
+/* ============================================================
+   PHASE 3B — Empty state CSS
+   ============================================================ */
+.empty-state {
+    padding: var(--spacing-xl, 2rem) var(--spacing-md, 1rem);
+    text-align: center;
+}
+
+.empty-state-icon {
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--color-primary-soft, var(--slams-primary-soft));
+    margin: 0 auto 0.75rem;
+}
+
+.empty-state-icon i {
+    font-size: 2rem;
+    color: var(--color-primary, var(--slams-primary));
+    opacity: 0.8;
+}
+
+/* ============================================================
+   PHASE 3C — Breadcrumb compact
+   ============================================================ */
+.breadcrumb-sm { font-size: var(--text-sm); }
+.breadcrumb-sm .breadcrumb-item + .breadcrumb-item::before {
+    color: var(--color-text-muted, var(--slams-muted));
 }
