@@ -4037,10 +4037,12 @@ body.slams-app {
 }
 
 .slams-cal-selected .slams-cal-day-num {
-    background: var(--slams-primary-strong);
-    color: #fff;
+    background: var(--slams-surface);
+    color: var(--slams-primary);
     font-weight: 800;
-    box-shadow: 0 4px 12px rgba(15, 118, 110, 0.4);
+    outline: 3px solid var(--slams-primary);
+    outline-offset: 1px;
+    box-shadow: none;
 }
 
 .slams-cal-legend {
