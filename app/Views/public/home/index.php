@@ -30,10 +30,9 @@ $approvedCount = (int) ($homeStats['approved'] ?? 0);
                     <i class="bi bi-stars"></i>
                     FKMP UTHM Laboratory Access
                 </div>
-                <h1>Smart laboratory booking with clearer approval control.</h1>
+                <h1>Your campus labs, easy to book.</h1>
                 <p class="subtitle">
-                    Discover FKMP laboratories, check available resources, submit booking requests,
-                    and track approvals through one coordinated SLAMS workspace.
+                    Find the right lab, check what's available, and get your booking approved — without the back-and-forth.
                 </p>
                 <div class="hero-buttons">
                     <a href="<?= site_url('/laboratories') ?>" class="hero-btn hero-btn-primary">
