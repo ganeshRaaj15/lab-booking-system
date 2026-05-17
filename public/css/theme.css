@@ -583,7 +583,7 @@ select {
 .form-select:focus,
 .form-control-glass:focus,
 textarea:focus,
-input:focus,
+input:not([type="checkbox"]):not([type="radio"]):focus,
 select:focus {
     border-color: var(--slams-primary) !important;
     box-shadow: var(--slams-focus) !important;
