@@ -71,7 +71,16 @@ if (function_exists('auth') && auth()->loggedIn()) {
                     </li>
 
                     <?php if (!($user->inGroup('pic') || $user->inGroup('manager'))): ?>
-                        <li class="nav-item me-2"><a class="nav-link position-relative" href="/dashboard/profile"><i class="bi bi-person-circle me-1"></i> Profile<span class="nav-indicator"></span></a></li>
+                        <?php $navProfilePhoto = trim((string) ($user->profile_photo ?? '')); ?>
+                        <li class="nav-item me-2 d-none d-lg-flex align-items-center">
+                            <a href="/dashboard/profile" class="slams-navbar-app-btn slams-navbar-profile-btn <?= url_is('dashboard/profile*') ? 'is-active' : '' ?>" aria-label="Profile" title="Profile">
+                                <?php if ($navProfilePhoto !== ''): ?>
+                                    <img src="<?= esc(base_url(ltrim($navProfilePhoto, '/'))) ?>" alt="Profile" class="slams-navbar-profile-avatar">
+                                <?php else: ?>
+                                    <span class="slams-navbar-profile-fallback" aria-hidden="true"><i class="bi bi-person"></i></span>
+                                <?php endif; ?>
+                            </a>
+                        </li>
                     <?php endif; ?>
                     <li class="nav-item ms-lg-2">
                         <form action="/logout" method="post" class="d-inline"><?= csrf_field() ?><button class="btn btn-glass btn-sm"><i class="bi bi-box-arrow-right me-1"></i> Logout</button></form>
