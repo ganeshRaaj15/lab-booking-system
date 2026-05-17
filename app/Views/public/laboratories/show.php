@@ -766,50 +766,66 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // -------------------------------
-    // FullCalendar setup with custom styling
+    // FullCalendar setup — defensive init so a CDN failure or
+    // any internal error does NOT abort the rest of this script
+    // (which would also prevent the booking wizard button from
+    // getting its click listener).
     // -------------------------------
-    const calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: "dayGridMonth",
-        height: "auto",
-        eventDisplay: "block",
-        headerToolbar: {
-            left: "prev,next today",
-            center: "title",
-            right: "dayGridMonth,timeGridWeek,timeGridDay"
-        },
-        buttonText: {
-            today: "Today",
-            month: "Month",
-            week: "Week",
-            day: "Day"
-        },
-        dateClick: (info) => {
-            const clickedDate = new Date(info.dateStr + "T00:00:00");
-            if (clickedDate < todayDate) {
-                return;
-            }
-            loadDaySlots(info.dateStr);
-        },
-        dayCellClassNames: (info) => {
-            const cellDate = new Date(info.date.getFullYear(), info.date.getMonth(), info.date.getDate());
-            return cellDate < todayDate ? ["fc-day-past-disabled"] : [];
-        },
-        eventDidMount: (info) => {
-            // Add tooltip for events
-            info.el.title = info.event.title;
-        },
-        datesSet: () => {
-            // Refresh calendar when view changes
-            refreshCalendar();
+    let calendar = null;
+    try {
+        if (typeof FullCalendar === "undefined" || !calendarEl) {
+            throw new Error("FullCalendar not available");
         }
-    });
-
-    calendar.render();
+        calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: "dayGridMonth",
+            height: "auto",
+            eventDisplay: "block",
+            headerToolbar: {
+                left: "prev,next today",
+                center: "title",
+                right: "dayGridMonth,timeGridWeek,timeGridDay"
+            },
+            buttonText: {
+                today: "Today",
+                month: "Month",
+                week: "Week",
+                day: "Day"
+            },
+            dateClick: (info) => {
+                const clickedDate = new Date(info.dateStr + "T00:00:00");
+                if (clickedDate < todayDate) {
+                    return;
+                }
+                loadDaySlots(info.dateStr);
+            },
+            dayCellClassNames: (info) => {
+                const cellDate = new Date(info.date.getFullYear(), info.date.getMonth(), info.date.getDate());
+                return cellDate < todayDate ? ["fc-day-past-disabled"] : [];
+            },
+            eventDidMount: (info) => {
+                info.el.title = info.event.title;
+            },
+            datesSet: () => {
+                refreshCalendar();
+            }
+        });
+        calendar.render();
+    } catch (fcError) {
+        if (calendarEl) {
+            calendarEl.innerHTML = `
+                <div class="text-muted p-4 text-center small">
+                    <i class="bi bi-calendar-x fs-3 d-block mb-2"></i>
+                    Availability calendar could not be loaded.
+                    Select a date directly in the booking wizard after launching it.
+                </div>`;
+        }
+    }
 
     // -------------------------------
     // Refresh availability on calendar
     // -------------------------------
     function refreshCalendar() {
+        if (!calendar) return;
         const serviceId = getSelectedServiceId();
         const assets = buildAssetSelectionString();
         if (!serviceId || !assets) {
@@ -1076,12 +1092,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!modalEl || typeof bootstrap === "undefined") {
             return false;
         }
-
-        if (modalEl.parentElement !== document.body) {
-            document.body.appendChild(modalEl);
-        }
-
-        const modal = new bootstrap.Modal(modalEl);
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
         modal.show();
         return true;
     }
