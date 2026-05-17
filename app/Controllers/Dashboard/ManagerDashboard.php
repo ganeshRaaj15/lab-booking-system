@@ -3,6 +3,7 @@
 namespace App\Controllers\Dashboard;
 
 use App\Controllers\BaseController;
+use App\Libraries\MaintenanceForecastService;
 use App\Models\BookingModel;
 use App\Models\ExternalRequestModel;
 use App\Models\LaboratoryModel;
@@ -55,7 +56,12 @@ class ManagerDashboard extends BaseController
         $stats = $this->getComprehensiveStats($labIds);
         
         // ------------------------------------------------------------
-        // 4. DETAILED ANALYTICS DATA FOR METRICS TAB
+        // 4. EQUIPMENT HEALTH WIDGET
+        // ------------------------------------------------------------
+        $equipmentHealth = $this->getEquipmentHealth();
+
+        // ------------------------------------------------------------
+        // 5. DETAILED ANALYTICS DATA FOR METRICS TAB
         // ------------------------------------------------------------
         $analytics = [
             'weeklyUtilization' => $this->getWeeklyUtilization($labIds, 8), // Last 8 weeks
@@ -71,7 +77,7 @@ class ManagerDashboard extends BaseController
         ];
 
         // ------------------------------------------------------------
-        // 5. RENDER VIEW
+        // 6. RENDER VIEW
         // ------------------------------------------------------------
         return view('dashboard/manager/index', [
             'user'               => $user,
@@ -80,6 +86,7 @@ class ManagerDashboard extends BaseController
             'pendingExternalMgr' => $pendingExternalMgr,
             'stats'              => $stats,
             'analytics'          => $analytics,
+            'equipmentHealth'    => $equipmentHealth,
             'activeTab'          => $this->request->getGet('tab') ?? 'approvals',
             'insightPeriod'      => $this->parseInsightWeeks($this->request->getGet('insight_period')),
         ]);
@@ -604,6 +611,51 @@ private function getFacultyDistribution(array $labIds): array
 
 
     
+    /**
+     * Build the equipment health widget data from the prediction/forecast service.
+     */
+    private function getEquipmentHealth(): array
+    {
+        try {
+            $forecastService = new MaintenanceForecastService();
+            $forecasts = $forecastService->getUpcomingForecasts(90);
+        } catch (\Throwable $e) {
+            log_message('error', 'ManagerDashboard::getEquipmentHealth failed: ' . $e->getMessage());
+            return ['high' => 0, 'medium' => 0, 'low' => 0, 'topAtRisk' => []];
+        }
+
+        $high = 0; $medium = 0; $low = 0;
+        foreach ($forecasts as $f) {
+            $band = $f['risk_band'] ?? 'low';
+            if ($band === 'high') $high++;
+            elseif ($band === 'medium') $medium++;
+            else $low++;
+        }
+
+        usort($forecasts, static function (array $a, array $b): int {
+            return ($b['risk_percent'] ?? 0) - ($a['risk_percent'] ?? 0);
+        });
+
+        $topAtRisk = array_map(static function (array $f): array {
+            return [
+                'asset_id'       => $f['asset_id'] ?? 0,
+                'name'           => $f['name'] ?? '-',
+                'lab_name'       => $f['lab_name'] ?? '-',
+                'risk_percent'   => (int) ($f['risk_percent'] ?? 0),
+                'risk_band'      => $f['risk_band'] ?? 'low',
+                'decision_label' => $f['decision_label'] ?? 'Normal monitoring',
+                'next_due_at'    => $f['next_due_at'] ?? null,
+            ];
+        }, array_slice($forecasts, 0, 5));
+
+        return [
+            'high'      => $high,
+            'medium'    => $medium,
+            'low'       => $low,
+            'topAtRisk' => $topAtRisk,
+        ];
+    }
+
     /**
      * Get booking details for modal (AJAX endpoint)
      */

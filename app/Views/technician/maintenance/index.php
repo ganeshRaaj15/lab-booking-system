@@ -141,28 +141,54 @@ $priorityBadgeClass = [
                                         'priority' => $recommendedPriority === 'high' ? 'high' : 'medium',
                                         'quantity_affected' => 1,
                                     ], '', '&', PHP_QUERY_RFC3986);
-                                    $riskClass = match ($forecast['risk_band'] ?? 'low') {
+                                    $riskBand = $forecast['risk_band'] ?? 'low';
+                                    $riskPercent = (int) ($forecast['risk_percent'] ?? 0);
+                                    $riskBadgeClass = match ($riskBand) {
                                         'high' => 'text-bg-danger',
                                         'medium' => 'text-bg-warning',
                                         default => 'text-bg-success',
                                     };
-                                    $reasonText = implode(' ', array_slice($forecast['reasons'] ?? [], 0, 1));
+                                    $riskBarColor = match ($riskBand) {
+                                        'high' => 'var(--bs-danger)',
+                                        'medium' => 'var(--bs-warning)',
+                                        default => 'var(--bs-success)',
+                                    };
+                                    $riskHeadline = match (true) {
+                                        $riskBand === 'high' => 'High risk — schedule maintenance now',
+                                        $riskBand === 'medium' => 'Moderate risk — inspect soon',
+                                        default => 'Low risk — continue monitoring',
+                                    };
+                                    $reasons = $forecast['reasons'] ?? [];
                                 ?>
                                 <tr>
                                     <td>
                                         <div class="fw-semibold"><?= esc($forecast['name'] ?? '-') ?></div>
                                         <small class="text-muted"><?= esc($forecast['lab_name'] ?? '-') ?></small>
                                     </td>
-                                    <td><span class="badge <?= esc($riskClass) ?>"><?= esc((int) ($forecast['risk_percent'] ?? 0)) ?>%</span></td>
+                                    <td style="min-width:120px">
+                                        <div class="d-flex align-items-center gap-2 mb-1">
+                                            <span class="badge <?= esc($riskBadgeClass) ?>"><?= esc($riskPercent) ?>%</span>
+                                        </div>
+                                        <div class="progress" style="height:6px;border-radius:4px;background:#e9ecef;">
+                                            <div class="progress-bar" role="progressbar"
+                                                 style="width:<?= esc($riskPercent) ?>%;background:<?= $riskBarColor ?>;border-radius:4px;"
+                                                 aria-valuenow="<?= esc($riskPercent) ?>" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                        <div class="small text-muted mt-1"><?= esc($riskHeadline) ?></div>
+                                    </td>
                                     <td>
                                         <div class="fw-semibold"><?= esc($forecast['decision_label'] ?? 'Normal monitoring') ?></div>
                                         <small class="text-muted text-uppercase"><?= esc($forecast['decision_priority'] ?? 'low') ?> priority</small>
                                     </td>
                                     <td><?= esc($nextDueLabel) ?></td>
                                     <td><?= esc($lastCompletedLabel) ?></td>
-                                    <td>
-                                        <?php if ($reasonText !== ''): ?>
-                                            <div class="small"><?= esc($reasonText) ?></div>
+                                    <td style="min-width:180px">
+                                        <?php if (! empty($reasons)): ?>
+                                            <ul class="mb-0 ps-3 small">
+                                                <?php foreach ($reasons as $reason): ?>
+                                                    <li class="mb-1"><?= esc($reason) ?></li>
+                                                <?php endforeach; ?>
+                                            </ul>
                                         <?php else: ?>
                                             <span class="badge <?= esc($statusClass) ?>"><?= esc($statusText) ?></span>
                                         <?php endif; ?>

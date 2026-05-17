@@ -154,6 +154,118 @@ $pendingExternalMgr = $pendingExternalMgr ?? [];
         </div>
     </div>
 </div>
+<?php
+/** @var array $equipmentHealth */
+$equipmentHealth = $equipmentHealth ?? ['high' => 0, 'medium' => 0, 'low' => 0, 'topAtRisk' => []];
+$ehHigh   = (int) ($equipmentHealth['high'] ?? 0);
+$ehMedium = (int) ($equipmentHealth['medium'] ?? 0);
+$ehLow    = (int) ($equipmentHealth['low'] ?? 0);
+$ehTotal  = $ehHigh + $ehMedium + $ehLow;
+$topAtRisk = $equipmentHealth['topAtRisk'] ?? [];
+?>
+<!-- EQUIPMENT HEALTH WIDGET -->
+<div class="card border-0 shadow-sm rounded-3 mb-4 overflow-hidden">
+    <div class="card-header border-0 py-3 d-flex align-items-center gap-2"
+         style="background:var(--slams-primary-soft);border-left:4px solid var(--slams-primary) !important;">
+        <i class="bi bi-cpu fs-5" style="color:var(--slams-primary)"></i>
+        <div>
+            <h6 class="mb-0 fw-bold" style="color:var(--slams-primary)">Equipment Health Overview</h6>
+            <small class="text-muted">AI-predicted maintenance risk for the next 90 days</small>
+        </div>
+    </div>
+    <div class="card-body">
+        <?php if ($ehTotal === 0): ?>
+            <p class="text-muted mb-0">No predictive maintenance data available yet. Train the model from the Technician panel to see risk scores.</p>
+        <?php else: ?>
+            <!-- Traffic-light summary -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="d-flex align-items-center gap-3 p-3 rounded-3" style="background:var(--slams-danger-soft)">
+                        <i class="bi bi-exclamation-triangle-fill fs-3" style="color:var(--slams-danger)"></i>
+                        <div>
+                            <div class="fs-2 fw-bold" style="color:var(--slams-danger)"><?= esc($ehHigh) ?></div>
+                            <div class="small fw-semibold" style="color:var(--slams-danger)">High Risk</div>
+                            <div class="small text-muted">Schedule now</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="d-flex align-items-center gap-3 p-3 rounded-3" style="background:var(--slams-warning-soft)">
+                        <i class="bi bi-exclamation-circle-fill fs-3" style="color:var(--slams-warning)"></i>
+                        <div>
+                            <div class="fs-2 fw-bold" style="color:var(--slams-warning)"><?= esc($ehMedium) ?></div>
+                            <div class="small fw-semibold" style="color:var(--slams-warning)">Medium Risk</div>
+                            <div class="small text-muted">Inspect soon</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="d-flex align-items-center gap-3 p-3 rounded-3" style="background:var(--slams-success-soft)">
+                        <i class="bi bi-check-circle-fill fs-3" style="color:var(--slams-success)"></i>
+                        <div>
+                            <div class="fs-2 fw-bold" style="color:var(--slams-success)"><?= esc($ehLow) ?></div>
+                            <div class="small fw-semibold" style="color:var(--slams-success)">Stable</div>
+                            <div class="small text-muted">Routine monitoring</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <?php if (! empty($topAtRisk)): ?>
+                <h6 class="fw-bold text-dark mb-3">Top 5 Assets At Risk</h6>
+                <div class="table-responsive rounded-3 border">
+                    <table class="table align-middle mb-0 table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="border-0 ps-3">Asset</th>
+                                <th class="border-0">Risk</th>
+                                <th class="border-0">Decision</th>
+                                <th class="border-0">Next Due</th>
+                                <th class="border-0 pe-3 text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($topAtRisk as $ar):
+                                $arBadge = match ($ar['risk_band']) {
+                                    'high' => 'text-bg-danger',
+                                    'medium' => 'text-bg-warning',
+                                    default => 'text-bg-success',
+                                };
+                                $arBarColor = match ($ar['risk_band']) {
+                                    'high' => 'var(--bs-danger)',
+                                    'medium' => 'var(--bs-warning)',
+                                    default => 'var(--bs-success)',
+                                };
+                                $arDueLabel = $ar['next_due_at'] ? date('d M Y', strtotime($ar['next_due_at'])) : '-';
+                            ?>
+                            <tr>
+                                <td class="ps-3">
+                                    <div class="fw-semibold text-dark"><?= esc($ar['name']) ?></div>
+                                    <small class="text-muted"><?= esc($ar['lab_name']) ?></small>
+                                </td>
+                                <td style="min-width:110px">
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <span class="badge <?= esc($arBadge) ?>"><?= esc($ar['risk_percent']) ?>%</span>
+                                    </div>
+                                    <div class="progress" style="height:5px;border-radius:4px;background:#e9ecef;max-width:80px">
+                                        <div class="progress-bar" style="width:<?= esc($ar['risk_percent']) ?>%;background:<?= $arBarColor ?>;border-radius:4px;"></div>
+                                    </div>
+                                </td>
+                                <td><span class="small"><?= esc($ar['decision_label']) ?></span></td>
+                                <td><span class="small text-muted"><?= esc($arDueLabel) ?></span></td>
+                                <td class="pe-3 text-end">
+                                    <a href="/technician/maintenance" class="btn btn-sm btn-outline-primary">Plan</a>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
+        <?php endif; ?>
+    </div>
+</div>
+
 <!-- ENHANCED TAB NAVIGATION WITH BETTER DESIGN -->
 <div class="card shadow-sm border-0 rounded-3 mb-4 overflow-hidden">
     <div class="card-header bg-white border-bottom-0 pt-4 pb-0">

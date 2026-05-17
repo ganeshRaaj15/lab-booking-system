@@ -373,29 +373,69 @@ $stageChecklist = match ($stageMode) {
         <div class="col-lg-4">
             <?php if (! empty($modelSummary['available']) && ! empty($assetPrediction)): ?>
                 <?php
-                    $riskClass = match ($assetPrediction['risk_band'] ?? 'low') {
+                    $predRiskBand = $assetPrediction['risk_band'] ?? 'low';
+                    $predRiskPercent = (int) ($assetPrediction['risk_percent'] ?? 0);
+                    $predRiskBadgeClass = match ($predRiskBand) {
                         'high' => 'text-bg-danger',
                         'medium' => 'text-bg-warning',
                         default => 'text-bg-success',
                     };
+                    $predRiskBarColor = match ($predRiskBand) {
+                        'high' => 'var(--bs-danger)',
+                        'medium' => 'var(--bs-warning)',
+                        default => 'var(--bs-success)',
+                    };
+                    $predRiskSoftBg = match ($predRiskBand) {
+                        'high' => 'var(--slams-danger-soft)',
+                        'medium' => 'var(--slams-warning-soft)',
+                        default => 'var(--slams-success-soft)',
+                    };
+                    $predRiskTextColor = match ($predRiskBand) {
+                        'high' => 'var(--slams-danger)',
+                        'medium' => 'var(--slams-warning)',
+                        default => 'var(--slams-success)',
+                    };
+                    $predHeadline = match ($predRiskBand) {
+                        'high' => 'Maintenance likely needed urgently',
+                        'medium' => 'Maintenance recommended within 60 days',
+                        default => 'Equipment appears stable — routine monitoring',
+                    };
+                    $predPriority = ucfirst((string) ($assetPrediction['decision']['priority'] ?? 'low'));
+                    $predReasons = $assetPrediction['reasons'] ?? [];
                 ?>
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-white"><h6 class="mb-1 fw-bold"><i class="bi bi-cpu me-2 text-primary"></i>Predictive Maintenance Decision</h6></div>
-                    <div class="card-body small text-muted">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="fw-semibold text-dark">Risk Score</span>
-                            <span class="badge <?= esc($riskClass) ?>"><?= esc((int) ($assetPrediction['risk_percent'] ?? 0)) ?>%</span>
+                <div class="card border-0 shadow-sm mb-4 overflow-hidden">
+                    <div class="card-header border-0 py-3" style="background:<?= $predRiskSoftBg ?>;border-left:4px solid <?= $predRiskTextColor ?> !important;">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <i class="bi bi-cpu" style="color:<?= $predRiskTextColor ?>"></i>
+                            <h6 class="mb-0 fw-bold" style="color:<?= $predRiskTextColor ?>">AI Maintenance Prediction</h6>
                         </div>
-                        <div class="mb-2"><strong>Recommended Action:</strong> <?= esc($assetPrediction['decision']['label'] ?? 'Normal monitoring') ?></div>
-                        <div class="mb-2"><strong>Priority:</strong> <?= esc(ucfirst((string) ($assetPrediction['decision']['priority'] ?? 'low'))) ?></div>
-                        <?php if (! empty($assetPrediction['reasons'])): ?>
-                            <div class="mb-0"><strong>Why:</strong>
-                                <ul class="mb-0 ps-3">
-                                    <?php foreach ($assetPrediction['reasons'] as $reason): ?>
-                                        <li><?= esc($reason) ?></li>
-                                    <?php endforeach; ?>
-                                </ul>
-                            </div>
+                        <div class="small fw-semibold" style="color:<?= $predRiskTextColor ?>"><?= esc($predHeadline) ?></div>
+                    </div>
+                    <div class="card-body small">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-muted fw-semibold">Risk Score</span>
+                            <span class="badge <?= esc($predRiskBadgeClass) ?>"><?= esc($predRiskPercent) ?>%</span>
+                        </div>
+                        <div class="progress mb-3" style="height:8px;border-radius:6px;background:#e9ecef;">
+                            <div class="progress-bar" role="progressbar"
+                                 style="width:<?= esc($predRiskPercent) ?>%;background:<?= $predRiskBarColor ?>;border-radius:6px;"
+                                 aria-valuenow="<?= esc($predRiskPercent) ?>" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        <div class="mb-2">
+                            <span class="text-muted">Decision:</span>
+                            <span class="fw-semibold text-dark ms-1"><?= esc($assetPrediction['decision']['label'] ?? 'Normal monitoring') ?></span>
+                        </div>
+                        <div class="mb-3">
+                            <span class="text-muted">Priority:</span>
+                            <span class="fw-semibold text-dark ms-1"><?= esc($predPriority) ?></span>
+                        </div>
+                        <?php if (! empty($predReasons)): ?>
+                            <div class="text-muted fw-semibold mb-1">Why the model flagged this:</div>
+                            <ul class="mb-0 ps-3">
+                                <?php foreach ($predReasons as $reason): ?>
+                                    <li class="mb-1 small"><?= esc($reason) ?></li>
+                                <?php endforeach; ?>
+                            </ul>
                         <?php endif; ?>
                     </div>
                 </div>
