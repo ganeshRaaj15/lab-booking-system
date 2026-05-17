@@ -779,7 +779,7 @@ input::placeholder {
 }
 
 .brand-logo-img {
-    height: 52px;
+    height: calc(var(--slams-navbar-height) - 16px);
     width: auto;
     object-fit: contain;
 }
