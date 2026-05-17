@@ -288,8 +288,9 @@ class BookingController extends BaseController
         }
 
         $slots = [];
-        $today = date('Y-m-d');
-        $now   = date('H:i:s');
+        $nowDt = new \DateTimeImmutable('now', new \DateTimeZone(app_timezone()));
+        $today = $nowDt->format('Y-m-d');
+        $now   = $nowDt->format('H:i:s');
         foreach ($slotDefs as $slot) {
 
             $assetsInfo = [];

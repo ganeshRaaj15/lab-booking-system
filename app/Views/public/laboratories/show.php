@@ -418,6 +418,7 @@ if ($picPhone === '') {
             </div>
         </div>
             <div id="labCalendar"></div>
+            <div id="daySlotPanel" class="d-none mt-4 pt-3 border-top"></div>
         </div>
 
     </div>
@@ -431,8 +432,28 @@ if ($picPhone === '') {
     'userProfile'  => $userProfile ?? null
 ]) ?>
 
-<!-- FULLCALENDAR (self-hosted global bundle — CSS injected by JS) -->
-<script src="<?= base_url('js/fullcalendar.global.min.js') ?>"></script>
+<style>
+.slams-cal-wrap { font-family: inherit; }
+.slams-cal-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.slams-cal-month-label { font-weight: 700; font-size: 15px; }
+.slams-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.slams-cal-hdr { text-align: center; font-size: 11px; font-weight: 700; color: #6b7280; padding: 6px 2px; text-transform: uppercase; }
+.slams-cal-cell { text-align: center; padding: 10px 4px; border-radius: 8px; font-size: 14px; min-height: 44px; display: flex; align-items: center; justify-content: center; }
+.slams-cal-empty { }
+.slams-cal-past { color: #d1d5db; cursor: default; }
+.slams-cal-future { cursor: pointer; }
+.slams-cal-future:not(.slams-cal-unavail):hover { background: #f0fdf4; color: #059669; font-weight: 600; }
+.slams-cal-today { background: #eff6ff; font-weight: 800; outline: 2px solid #93c5fd; color: #3b82f6; }
+.slams-cal-unavail { background: #fef2f2 !important; color: #ef4444 !important; cursor: default; }
+.slams-cal-unavail:hover { background: #fef2f2 !important; color: #ef4444 !important; font-weight: normal !important; }
+.slams-cal-selected { outline: 3px solid #3b82f6 !important; font-weight: 800; }
+.slams-cal-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 14px; padding-top: 12px; border-top: 1px solid #e5e7eb; }
+.slams-cal-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #6b7280; }
+.slams-cal-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.cal-dot-past { background: #e5e7eb; }
+.cal-dot-open { background: #10b981; }
+.cal-dot-unavail { background: #ef4444; }
+</style>
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
@@ -763,60 +784,132 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    // -------------------------------
-    // FullCalendar setup — defensive init so a CDN failure or
-    // any internal error does NOT abort the rest of this script
-    // (which would also prevent the booking wizard button from
-    // getting its click listener).
-    // -------------------------------
-    let calendar = null;
-    try {
-        if (typeof FullCalendar === "undefined" || !calendarEl) {
-            throw new Error("FullCalendar not available");
-        }
-        calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: "dayGridMonth",
-            height: "auto",
-            eventDisplay: "block",
-            headerToolbar: {
-                left: "prev,next today",
-                center: "title",
-                right: "dayGridMonth,timeGridWeek,timeGridDay"
-            },
-            buttonText: {
-                today: "Today",
-                month: "Month",
-                week: "Week",
-                day: "Day"
-            },
-            dateClick: (info) => {
-                const clickedDate = new Date(info.dateStr + "T00:00:00");
-                if (clickedDate < todayDate) {
-                    return;
-                }
-                loadDaySlots(info.dateStr);
-            },
-            dayCellClassNames: (info) => {
-                const cellDate = new Date(info.date.getFullYear(), info.date.getMonth(), info.date.getDate());
-                return cellDate < todayDate ? ["fc-day-past-disabled"] : [];
-            },
-            eventDidMount: (info) => {
-                info.el.title = info.event.title;
-            },
-            datesSet: () => {
-                refreshCalendar();
+    // -------------------------------------------------------
+    // Custom month-grid calendar (no external dependencies)
+    // -------------------------------------------------------
+    const MonthCal = {
+        el: null,
+        onDateClick: null,
+        onMonthChange: null,
+        today: null,
+        year: 0,
+        month: 0,
+        eventMap: {},
+
+        init(container, opts) {
+            this.el = container;
+            this.onDateClick = opts.onDateClick || (() => {});
+            this.onMonthChange = opts.onMonthChange || (() => {});
+            this.today = new Date();
+            this.today.setHours(0, 0, 0, 0);
+            this.year = this.today.getFullYear();
+            this.month = this.today.getMonth();
+            this.render();
+        },
+
+        _pad(n) { return String(n).padStart(2, '0'); },
+
+        _dateStr(y, m, d) {
+            return `${y}-${this._pad(m + 1)}-${this._pad(d)}`;
+        },
+
+        render() {
+            if (!this.el) return;
+
+            const firstDay = new Date(this.year, this.month, 1);
+            const lastDay  = new Date(this.year, this.month + 1, 0);
+            const label    = firstDay.toLocaleDateString('en-MY', { month: 'long', year: 'numeric' });
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+            let cells = dayNames.map(d =>
+                `<div class="slams-cal-hdr">${d}</div>`
+            ).join('');
+
+            for (let i = 0; i < firstDay.getDay(); i++) {
+                cells += `<div class="slams-cal-cell slams-cal-empty"></div>`;
             }
+
+            for (let d = 1; d <= lastDay.getDate(); d++) {
+                const cellDate = new Date(this.year, this.month, d);
+                cellDate.setHours(0, 0, 0, 0);
+                const ds      = this._dateStr(this.year, this.month, d);
+                const isPast  = cellDate < this.today;
+                const isToday = cellDate.getTime() === this.today.getTime();
+                const ev      = this.eventMap[ds] || null;
+
+                let cls = 'slams-cal-cell';
+                cls += isPast ? ' slams-cal-past' : ' slams-cal-future';
+                if (isToday) cls += ' slams-cal-today';
+                if (!isPast && ev === 'unavailable') cls += ' slams-cal-unavail';
+
+                const dateAttr = !isPast ? `data-date="${ds}"` : '';
+                cells += `<div class="${cls}" ${dateAttr}>${d}</div>`;
+            }
+
+            this.el.innerHTML = `
+                <div class="slams-cal-wrap">
+                    <div class="slams-cal-nav">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="slamsCaPrev">&lsaquo; Prev</button>
+                        <span class="slams-cal-month-label">${label}</span>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="slamsCaNext">Next &rsaquo;</button>
+                    </div>
+                    <div class="slams-cal-grid">${cells}</div>
+                    <div class="slams-cal-legend">
+                        <span class="slams-cal-legend-item">
+                            <span class="slams-cal-dot cal-dot-past"></span> Past
+                        </span>
+                        <span class="slams-cal-legend-item">
+                            <span class="slams-cal-dot cal-dot-open"></span> Open — click to see sessions
+                        </span>
+                        <span class="slams-cal-legend-item">
+                            <span class="slams-cal-dot cal-dot-unavail"></span> Fully booked
+                        </span>
+                    </div>
+                </div>
+            `;
+
+            this.el.querySelector('#slamsCaPrev')?.addEventListener('click', () => {
+                this.month--;
+                if (this.month < 0) { this.month = 11; this.year--; }
+                this.render();
+                this.onMonthChange();
+            });
+            this.el.querySelector('#slamsCaNext')?.addEventListener('click', () => {
+                this.month++;
+                if (this.month > 11) { this.month = 0; this.year++; }
+                this.render();
+                this.onMonthChange();
+            });
+
+            this.el.querySelectorAll('[data-date]').forEach(cell => {
+                cell.addEventListener('click', () => {
+                    if (cell.classList.contains('slams-cal-unavail')) return;
+                    this.el.querySelectorAll('.slams-cal-selected').forEach(c =>
+                        c.classList.remove('slams-cal-selected')
+                    );
+                    cell.classList.add('slams-cal-selected');
+                    this.onDateClick(cell.dataset.date);
+                });
+            });
+        },
+
+        setEvents(unavailableDates) {
+            this.eventMap = {};
+            (unavailableDates || []).forEach(d => { this.eventMap[d] = 'unavailable'; });
+            this.render();
+        },
+
+        removeAllEvents() { this.setEvents([]); },
+        updateSize() {}
+    };
+
+    let calendar = null;
+    if (calendarEl) {
+        MonthCal.init(calendarEl, {
+            onDateClick: (ds) => loadDaySlots(ds),
+            onMonthChange: () => refreshCalendar()
         });
-        calendar.render();
-    } catch (fcError) {
-        if (calendarEl) {
-            calendarEl.innerHTML = `
-                <div class="text-muted p-4 text-center small">
-                    <i class="bi bi-calendar-x fs-3 d-block mb-2"></i>
-                    Availability calendar could not be loaded.
-                    Select a date directly in the booking wizard after launching it.
-                </div>`;
-        }
+        calendar = MonthCal;
     }
 
     // -------------------------------
@@ -828,54 +921,36 @@ document.addEventListener("DOMContentLoaded", function () {
         const assets = buildAssetSelectionString();
         if (!serviceId || !assets) {
             calendar.removeAllEvents();
+            hideDaySlotPanel();
             return;
         }
 
-        // Show loading state
-        calendar.updateSize();
-        
         fetch(`/api/calendar-with-assets/${LAB_ID}?service_id=${encodeURIComponent(serviceId)}&assets=${encodeURIComponent(assets)}`)
             .then(r => r.json())
             .then(data => {
-                calendar.removeAllEvents();
-
-                (data.unavailableDates || []).forEach(date => {
-                    calendar.addEvent({
-                        start: date,
-                        allDay: true,
-                        title: "Fully Unavailable",
-                        color: "#ef4444",
-                        classNames: ["fc-event-unavailable"]
-                    });
-                });
-
-                // Add available dates if needed
-                if (data.availableDates && data.availableDates.length > 0) {
-                    data.availableDates.forEach(date => {
-                        calendar.addEvent({
-                            start: date,
-                            allDay: true,
-                            title: "Available",
-                            color: "#10b981",
-                            classNames: ["fc-event-available"]
-                        });
-                    });
-                }
+                calendar.setEvents(data.unavailableDates || []);
             })
             .catch(() => {
-                // Show error state
-                calendar.addEvent({
-                    title: "Error loading availability",
-                    start: new Date(),
-                    allDay: true,
-                    color: "#f97316"
-                });
+                calendar.removeAllEvents();
             });
     }
 
     // -------------------------------
-    // Load day slots for clicked date
+    // Day slot inline panel
     // -------------------------------
+    const daySlotPanel = document.getElementById("daySlotPanel");
+
+    function hideDaySlotPanel() {
+        if (!daySlotPanel) return;
+        daySlotPanel.classList.add("d-none");
+        daySlotPanel.innerHTML = "";
+        if (calendarEl) {
+            calendarEl.querySelectorAll('.slams-cal-selected').forEach(c =>
+                c.classList.remove('slams-cal-selected')
+            );
+        }
+    }
+
     function loadDaySlots(dateStr) {
         const serviceId = getSelectedServiceId();
         if (!serviceId) {
@@ -889,164 +964,137 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        // Show loading
-        showLoadingPopup();
+        if (!daySlotPanel) return;
+
+        const formattedDate = new Date(dateStr + "T00:00:00").toLocaleDateString('en-MY', {
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+        });
+
+        daySlotPanel.innerHTML = `
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <i class="bi bi-calendar-event text-primary fs-5"></i>
+                <span class="fw-bold text-primary">${formattedDate}</span>
+            </div>
+            <div class="text-center py-3 text-muted small">
+                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                Loading sessions…
+            </div>
+        `;
+        daySlotPanel.classList.remove("d-none");
+        daySlotPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
         fetch(`/api/bookings/day-with-assets/${LAB_ID}/${dateStr}?service_id=${encodeURIComponent(serviceId)}&assets=${encodeURIComponent(assets)}`)
             .then(r => r.json())
-            .then(data => {
-                showSlotPopup(dateStr, data.slots || []);
-            })
+            .then(data => renderDaySlots(dateStr, formattedDate, data.slots || []))
             .catch(() => {
-                showAlert("Unable to load timeslots for this date.", "error");
+                daySlotPanel.innerHTML = `
+                    <div class="alert alert-warning small mb-0">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        Unable to load sessions for this date.
+                    </div>`;
             });
     }
 
-    // -------------------------------
-    // Timeslot popup - Enhanced Design
-    // -------------------------------
-    function showSlotPopup(dateStr, slots) {
-        const formattedDate = new Date(dateStr).toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
+    function renderDaySlots(dateStr, formattedDate, slots) {
+        if (!daySlotPanel) return;
 
-        let html = `
-            <div class="slot-popup">
-                <div class="slot-header mb-4">
-                    <h4 class="fw-bold text-primary mb-1">${formattedDate}</h4>
-                    <p class="text-muted mb-0">Available timeslots for the selected service and linked equipment</p>
-                </div>
-        `;
+        let slotsHtml = '';
 
         if (!slots.length) {
-            html += `
-                <div class="no-slots text-center py-4">
-                    <i class="bi bi-calendar-x text-primary fs-1 mb-3"></i>
-                    <p class="text-muted">No timeslots available for this date.</p>
-                </div>
-            `;
+            slotsHtml = `<p class="text-muted small mb-0">No sessions are configured for this date.</p>`;
+        } else {
+            slotsHtml = `<div class="row g-3">`;
+            slots.forEach(slot => {
+                const isPast   = !slot.can_book && (slot.reason || '').includes('past');
+                const isBooked = !slot.can_book && !isPast;
+
+                let cardCls  = 'card h-100 border-0 ';
+                let badge    = '';
+                let actionHtml = '';
+
+                if (isPast) {
+                    cardCls += 'bg-light';
+                    badge = `<span class="badge bg-secondary">Past</span>`;
+                } else if (isBooked) {
+                    cardCls += 'bg-danger bg-opacity-10';
+                    badge = `<span class="badge bg-danger">Fully Booked</span>`;
+                } else {
+                    cardCls += 'bg-success bg-opacity-10';
+                    badge = `<span class="badge bg-success">Open</span>`;
+
+                    if (BOOKING_MODE === "uthm") {
+                        actionHtml = `
+                            <button type="button"
+                                    class="btn btn-success btn-sm w-100 mt-2 book-slot-btn"
+                                    data-date="${dateStr}"
+                                    data-start="${slot.start}"
+                                    data-end="${slot.end}">
+                                <i class="bi bi-calendar-plus me-1"></i>Book This Session
+                            </button>`;
+                    } else if (BOOKING_MODE === "external") {
+                        actionHtml = `
+                            <a class="btn btn-outline-primary btn-sm w-100 mt-2"
+                               href="/dashboard/external/request?lab_id=${LAB_ID}&preferred_date=${dateStr}&preferred_start_time=${slot.start}&preferred_end_time=${slot.end}">
+                                <i class="bi bi-clipboard-plus me-1"></i>Request Slot
+                            </a>`;
+                    } else {
+                        actionHtml = `
+                            <div class="alert alert-warning small mt-2 mb-0 p-2">
+                                <i class="bi bi-box-arrow-in-right me-1"></i>
+                                Login to request this slot.
+                            </div>`;
+                    }
+                }
+
+                let assetList = '';
+                if ((slot.assets || []).length > 0) {
+                    assetList = `<ul class="list-unstyled mb-0 mt-2">` +
+                        slot.assets.map(a => {
+                            const ok = a.remaining >= a.requested;
+                            return `<li class="small ${ok ? 'text-success' : 'text-danger'}">
+                                <i class="bi ${ok ? 'bi-check-circle' : 'bi-x-circle'} me-1"></i>
+                                ${a.name}: ${a.remaining}/${a.requested} avail.
+                            </li>`;
+                        }).join('') +
+                    `</ul>`;
+                }
+
+                slotsHtml += `
+                    <div class="col-sm-6 col-lg-4">
+                        <div class="${cardCls}" style="border-radius:14px;padding:14px;">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold small">${slot.label}</span>
+                                ${badge}
+                            </div>
+                            <div class="text-muted small">${slot.start} – ${slot.end}</div>
+                            ${assetList}
+                            ${actionHtml}
+                        </div>
+                    </div>`;
+            });
+            slotsHtml += `</div>`;
         }
 
-        slots.forEach((slot, index) => {
-            const colorClass = slot.can_book ? "slot-available" : "slot-unavailable";
-            const statusText = slot.can_book ? "Available" : "Unavailable";
-            const statusIcon = slot.can_book ? "bi-check-circle" : "bi-x-circle";
+        daySlotPanel.innerHTML = `
+            <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-calendar-event text-primary fs-5"></i>
+                    <span class="fw-bold text-primary">${formattedDate}</span>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="closeDayPanel">
+                    <i class="bi bi-x me-1"></i>Close
+                </button>
+            </div>
+            ${slotsHtml}
+        `;
 
-            html += `
-                <div class="slot-item ${colorClass} mb-3">
-                    <div class="slot-info">
-                        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-                            <div>
-                                <h6 class="fw-semibold mb-0">${slot.label}</h6>
-                                <small class="text-muted">${slot.start} - ${slot.end}</small>
-                            </div>
-                            <span class="slot-status badge ${slot.can_book ? 'bg-success' : 'bg-secondary'}">
-                                <i class="bi ${statusIcon} me-1"></i>${statusText}
-                            </span>
-                        </div>
+        daySlotPanel.querySelector('#closeDayPanel')?.addEventListener('click', hideDaySlotPanel);
 
-                        <div class="slot-assets">
-                            <small class="d-block mb-1"><strong>Equipment Status:</strong></small>
-                            <ul class="mb-0 ps-3">
-            `;
-
-            (slot.assets || []).forEach(a => {
-                const icon = a.remaining >= a.requested ? "bi-check-circle text-success" : "bi-x-circle text-danger";
-                html += `
-                    <li class="small">
-                        <i class="bi ${icon} me-1"></i>
-                        ${a.name}: Requested ${a.requested}, Available ${a.remaining}
-                    </li>
-                `;
+        daySlotPanel.querySelectorAll('.book-slot-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                window.selectSlot(btn.dataset.date, btn.dataset.start, btn.dataset.end);
             });
-
-            html += `</ul>`;
-
-            if (slot.can_book && BOOKING_MODE === "uthm") {
-                html += `
-                    <button class="btn btn-primary btn-sm w-100 mt-3"
-                            type="button"
-                            onclick="selectSlot('${dateStr}', '${slot.start}', '${slot.end}')">
-                        <i class="bi bi-calendar-plus me-1"></i>Book This Slot
-                    </button>
-                `;
-            } else if (slot.can_book && BOOKING_MODE === "external") {
-                html += `
-                    <a class="btn btn-outline-primary btn-sm w-100 mt-3"
-                       href="/dashboard/external/request?lab_id=${LAB_ID}&preferred_date=${dateStr}&preferred_start_time=${slot.start}&preferred_end_time=${slot.end}">
-                        <i class="bi bi-clipboard-plus me-1"></i>Request This Slot
-                    </a>
-                `;
-            } else if (slot.can_book && BOOKING_MODE === "guest") {
-                html += `
-                    <div class="alert alert-warning small mt-3 mb-0">
-                        <i class="bi bi-box-arrow-in-right me-1"></i>
-                        Login with an external account to request this slot, or contact the PIC.
-                    </div>
-                `;
-            }
-
-            html += `</div></div></div>`;
         });
-
-        html += `</div>`;
-
-        const modal = document.createElement("div");
-        modal.className = "modal fade";
-        modal.innerHTML = `
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content shadow-lg" style="border-radius: 20px; border: none;">
-                    <div class="modal-header border-0 pb-0">
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body pt-0">${html}</div>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(modal);
-        const bsModal = new bootstrap.Modal(modal);
-        window.currentSlotModal = { instance: bsModal, element: modal };
-        bsModal.show();
-
-        modal.addEventListener("hidden.bs.modal", () => {
-            if (window.currentSlotModal?.element === modal) {
-                window.currentSlotModal = null;
-            }
-            modal.remove();
-        });
-    }
-
-    function showLoadingPopup() {
-        const modal = document.createElement("div");
-        modal.className = "modal fade";
-        modal.innerHTML = `
-            <div class="modal-dialog modal-sm">
-                <div class="modal-content border-0 shadow-lg">
-                    <div class="modal-body text-center py-4">
-                        <div class="spinner-border text-primary mb-3" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="mb-0">Loading timeslots...</p>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(modal);
-        const bsModal = new bootstrap.Modal(modal);
-        bsModal.show();
-        
-        // Auto remove after 3 seconds if still showing
-        setTimeout(() => {
-            if (document.body.contains(modal)) {
-                bsModal.hide();
-                modal.remove();
-            }
-        }, 3000);
     }
 
     function showAlert(message, type = "info") {
@@ -1096,16 +1144,12 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // -------------------------------------------------
-    // Global function used by popup "Book This Slot"
+    // Global function: pre-fill booking wizard from slot
     // -------------------------------------------------
     window.selectSlot = function(dateStr, start, end) {
         if (BOOKING_MODE !== "uthm") {
             showAlert("Online booking is only available for UTHM users.", "warning");
             return;
-        }
-
-        if (window.currentSlotModal?.instance) {
-            window.currentSlotModal.instance.hide();
         }
 
         const bookingModalEl = document.getElementById("bookingModal");
