@@ -820,15 +820,19 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (!isPast && ev === 'unavailable') cls += ' slams-cal-unavail';
 
                 const dateAttr = !isPast ? `data-date="${ds}"` : '';
-                cells += `<div class="${cls}" ${dateAttr}>${d}</div>`;
+                cells += `<div class="${cls}" ${dateAttr}><span class="slams-cal-day-num">${d}</span></div>`;
             }
 
             this.el.innerHTML = `
                 <div class="slams-cal-wrap">
                     <div class="slams-cal-nav">
-                        <button type="button" class="btn btn-sm btn-outline-secondary" id="slamsCaPrev">&lsaquo; Prev</button>
+                        <button type="button" class="slams-cal-nav-btn" id="slamsCaPrev">
+                            <i class="bi bi-chevron-left"></i> Prev
+                        </button>
                         <span class="slams-cal-month-label">${label}</span>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" id="slamsCaNext">Next &rsaquo;</button>
+                        <button type="button" class="slams-cal-nav-btn" id="slamsCaNext">
+                            Next <i class="bi bi-chevron-right"></i>
+                        </button>
                     </div>
                     <div class="slams-cal-grid">${cells}</div>
                     <div class="slams-cal-legend">
@@ -949,11 +953,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
         daySlotPanel.innerHTML = `
             <div class="d-flex align-items-center gap-2 mb-3">
-                <i class="bi bi-calendar-event text-primary fs-5"></i>
-                <span class="fw-bold text-primary">${formattedDate}</span>
+                <i class="bi bi-calendar-event" style="font-size:1.2rem;color:var(--slams-primary)"></i>
+                <span style="font-size:1rem;font-weight:800;color:var(--slams-heading);letter-spacing:-0.02em;">${formattedDate}</span>
             </div>
-            <div class="text-center py-3 text-muted small">
-                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+            <div class="d-flex align-items-center gap-2 py-3" style="color:var(--slams-muted);font-size:13px;">
+                <span class="spinner-border spinner-border-sm" style="color:var(--slams-primary)" role="status"></span>
                 Loading sessions…
             </div>
         `;
@@ -978,73 +982,77 @@ document.addEventListener("DOMContentLoaded", function () {
         let slotsHtml = '';
 
         if (!slots.length) {
-            slotsHtml = `<p class="text-muted small mb-0">No sessions are configured for this date.</p>`;
+            slotsHtml = `
+                <div class="text-center py-4">
+                    <i class="bi bi-calendar-x fs-2 mb-2" style="color:var(--slams-muted)"></i>
+                    <p class="text-muted small mb-0">No sessions are configured for this date.</p>
+                </div>`;
         } else {
             slotsHtml = `<div class="row g-3">`;
             slots.forEach(slot => {
                 const isPast   = !slot.can_book && (slot.reason || '').includes('past');
                 const isBooked = !slot.can_book && !isPast;
 
-                let cardCls  = 'card h-100 border-0 ';
-                let badge    = '';
-                let actionHtml = '';
+                let cardBg, badgeHtml, actionHtml = '';
 
                 if (isPast) {
-                    cardCls += 'bg-light';
-                    badge = `<span class="badge bg-secondary">Past</span>`;
+                    cardBg   = 'background:var(--slams-surface-soft);border:1px solid var(--slams-border);opacity:0.72;';
+                    badgeHtml = `<span class="slams-slot-badge slams-slot-badge--past">
+                        <i class="bi bi-clock-history"></i> Past
+                    </span>`;
                 } else if (isBooked) {
-                    cardCls += 'bg-danger bg-opacity-10';
-                    badge = `<span class="badge bg-danger">Fully Booked</span>`;
+                    cardBg   = 'background:var(--slams-danger-soft);border:1px solid color-mix(in srgb,var(--slams-danger) 22%,transparent);';
+                    badgeHtml = `<span class="slams-slot-badge slams-slot-badge--full">
+                        <i class="bi bi-x-circle"></i> Full
+                    </span>`;
                 } else {
-                    cardCls += 'bg-success bg-opacity-10';
-                    badge = `<span class="badge bg-success">Open</span>`;
+                    cardBg   = 'background:var(--slams-success-soft);border:1px solid color-mix(in srgb,var(--slams-success) 22%,transparent);';
+                    badgeHtml = `<span class="slams-slot-badge slams-slot-badge--open">
+                        <i class="bi bi-check-circle"></i> Open
+                    </span>`;
 
                     if (BOOKING_MODE === "uthm") {
                         actionHtml = `
                             <button type="button"
-                                    class="btn btn-success btn-sm w-100 mt-2 book-slot-btn"
+                                    class="slams-slot-book-btn book-slot-btn"
                                     data-date="${dateStr}"
                                     data-start="${slot.start}"
                                     data-end="${slot.end}">
-                                <i class="bi bi-calendar-plus me-1"></i>Book This Session
+                                <i class="bi bi-calendar-plus"></i> Book This Session
                             </button>`;
                     } else if (BOOKING_MODE === "external") {
                         actionHtml = `
-                            <a class="btn btn-outline-primary btn-sm w-100 mt-2"
+                            <a class="slams-slot-book-btn"
+                               style="text-decoration:none;background:var(--slams-primary);"
                                href="/dashboard/external/request?lab_id=${LAB_ID}&preferred_date=${dateStr}&preferred_start_time=${slot.start}&preferred_end_time=${slot.end}">
-                                <i class="bi bi-clipboard-plus me-1"></i>Request Slot
+                                <i class="bi bi-clipboard-plus"></i> Request Slot
                             </a>`;
-                    } else {
-                        actionHtml = `
-                            <div class="alert alert-warning small mt-2 mb-0 p-2">
-                                <i class="bi bi-box-arrow-in-right me-1"></i>
-                                Login to request this slot.
-                            </div>`;
                     }
                 }
 
-                let assetList = '';
-                if ((slot.assets || []).length > 0) {
-                    assetList = `<ul class="list-unstyled mb-0 mt-2">` +
-                        slot.assets.map(a => {
-                            const ok = a.remaining >= a.requested;
-                            return `<li class="small ${ok ? 'text-success' : 'text-danger'}">
-                                <i class="bi ${ok ? 'bi-check-circle' : 'bi-x-circle'} me-1"></i>
-                                ${a.name}: ${a.remaining}/${a.requested} avail.
-                            </li>`;
-                        }).join('') +
-                    `</ul>`;
-                }
+                // Deduplicate label vs time (slot.label is often just the time range)
+                const timeStr = `${slot.start} – ${slot.end}`;
+                const showLabel = slot.label && !slot.label.replace(/[:\s\-–]/g, '').includes(
+                    slot.start.replace(/[:\s]/g, '')
+                );
+
+                const assetRows = (slot.assets || []).map(a => {
+                    const ok = a.remaining >= a.requested;
+                    return `<div class="slams-slot-asset slams-slot-asset--${ok ? 'ok' : 'err'}">
+                        <i class="bi bi-${ok ? 'check-circle-fill' : 'x-circle-fill'}"></i>
+                        <span>${a.name}: ${a.remaining} avail.</span>
+                    </div>`;
+                }).join('');
 
                 slotsHtml += `
                     <div class="col-sm-6 col-lg-4">
-                        <div class="${cardCls}" style="border-radius:14px;padding:14px;">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="fw-bold small">${slot.label}</span>
-                                ${badge}
+                        <div class="slams-slot-card" style="${cardBg}">
+                            <div class="slams-slot-card-head">
+                                <span class="slams-slot-time">${timeStr}</span>
+                                ${badgeHtml}
                             </div>
-                            <div class="text-muted small">${slot.start} – ${slot.end}</div>
-                            ${assetList}
+                            ${showLabel ? `<div class="slams-slot-name">${slot.label}</div>` : ''}
+                            ${assetRows ? `<div class="slams-slot-assets">${assetRows}</div>` : ''}
                             ${actionHtml}
                         </div>
                     </div>`;
@@ -1053,13 +1061,13 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         daySlotPanel.innerHTML = `
-            <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+            <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
                 <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-calendar-event text-primary fs-5"></i>
-                    <span class="fw-bold text-primary">${formattedDate}</span>
+                    <i class="bi bi-calendar-event" style="font-size:1.2rem;color:var(--slams-primary)"></i>
+                    <span style="font-size:1rem;font-weight:800;color:var(--slams-heading);letter-spacing:-0.02em;">${formattedDate}</span>
                 </div>
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="closeDayPanel">
-                    <i class="bi bi-x me-1"></i>Close
+                <button type="button" class="slams-cal-nav-btn" id="closeDayPanel" style="padding:5px 12px;">
+                    <i class="bi bi-x"></i> Close
                 </button>
             </div>
             ${slotsHtml}
