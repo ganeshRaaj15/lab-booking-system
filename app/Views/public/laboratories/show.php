@@ -432,29 +432,6 @@ if ($picPhone === '') {
     'userProfile'  => $userProfile ?? null
 ]) ?>
 
-<style>
-.slams-cal-wrap { font-family: inherit; }
-.slams-cal-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-.slams-cal-month-label { font-weight: 700; font-size: 15px; }
-.slams-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-.slams-cal-hdr { text-align: center; font-size: 11px; font-weight: 700; color: #6b7280; padding: 6px 2px; text-transform: uppercase; }
-.slams-cal-cell { text-align: center; padding: 10px 4px; border-radius: 8px; font-size: 14px; min-height: 44px; display: flex; align-items: center; justify-content: center; }
-.slams-cal-empty { }
-.slams-cal-past { color: #d1d5db; cursor: default; }
-.slams-cal-future { cursor: pointer; }
-.slams-cal-future:not(.slams-cal-unavail):hover { background: #f0fdf4; color: #059669; font-weight: 600; }
-.slams-cal-today { background: #eff6ff; font-weight: 800; outline: 2px solid #93c5fd; color: #3b82f6; }
-.slams-cal-unavail { background: #fef2f2 !important; color: #ef4444 !important; cursor: default; }
-.slams-cal-unavail:hover { background: #fef2f2 !important; color: #ef4444 !important; font-weight: normal !important; }
-.slams-cal-selected { outline: 3px solid #3b82f6 !important; font-weight: 800; }
-.slams-cal-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 14px; padding-top: 12px; border-top: 1px solid #e5e7eb; }
-.slams-cal-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #6b7280; }
-.slams-cal-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
-.cal-dot-past { background: #e5e7eb; }
-.cal-dot-open { background: #10b981; }
-.cal-dot-unavail { background: #ef4444; }
-</style>
-
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
