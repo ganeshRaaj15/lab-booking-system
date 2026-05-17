@@ -18,7 +18,7 @@ $pushLoggedIn = function_exists('auth') && auth()->loggedIn();
 
     <script src="<?= slams_asset('js/theme.js') ?>"></script>
     <link rel="manifest" href="<?= slams_asset('manifest.webmanifest') ?>">
-    <link rel="icon" href="<?= slams_asset('icons/slams-mobile.svg') ?>" type="image/svg+xml">
+    <link rel="icon" href="<?= slams_asset('icons/slams-icon.png') ?>" type="image/png">
     <?= csrf_meta('slams-csrf-meta') ?>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

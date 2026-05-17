@@ -8,7 +8,7 @@ const STATIC_ASSETS = [
     "js/theme.js",
     "js/mobile-app.js",
     "manifest.webmanifest",
-    "icons/slams-mobile.svg",
+    "icons/slams-icon.png",
     "offline.html"
 ].map((path) => new URL(path, SLAMS_SCOPE).href);
 const PUBLIC_PATHS = ["/", "/laboratories", "/assets", "/contact"];

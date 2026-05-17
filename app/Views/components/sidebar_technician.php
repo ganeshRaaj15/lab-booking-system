@@ -1,7 +1,7 @@
 <aside class="glass-sidebar d-flex flex-column">
     <div class="text-center mb-4 mt-3">
         <div class="sidebar-logo">
-            <i class="bi bi-wrench-adjustable-circle text-white fs-4"></i>
+            <img src="<?= slams_asset('icons/slams-icon.png') ?>" alt="SLAMS" class="sidebar-logo-img">
         </div>
         <div class="fw-bold text-white">Technician Dashboard</div>
         <small class="text-light opacity-75">Maintenance Operations</small>

@@ -12,9 +12,9 @@
     "categories": ["education", "productivity", "utilities"],
     "icons": [
         {
-            "src": "icons/slams-mobile.svg",
-            "sizes": "any",
-            "type": "image/svg+xml",
+            "src": "icons/slams-icon.png",
+            "sizes": "512x512",
+            "type": "image/png",
             "purpose": "any maskable"
         }
     ],
@@ -25,9 +25,9 @@
             "url": "laboratories",
             "icons": [
                 {
-                    "src": "icons/slams-mobile.svg",
+                    "src": "icons/slams-icon.png",
                     "sizes": "any",
-                    "type": "image/svg+xml"
+                    "type": "image/png"
                 }
             ]
         },
@@ -37,9 +37,9 @@
             "url": "assets",
             "icons": [
                 {
-                    "src": "icons/slams-mobile.svg",
+                    "src": "icons/slams-icon.png",
                     "sizes": "any",
-                    "type": "image/svg+xml"
+                    "type": "image/png"
                 }
             ]
         },
@@ -49,9 +49,9 @@
             "url": "dashboard",
             "icons": [
                 {
-                    "src": "icons/slams-mobile.svg",
+                    "src": "icons/slams-icon.png",
                     "sizes": "any",
-                    "type": "image/svg+xml"
+                    "type": "image/png"
                 }
             ]
         },
@@ -61,9 +61,9 @@
             "url": "dashboard/notifications",
             "icons": [
                 {
-                    "src": "icons/slams-mobile.svg",
+                    "src": "icons/slams-icon.png",
                     "sizes": "any",
-                    "type": "image/svg+xml"
+                    "type": "image/png"
                 }
             ]
         },
@@ -73,9 +73,9 @@
             "url": "dashboard/external/request",
             "icons": [
                 {
-                    "src": "icons/slams-mobile.svg",
+                    "src": "icons/slams-icon.png",
                     "sizes": "any",
-                    "type": "image/svg+xml"
+                    "type": "image/png"
                 }
             ]
         }

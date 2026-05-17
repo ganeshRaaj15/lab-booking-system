@@ -14,9 +14,9 @@ if (function_exists('auth') && auth()->loggedIn()) {
 <nav class="navbar navbar-expand-lg glass-navbar py-2">
     <div class="container">
         <a class="navbar-brand fw-bold" href="/">
-            <div class="d-flex align-items-center">
-                <div class="brand-logo me-2"><i class="bi bi-building-fill fs-4"></i></div>
-                <div><span class="brand-name">SLAMS</span><span class="brand-suffix small"> | FKMP</span></div>
+            <div class="d-flex align-items-center gap-2">
+                <img src="<?= slams_asset('images/logo.png') ?>" alt="SLAMS" class="brand-logo-img">
+                <span class="brand-suffix small">| FKMP</span>
             </div>
         </a>
 
