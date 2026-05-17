@@ -64,6 +64,27 @@ body.slams-mobile-app {
     -webkit-backdrop-filter: none;
 }
 
+.slams-navbar-profile-btn {
+    overflow: hidden;
+    border-radius: 999px;
+}
+
+.slams-navbar-profile-avatar,
+.slams-navbar-profile-fallback {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    place-items: center;
+}
+
+.slams-navbar-profile-avatar {
+    object-fit: cover;
+}
+
+.slams-navbar-profile-fallback {
+    font-size: 1rem;
+}
+
 .slams-mobile-bottom-nav,
 .slams-mobile-status-banner,
 .slams-mobile-update-banner {
@@ -97,6 +118,10 @@ body.slams-mobile-app {
         position: sticky;
         top: 0;
         z-index: 1000;
+    }
+
+    .slams-mobile-app .user-profile-glass {
+        display: none;
     }
 
     .slams-mobile-app .chatbot-panel {
