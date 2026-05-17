@@ -431,10 +431,8 @@ if ($picPhone === '') {
     'userProfile'  => $userProfile ?? null
 ]) ?>
 
-<!-- FULLCALENDAR -->
-<link rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css">
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+<!-- FULLCALENDAR (self-hosted global bundle — CSS injected by JS) -->
+<script src="<?= base_url('js/fullcalendar.global.min.js') ?>"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
