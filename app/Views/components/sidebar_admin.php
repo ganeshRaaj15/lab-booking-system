@@ -32,4 +32,8 @@
     <a href="/admin/settings" class="sidebar-link <?= url_is('admin/settings') ? 'active' : '' ?>">
         <i class="bi bi-gear"></i> System Settings
     </a>
+
+    <a href="/admin/contact-settings" class="sidebar-link <?= url_is('admin/contact-settings*') ? 'active' : '' ?>">
+        <i class="bi bi-telephone"></i> Contact Page
+    </a>
 </aside>

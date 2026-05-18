@@ -64,6 +64,7 @@ use App\Controllers\Approvals\BookingApprovalController;
 // ---------------------------------------------------------
 // ADMIN CONTROLLERS
 // ---------------------------------------------------------
+use App\Controllers\Admin\ContactSettingsController;
 use App\Controllers\Admin\SettingsController;
 use App\Controllers\Admin\AssetController;
 use App\Controllers\Admin\LaboratoryAdminController;
@@ -496,6 +497,13 @@ $routes->group('booking', ['filter' => 'session'], function ($routes) {
 // ====================================================================
 
 $routes->group('admin', ['filter' => 'group:admin'], function ($routes) {
+
+    // Contact Page Settings
+    $routes->get('contact-settings', [ContactSettingsController::class, 'index']);
+    $routes->post('contact-settings/update', [ContactSettingsController::class, 'updateSettings']);
+    $routes->post('contact-settings/personnel/add', [ContactSettingsController::class, 'addPersonnel']);
+    $routes->post('contact-settings/personnel/update/(:num)', [ContactSettingsController::class, 'updatePersonnel/$1']);
+    $routes->post('contact-settings/personnel/delete/(:num)', [ContactSettingsController::class, 'deletePersonnel/$1']);
 
     // Settings
     $routes->get('settings', [SettingsController::class, 'index']);

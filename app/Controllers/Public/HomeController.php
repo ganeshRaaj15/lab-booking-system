@@ -3,8 +3,10 @@
 namespace App\Controllers\Public;
 
 use App\Controllers\BaseController;
-use App\Models\LaboratoryModel;
 use App\Models\BookingModel;
+use App\Models\ContactPersonnelModel;
+use App\Models\LaboratoryModel;
+use App\Models\SettingsModel;
 
 class HomeController extends BaseController
 {
@@ -51,11 +53,21 @@ class HomeController extends BaseController
     }
 
 
-    /**
-     * Contact Page
-     */
     public function contact()
     {
-        return view('public/contact');
+        $settingsModel = new SettingsModel();
+
+        $rows = $settingsModel->where('class', 'contact')->findAll();
+        $contactSettings = [];
+        foreach ($rows as $row) {
+            $contactSettings[$row['key']] = $row['value'];
+        }
+
+        $personnel = (new ContactPersonnelModel())->allOrdered();
+
+        return view('public/contact', [
+            'contactSettings' => $contactSettings,
+            'personnel'       => $personnel,
+        ]);
     }
 }
