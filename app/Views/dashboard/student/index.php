@@ -58,8 +58,10 @@ $filters           = $filters ?? ['q' => '', 'status' => '', 'date_from' => '', 
                                 <?= esc($nextBooking['activity']) ?>
                             </div>
                         <?php else: ?>
-                            <p class="text-muted small mb-1">You have no upcoming bookings.</p>
-                            <a href="/laboratories" class="small">Browse laboratories &amp; make your first booking</a>
+                            <p class="text-muted small mb-2">You have no upcoming bookings.</p>
+                            <a href="/laboratories" class="btn btn-sm btn-outline-primary px-3">
+                                <i class="bi bi-calendar-plus me-1"></i> Book a Laboratory
+                            </a>
                         <?php endif; ?>
                     </div>
 
@@ -173,9 +175,9 @@ $filters           = $filters ?? ['q' => '', 'status' => '', 'date_from' => '', 
                     <div class="d-flex align-items-center gap-3">
                         <i class="bi bi-building quick-action-icon"></i>
                         <div>
-                            <a href="/laboratories" class="small">Browse laboratories &amp; make your first booking</a>
+                            <h6 class="fw-bold mb-1">Browse Laboratories</h6>
                             <p class="small text-muted mb-0">
-                                View available labs & start booking.
+                                View available labs &amp; start booking.
                             </p>
                         </div>
                     </div>
@@ -427,7 +429,33 @@ $filters           = $filters ?? ['q' => '', 'status' => '', 'date_from' => '', 
             </div>
 
             <div class="modal-body" id="bookingDetailsBody">
-                <p class="text-center text-muted">Loading...</p>
+                <div class="slams-skeleton-modal" aria-hidden="true">
+                    <div class="slams-skeleton-panel">
+                        <div class="skeleton-row skeleton-row-60"></div>
+                        <div class="skeleton-row skeleton-row-80"></div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="slams-skeleton-panel">
+                                <div class="skeleton-row skeleton-row-60"></div>
+                                <div class="skeleton-row skeleton-row-full"></div>
+                                <div class="skeleton-row skeleton-row-80"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="slams-skeleton-panel">
+                                <div class="skeleton-row skeleton-row-60"></div>
+                                <div class="skeleton-row skeleton-row-full"></div>
+                                <div class="skeleton-row skeleton-row-80"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slams-skeleton-panel">
+                        <div class="skeleton-row skeleton-row-60"></div>
+                        <div class="skeleton-row skeleton-row-full"></div>
+                        <div class="skeleton-row skeleton-row-full"></div>
+                    </div>
+                </div>
             </div>
 
             <div class="modal-footer border-0">
@@ -452,6 +480,38 @@ $filters           = $filters ?? ['q' => '', 'status' => '', 'date_from' => '', 
 <script>
 const csrfHeaderName = "X-CSRF-TOKEN";
 const csrfTokenValue = "<?= csrf_hash() ?>";
+
+function bookingDetailsSkeleton() {
+    return `
+        <div class="slams-skeleton-modal" aria-hidden="true">
+            <div class="slams-skeleton-panel">
+                <div class="skeleton-row skeleton-row-60"></div>
+                <div class="skeleton-row skeleton-row-80"></div>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="slams-skeleton-panel">
+                        <div class="skeleton-row skeleton-row-60"></div>
+                        <div class="skeleton-row skeleton-row-full"></div>
+                        <div class="skeleton-row skeleton-row-80"></div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="slams-skeleton-panel">
+                        <div class="skeleton-row skeleton-row-60"></div>
+                        <div class="skeleton-row skeleton-row-full"></div>
+                        <div class="skeleton-row skeleton-row-80"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="slams-skeleton-panel">
+                <div class="skeleton-row skeleton-row-60"></div>
+                <div class="skeleton-row skeleton-row-full"></div>
+                <div class="skeleton-row skeleton-row-full"></div>
+            </div>
+        </div>
+    `;
+}
 
 new Chart(document.getElementById('studentTrendChart'), {
     type: 'line',
@@ -491,7 +551,7 @@ document.querySelectorAll(".booking-row").forEach(row => {
         const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
         const body = document.getElementById("bookingDetailsBody");
 
-        body.innerHTML = "<p class='text-center text-muted'>Loading...</p>";
+        body.innerHTML = bookingDetailsSkeleton();
         modal.show();
 
         fetch(`/dashboard/student/booking-details/${id}`, {
