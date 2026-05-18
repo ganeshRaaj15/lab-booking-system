@@ -55,15 +55,23 @@ class HomeController extends BaseController
 
     public function contact()
     {
-        $settingsModel = new SettingsModel();
-
-        $rows = $settingsModel->where('class', 'contact')->findAll();
         $contactSettings = [];
-        foreach ($rows as $row) {
-            $contactSettings[$row['key']] = $row['value'];
+        $personnel       = [];
+
+        try {
+            $rows = (new SettingsModel())->where('class', 'contact')->findAll();
+            foreach ($rows as $row) {
+                $contactSettings[$row['key']] = $row['value'];
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'contact settings query failed: ' . $e->getMessage());
         }
 
-        $personnel = (new ContactPersonnelModel())->allOrdered();
+        try {
+            $personnel = (new ContactPersonnelModel())->allOrdered();
+        } catch (\Throwable $e) {
+            log_message('error', 'contact_personnel query failed: ' . $e->getMessage());
+        }
 
         return view('public/contact', [
             'contactSettings' => $contactSettings,
