@@ -116,6 +116,36 @@
             </div>
         </div>
     </div>
+
+    <div class="row g-4 mt-1">
+        <div class="col-lg-8 offset-lg-4">
+            <div class="card p-4">
+                <h6 class="fw-bold mb-1">Two-Factor Authentication</h6>
+                <p class="text-muted small mb-3">
+                    When enabled, a one-time code will be sent to your email address each time you log in.
+                    <?php if (!empty($user->twofa_enabled)): ?>
+                        <span class="badge text-bg-success ms-1">Enabled</span>
+                    <?php else: ?>
+                        <span class="badge text-bg-secondary ms-1">Disabled</span>
+                    <?php endif; ?>
+                </p>
+                <form action="/dashboard/profile/twofa" method="post">
+                    <?= csrf_field() ?>
+                    <?php if (!empty($user->twofa_enabled)): ?>
+                        <input type="hidden" name="twofa_enabled" value="0">
+                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                            <i class="bi bi-shield-x me-1"></i> Disable 2FA
+                        </button>
+                    <?php else: ?>
+                        <input type="hidden" name="twofa_enabled" value="1">
+                        <button type="submit" class="btn btn-outline-success btn-sm">
+                            <i class="bi bi-shield-check me-1"></i> Enable 2FA
+                        </button>
+                    <?php endif; ?>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 
 <?= $this->endSection() ?>

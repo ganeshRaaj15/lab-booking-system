@@ -153,6 +153,29 @@ class ProfileController extends BaseController
         return redirect()->to('/dashboard/profile')->with('message', 'Profile updated successfully.');
     }
 
+    public function toggleTwofa(): RedirectResponse
+    {
+        helper('auth');
+
+        if (! auth()->loggedIn()) {
+            return redirect()->to('/login');
+        }
+
+        $user    = auth()->user();
+        $enabled = $this->request->getPost('twofa_enabled') === '1';
+
+        \Config\Database::connect()
+            ->table('users')
+            ->where('id', $user->id)
+            ->update(['twofa_enabled' => $enabled ? 1 : 0]);
+
+        $message = $enabled
+            ? 'Two-factor authentication enabled. You will receive an email OTP on each login.'
+            : 'Two-factor authentication disabled.';
+
+        return redirect()->to('/dashboard/profile')->with('message', $message);
+    }
+
     /**
      * @return array{path: string|null, error: string|null}
      */

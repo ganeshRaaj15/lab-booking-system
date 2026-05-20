@@ -89,6 +89,7 @@ $routes->get('open/booking/(:num)', [AppLinkController::class, 'booking/$1']);
 $routes->group('api/native', static function ($routes) {
     $routes->get('health', [NativeHealthController::class, 'show']);
     $routes->post('auth/token', [NativeAuthController::class, 'token']);
+    $routes->post('auth/otp/verify', [NativeAuthController::class, 'verifyOtp']);
     $routes->post('auth/register', [NativeAuthController::class, 'register']);
 
     $routes->get('labs', [NativeLaboratoryController::class, 'index']);
@@ -106,6 +107,7 @@ $routes->group('api/native', ['filter' => 'tokens'], static function ($routes) {
     $routes->get('bootstrap', [NativeBootstrapController::class, 'show']);
     $routes->get('profile', [NativeProfileController::class, 'show']);
     $routes->post('profile', [NativeProfileController::class, 'update']);
+    $routes->post('profile/twofa', [NativeProfileController::class, 'toggleTwofa']);
     $routes->get('push', [NativePushController::class, 'show']);
     $routes->post('push/register', [NativePushController::class, 'register']);
     $routes->post('push/unregister', [NativePushController::class, 'unregister']);
@@ -427,6 +429,7 @@ $routes->get('dashboard', [DashboardController::class, 'index'], ['filter' => 's
 $routes->group('dashboard', ['filter' => 'session'], function ($routes) {
     $routes->get('profile', [ProfileController::class, 'index']);
     $routes->post('profile/update', [ProfileController::class, 'update']);
+    $routes->post('profile/twofa', [ProfileController::class, 'toggleTwofa']);
     $routes->get('reports/analytics', [AnalyticsController::class, 'index'], ['filter' => 'group:pic,manager,admin']);
     $routes->get('reports/pdf', [ReportController::class, 'download'], ['filter' => 'group:pic,manager,admin']);
     $routes->get('reports/csv', [ReportController::class, 'downloadCsv'], ['filter' => 'group:pic,manager,admin']);
