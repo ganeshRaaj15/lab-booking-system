@@ -298,43 +298,42 @@ class NativeBootstrapController extends BaseController
 
     protected function adminSummary(int $notificationCount): array
     {
-        $pendingAll = (int) (new BookingModel())
-            ->where('status', 'PENDING')
-            ->groupStart()
-                ->where('approved_by_pic', 0)
-                ->orGroupStart()
-                    ->where('approved_by_pic', 1)
-                    ->where('approved_by_manager', 0)
-                    ->where('approval_flow !=', 'FKMP_APPROVAL')
-                ->groupEnd()
-            ->groupEnd()
-            ->countAllResults();
+        $db = db_connect();
 
-        $externalReview = (int) (new ExternalRequestModel())
-            ->whereIn('status', ['pending_pic_approval', 'pending_manager_approval'])
-            ->countAllResults();
+        $bookingCounts = $db->table('bookings')
+            ->select("
+                COUNT(*) AS total,
+                SUM(CASE WHEN status = 'APPROVED' THEN 1 ELSE 0 END) AS approved
+            ")
+            ->get()
+            ->getRowArray() ?? [];
 
-        $maintenanceOpen = (int) db_connect()->table('maintenance_records')
+        $totalBookings    = (int) ($bookingCounts['total'] ?? 0);
+        $approvedBookings = (int) ($bookingCounts['approved'] ?? 0);
+
+        $maintenanceOpen = (int) $db->table('maintenance_records')
             ->whereIn('status', ['reported', 'scheduled', 'in_progress', 'testing'])
             ->countAllResults();
+
         $assetIntelligenceService = new AssetIntelligenceService();
         $intelligenceStats = $assetIntelligenceService->stats($assetIntelligenceService->mapForAssets());
+        $dueSoon = (int) ($intelligenceStats['due_soon'] ?? 0);
 
         return [
             'role' => 'admin',
-            'attention_count' => max($pendingAll + $externalReview, (int) ($intelligenceStats['high_risk'] ?? 0)),
-            'attention_label' => ($intelligenceStats['high_risk'] ?? 0) > 0
-                ? $intelligenceStats['high_risk'] . ' high-risk asset(s)'
-                : (($pendingAll + $externalReview) > 0 ? ($pendingAll + $externalReview) . ' admin tasks waiting' : 'Admin queue is clear'),
-            'attention_meta' => 'Oversee approvals, requests, maintenance, and asset-risk intelligence.',
+            'attention_count' => max($totalBookings, $maintenanceOpen),
+            'attention_label' => $maintenanceOpen > 0
+                ? $maintenanceOpen . ' open maintenance case(s)'
+                : ($totalBookings > 0 ? $totalBookings . ' total booking(s)' : 'No activity yet'),
+            'attention_meta' => 'Oversee bookings, maintenance cases, and asset health across all laboratories.',
             'stats' => [
-                ['id' => 'pending_all', 'label' => 'Approvals', 'value' => $pendingAll, 'tone' => 'warning'],
-                ['id' => 'high_risk_assets', 'label' => 'High Risk', 'value' => (int) ($intelligenceStats['high_risk'] ?? 0), 'tone' => 'danger'],
-                ['id' => 'maintenance_open', 'label' => 'Maintenance', 'value' => $maintenanceOpen, 'tone' => 'primary'],
-                ['id' => 'due_soon_assets', 'label' => 'Due Soon', 'value' => (int) ($intelligenceStats['due_soon'] ?? 0), 'tone' => 'accent'],
+                ['id' => 'approved_bookings', 'label' => 'Approved', 'value' => $approvedBookings, 'tone' => 'success'],
+                ['id' => 'total_bookings', 'label' => 'Total Bookings', 'value' => $totalBookings, 'tone' => 'primary'],
+                ['id' => 'maintenance_open', 'label' => 'Maintenance', 'value' => $maintenanceOpen, 'tone' => 'warning'],
+                ['id' => 'due_soon_assets', 'label' => 'Due Soon', 'value' => $dueSoon, 'tone' => 'accent'],
             ],
             'next_item' => null,
-            'message' => 'User management, reports, settings, laboratories, and assets now include predictive maintenance signals driven by booking demand and maintenance history.',
+            'message' => 'User management, reports, settings, laboratories, and assets are available from the Admin workspace.',
         ];
     }
 
