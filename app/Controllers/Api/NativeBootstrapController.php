@@ -95,10 +95,7 @@ class NativeBootstrapController extends BaseController
             ],
             'admin' => [
                 ['id' => 'home', 'label' => 'Home'],
-                ['id' => 'labs', 'label' => 'Labs'],
-                ['id' => 'approvals', 'label' => 'Approvals'],
                 ['id' => 'reports', 'label' => 'Reports'],
-                ['id' => 'requests', 'label' => 'External'],
                 ['id' => 'admin', 'label' => 'Admin'],
                 ['id' => 'notifications', 'label' => 'Alerts'],
                 ['id' => 'profile', 'label' => 'Profile'],
@@ -296,7 +293,7 @@ class NativeBootstrapController extends BaseController
         ];
     }
 
-    protected function adminSummary(int $notificationCount): array
+    protected function adminSummary(int $_notificationCount): array
     {
         $db = db_connect();
 
