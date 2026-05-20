@@ -312,7 +312,6 @@ class NativeBootstrapController extends BaseController
         $approvedBookings = (int) ($bookingCounts['approved'] ?? 0);
 
         $maintenanceOpen = (int) $db->table('maintenance_records')
-            ->whereIn('status', ['reported', 'scheduled', 'in_progress', 'testing'])
             ->countAllResults();
 
         $assetIntelligenceService = new AssetIntelligenceService();
