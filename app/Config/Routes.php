@@ -153,6 +153,7 @@ $routes->group('api/native', ['filter' => 'tokens'], static function ($routes) {
     $routes->post('admin/settings', [NativeAdminSettingsController::class, 'update']);
     $routes->post('admin/settings/slots', [NativeAdminSettingsController::class, 'saveSlots']);
     $routes->post('admin/settings/run-scheduled-tasks', [NativeAdminSettingsController::class, 'runScheduledTasks']);
+    $routes->post('admin/settings/train-maintenance-model', [NativeAdminSettingsController::class, 'trainMaintenanceModel']);
     $routes->get('admin/users', [NativeAdminUserController::class, 'index']);
     $routes->get('admin/users/(:num)', [NativeAdminUserController::class, 'show/$1']);
     $routes->post('admin/users', [NativeAdminUserController::class, 'store']);
@@ -572,4 +573,3 @@ service('auth')->routes($routes, ['except' => ['magic-link']]);
 
 // Logout
 $routes->post('logout', '\CodeIgniter\Shield\Controllers\LoginController::logoutAction', ['as' => 'logout']);
-

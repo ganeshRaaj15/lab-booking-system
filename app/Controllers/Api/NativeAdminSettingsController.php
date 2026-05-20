@@ -3,7 +3,9 @@
 namespace App\Controllers\Api;
 
 use App\Controllers\BaseController;
+use App\Libraries\AssetIntelligenceService;
 use App\Libraries\MaintenanceForecastService;
+use App\Libraries\MaintenancePredictionService;
 use App\Libraries\NotificationService;
 use App\Libraries\StudentRoleService;
 use App\Models\SettingsModel;
@@ -248,6 +250,43 @@ class NativeAdminSettingsController extends BaseController
             'maintenance_due_reminders' => $maintenanceSent,
             'errors' => $errors,
         ]);
+    }
+
+    public function trainMaintenanceModel()
+    {
+        $user = $this->authorizedAdmin();
+        if (! $user instanceof User) {
+            return $user;
+        }
+
+        $payload = $this->requestPayload();
+        $horizonDays = max((int) ($payload['horizon_days'] ?? 60), 14);
+        $stepDays = max((int) ($payload['step_days'] ?? 7), 7);
+        $lookbackDays = max((int) ($payload['lookback_days'] ?? 540), 180);
+
+        try {
+            $predictionService = new MaintenancePredictionService();
+            $predictionService->trainAndPersist($horizonDays, $stepDays, $lookbackDays);
+            $summary = $predictionService->getModelSummary();
+            $assetIntelligenceService = new AssetIntelligenceService();
+            $intelligenceMap = $assetIntelligenceService->mapForAssets();
+
+            return $this->response->setJSON([
+                'status' => 'success',
+                'message' => 'Maintenance model trained successfully.',
+                'model_summary' => $summary,
+                'asset_stats' => $assetIntelligenceService->stats($intelligenceMap),
+            ]);
+        } catch (\Throwable $e) {
+            log_message('error', 'Maintenance model training failed via admin API: ' . $e->getMessage());
+
+            return $this->response
+                ->setStatusCode(500)
+                ->setJSON([
+                    'status' => 'error',
+                    'message' => 'Maintenance model training failed.',
+                ]);
+        }
     }
 
     protected function authorizedAdmin()

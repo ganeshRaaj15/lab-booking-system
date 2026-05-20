@@ -45,6 +45,9 @@ class MaintenanceFeatureExtractor
             'planned_gap_delta',
             'mean_quantity_ratio_last_5',
             'corrective_ratio_365d',
+            'booking_count_30d',
+            'booking_count_90d',
+            'booking_hours_90d',
         ];
     }
 
@@ -55,10 +58,9 @@ class MaintenanceFeatureExtractor
             return [];
         }
 
-        $historyByAsset = $this->maintenanceHistoryByAsset(array_map(
-            static fn(array $row): int => (int) $row['id'],
-            $assets
-        ));
+        $assetIds = array_map(static fn(array $row): int => (int) $row['id'], $assets);
+        $historyByAsset = $this->maintenanceHistoryByAsset($assetIds);
+        $bookingsByAsset = $this->bookingUsageByAsset($assetIds);
 
         $today = new DateTimeImmutable('today', $this->timezone);
         $maxAnchor = $today->sub(new DateInterval('P' . max($horizonDays, 1) . 'D'));
@@ -72,12 +74,13 @@ class MaintenanceFeatureExtractor
                 continue;
             }
 
+            $bookings = $bookingsByAsset[$assetId] ?? [];
             $firstEventAt = $history[0]['event_at'];
             $anchor = $firstEventAt > $globalStart ? $firstEventAt : $globalStart;
             $anchor = $anchor->setTime(0, 0);
 
             while ($anchor <= $maxAnchor) {
-                $features = $this->extractFeaturesFromHistory($asset, $history, $anchor);
+                $features = $this->extractFeaturesFromHistory($asset, $history, $anchor, $bookings);
                 if (($features['events_last_90d'] ?? 0.0) > 0.0 || ($features['days_since_last_event'] ?? 999.0) < 365.0) {
                     $samples[] = [
                         'asset_id' => $assetId,
@@ -109,9 +112,10 @@ class MaintenanceFeatureExtractor
         }
 
         $history = $this->maintenanceHistoryByAsset([$assetId])[$assetId] ?? [];
+        $bookings = $this->bookingUsageByAsset([$assetId])[$assetId] ?? [];
         $anchor = $anchor ?? new DateTimeImmutable('now', $this->timezone);
 
-        return $this->extractFeaturesFromHistory($asset, $history, $anchor);
+        return $this->extractFeaturesFromHistory($asset, $history, $anchor, $bookings);
     }
 
     public function assetRows(): array
@@ -121,6 +125,47 @@ class MaintenanceFeatureExtractor
             ->orderBy('id', 'ASC')
             ->get()
             ->getResultArray();
+    }
+
+    public function bookingUsageByAsset(array $assetIds): array
+    {
+        if ($assetIds === []) {
+            return [];
+        }
+
+        $rows = $this->db->table('booking_assets ba')
+            ->select('ba.asset_id, b.date, b.start_time, b.end_time')
+            ->join('bookings b', 'b.id = ba.booking_id', 'inner')
+            ->whereIn('ba.asset_id', $assetIds)
+            ->where('b.status', 'APPROVED')
+            ->orderBy('b.date', 'ASC')
+            ->get()
+            ->getResultArray();
+
+        $usage = [];
+
+        foreach ($rows as $row) {
+            $assetId = (int) ($row['asset_id'] ?? 0);
+            if ($assetId <= 0) {
+                continue;
+            }
+
+            $date = trim((string) ($row['date'] ?? ''));
+            $start = trim((string) ($row['start_time'] ?? '00:00:00'));
+            $end   = trim((string) ($row['end_time'] ?? '00:00:00'));
+
+            try {
+                $bookedAt = new DateTimeImmutable($date . ' ' . $start, $this->timezone);
+                $endAt    = new DateTimeImmutable($date . ' ' . $end,   $this->timezone);
+                $hours    = max(($endAt->getTimestamp() - $bookedAt->getTimestamp()) / 3600.0, 0.0);
+            } catch (\Throwable $e) {
+                continue;
+            }
+
+            $usage[$assetId][] = ['booked_at' => $bookedAt, 'hours' => $hours];
+        }
+
+        return $usage;
     }
 
     protected function maintenanceHistoryByAsset(array $assetIds): array
@@ -194,7 +239,7 @@ class MaintenanceFeatureExtractor
         return false;
     }
 
-    protected function extractFeaturesFromHistory(array $asset, array $history, DateTimeImmutable $anchor): array
+    protected function extractFeaturesFromHistory(array $asset, array $history, DateTimeImmutable $anchor, array $bookings = []): array
     {
         $totalQuantity = max((int) ($asset['total_quantity'] ?? $asset['quantity'] ?? 1), 1);
         $pastEvents = array_values(array_filter(
@@ -229,6 +274,26 @@ class MaintenanceFeatureExtractor
             $meanQuantityRatio = $sum / count($recentFive);
         }
 
+        $cutoff30  = $anchor->sub(new DateInterval('P30D'));
+        $cutoff90  = $anchor->sub(new DateInterval('P90D'));
+        $bookingCount30 = 0;
+        $bookingCount90 = 0;
+        $bookingHours90 = 0.0;
+
+        foreach ($bookings as $booking) {
+            $bookedAt = $booking['booked_at'];
+            if ($bookedAt > $anchor) {
+                continue;
+            }
+            if ($bookedAt >= $cutoff90) {
+                $bookingCount90++;
+                $bookingHours90 += (float) ($booking['hours'] ?? 0.0);
+            }
+            if ($bookedAt >= $cutoff30) {
+                $bookingCount30++;
+            }
+        }
+
         return [
             'total_quantity' => (float) $totalQuantity,
             'is_single_unit' => $totalQuantity <= 1 ? 1.0 : 0.0,
@@ -245,6 +310,9 @@ class MaintenanceFeatureExtractor
             'planned_gap_delta' => max($daysSinceLastPlanned - $avgPlannedGap, 0.0),
             'mean_quantity_ratio_last_5' => $meanQuantityRatio,
             'corrective_ratio_365d' => $eventsLast365 === [] ? 0.0 : count($correctiveLast365) / count($eventsLast365),
+            'booking_count_30d' => (float) $bookingCount30,
+            'booking_count_90d' => (float) $bookingCount90,
+            'booking_hours_90d' => round($bookingHours90, 2),
         ];
     }
 

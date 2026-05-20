@@ -239,9 +239,20 @@ class MaintenancePredictionService
             $reasons[] = 'A large share of the last year\'s maintenance history was corrective rather than preventive.';
         }
 
+        $bookingCount90 = (float) ($features['booking_count_90d'] ?? 0.0);
+        $bookingHours90 = (float) ($features['booking_hours_90d'] ?? 0.0);
+
+        if ($bookingCount90 >= 20.0) {
+            $reasons[] = 'This asset has been booked heavily (' . (int) $bookingCount90 . ' sessions in the last 90 days), increasing wear exposure.';
+        } elseif ($bookingHours90 >= 80.0) {
+            $reasons[] = 'High cumulative usage hours (' . (int) $bookingHours90 . ' h in 90 days) detected from booking records.';
+        }
+
         if ($reasons === []) {
             if ((float) ($features['days_since_last_planned'] ?? 999.0) <= 30.0) {
                 $reasons[] = 'Planned maintenance was completed recently, so no immediate action is needed.';
+            } elseif ($bookingCount90 > 0.0) {
+                $reasons[] = 'Maintenance history is stable; booking usage is within normal range.';
             } else {
                 $reasons[] = 'Recent maintenance history is stable and within the expected planned interval.';
             }
@@ -270,6 +281,15 @@ class MaintenancePredictionService
 
         if ((float) ($features['corrective_ratio_365d'] ?? 0.0) >= 0.45 && (float) ($features['events_last_30d'] ?? 0.0) >= 1.0) {
             return 0.58;
+        }
+
+        // Heavily booked assets with no recent planned maintenance warrant elevated monitoring.
+        if ((float) ($features['booking_count_90d'] ?? 0.0) >= 20.0 && (float) ($features['planned_last_180d'] ?? 0.0) === 0.0) {
+            return 0.55;
+        }
+
+        if ((float) ($features['booking_hours_90d'] ?? 0.0) >= 100.0 && (float) ($features['planned_last_180d'] ?? 0.0) === 0.0) {
+            return 0.50;
         }
 
         return 0.0;
