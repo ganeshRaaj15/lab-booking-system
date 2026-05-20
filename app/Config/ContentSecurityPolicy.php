@@ -92,7 +92,7 @@ class ContentSecurityPolicy extends BaseConfig
      *
      * @var list<string>|string
      */
-    public $connectSrc = 'self';
+    public $connectSrc = ['self', 'https://cdn.jsdelivr.net'];
 
     /**
      * Specifies the origins that can serve web fonts.
@@ -172,5 +172,5 @@ class ContentSecurityPolicy extends BaseConfig
     /**
      * Replace nonce tag automatically
      */
-    public bool $autoNonce = true;
+    public bool $autoNonce = false;
 }
