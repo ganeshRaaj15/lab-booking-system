@@ -101,12 +101,20 @@ class MaintenanceForecastService
             }
         }
 
+        // Suppress assets that already have an open maintenance record — no duplicate alerting.
+        $openAssetIds = array_flip($this->assetsWithOpenMaintenance($assetIds));
+
         $now = new DateTimeImmutable('now', $this->timezone);
         $cutoff = $now->add(new DateInterval('P' . max($daysAhead, 1) . 'D'));
 
         $upcoming = [];
         foreach ($assets as $asset) {
             $assetId = (int) $asset['id'];
+
+            if (isset($openAssetIds[$assetId])) {
+                continue;
+            }
+
             $forecast = $forecasts[$assetId] ?? [
                 'asset_id' => $assetId,
                 'history_count' => 0,
@@ -119,6 +127,7 @@ class MaintenanceForecastService
             $prediction = $predictions[$assetId] ?? null;
             $decision = $prediction['decision'] ?? ['action' => 'monitor', 'label' => 'Normal monitoring', 'priority' => 'low'];
             $riskProbability = (float) ($prediction['risk_probability'] ?? 0.0);
+            $riskBand = (string) ($prediction['risk_band'] ?? 'low');
 
             $diffDays = null;
             $status = 'monitor';
@@ -129,12 +138,21 @@ class MaintenanceForecastService
                 $status = 'predicted';
             }
 
+            // Tighter inclusion: only surface genuinely actionable items.
             $shouldInclude = false;
             if ($nextDue instanceof DateTimeImmutable && $nextDue <= $cutoff) {
                 $shouldInclude = true;
             }
-            if ($decision['action'] !== 'monitor') {
+            if ($riskBand === 'high' || ($decision['action'] ?? 'monitor') === 'schedule_now') {
                 $shouldInclude = true;
+            }
+            if (! $shouldInclude && $riskBand === 'medium') {
+                $pFeatures = $prediction['features'] ?? [];
+                $hasCorrectiveEvidence = (float) ($pFeatures['corrective_last_120d'] ?? 0.0) >= 1.0
+                    || (float) ($pFeatures['high_priority_last_180d'] ?? 0.0) >= 1.0;
+                if ($hasCorrectiveEvidence) {
+                    $shouldInclude = true;
+                }
             }
 
             if (! $shouldInclude) {
@@ -146,7 +164,7 @@ class MaintenanceForecastService
                 'status' => $status,
                 'risk_probability' => $riskProbability,
                 'risk_percent' => (int) round($riskProbability * 100),
-                'risk_band' => $prediction['risk_band'] ?? 'low',
+                'risk_band' => $riskBand,
                 'decision' => $decision,
                 'decision_label' => $decision['label'] ?? 'Normal monitoring',
                 'decision_priority' => $decision['priority'] ?? 'low',
@@ -155,11 +173,34 @@ class MaintenanceForecastService
             ]);
         }
 
-        usort($upcoming, static function (array $a, array $b): int {
+        usort($upcoming, static function (array $a, array $b) use ($predictions): int {
             $priorityRank = ['high' => 0, 'medium' => 1, 'low' => 2];
             $priorityCompare = ($priorityRank[$a['decision_priority'] ?? 'low'] ?? 2) <=> ($priorityRank[$b['decision_priority'] ?? 'low'] ?? 2);
             if ($priorityCompare !== 0) {
                 return $priorityCompare;
+            }
+
+            // Overdue beats upcoming/predicted at the same priority level.
+            $aOverdue = ($a['status'] ?? '') === 'overdue' ? 0 : 1;
+            $bOverdue = ($b['status'] ?? '') === 'overdue' ? 0 : 1;
+            if ($aOverdue !== $bOverdue) {
+                return $aOverdue <=> $bOverdue;
+            }
+
+            // Corrective pressure: corrective events + weighted high-priority events.
+            $aFeat = $predictions[(int) ($a['asset_id'] ?? 0)]['features'] ?? [];
+            $bFeat = $predictions[(int) ($b['asset_id'] ?? 0)]['features'] ?? [];
+            $aScore = (float) ($aFeat['corrective_last_120d'] ?? 0.0) + (float) ($aFeat['high_priority_last_180d'] ?? 0.0) * 1.5;
+            $bScore = (float) ($bFeat['corrective_last_120d'] ?? 0.0) + (float) ($bFeat['high_priority_last_180d'] ?? 0.0) * 1.5;
+            if (abs($aScore - $bScore) > 0.1) {
+                return $bScore <=> $aScore;
+            }
+
+            // Booking pressure as tiebreaker.
+            $aBookings = (float) ($aFeat['booking_count_90d'] ?? 0.0);
+            $bBookings = (float) ($bFeat['booking_count_90d'] ?? 0.0);
+            if (abs($aBookings - $bBookings) > 1.0) {
+                return $bBookings <=> $aBookings;
             }
 
             $riskCompare = ((float) ($b['risk_probability'] ?? 0.0)) <=> ((float) ($a['risk_probability'] ?? 0.0));
@@ -216,6 +257,23 @@ class MaintenanceForecastService
         }
 
         return $forecasts;
+    }
+
+    protected function assetsWithOpenMaintenance(array $assetIds): array
+    {
+        if (empty($assetIds)) {
+            return [];
+        }
+
+        $rows = $this->db->table('maintenance_records')
+            ->select('asset_id')
+            ->distinct()
+            ->whereIn('asset_id', $assetIds)
+            ->whereIn('status', ['reported', 'scheduled', 'in_progress', 'testing'])
+            ->get()
+            ->getResultArray();
+
+        return array_map(static fn(array $row): int => (int) $row['asset_id'], $rows);
     }
 
     protected function completedDatesByAsset(array $assetIds = []): array

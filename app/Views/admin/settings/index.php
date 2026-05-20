@@ -214,6 +214,33 @@ $settingMeta = [
         </div>
     </div>
 
+    <!-- PREDICTIVE MAINTENANCE MODEL -->
+    <div class="glass-card mb-5" id="maintenance-model-card">
+        <div class="settings-card-header">
+            <h5>
+                <i class="bi bi-cpu-fill"></i>
+                Predictive Maintenance Model
+            </h5>
+        </div>
+
+        <div class="card-body p-4">
+            <div class="info-box">
+                <p class="d-flex align-items-center mb-0">
+                    <i class="bi bi-info-circle-fill me-2" style="color: #3b82f6;"></i>
+                    Retrains the local logistic regression model using all current maintenance records and booking history. Run this after adding significant amounts of new data to keep risk scores accurate.
+                </p>
+            </div>
+
+            <div id="model-result" class="mb-3" style="display:none;">
+                <div class="row g-3 mt-1" id="model-stats-row"></div>
+            </div>
+
+            <button id="trainModelBtn" type="button" class="btn btn-glass">
+                <i class="bi bi-arrow-repeat me-2"></i> Retrain Maintenance Model
+            </button>
+        </div>
+    </div>
+
     <!-- SCHEDULED TASK DEMO TRIGGER -->
     <div class="glass-card mb-5">
         <div class="settings-card-header">
@@ -316,6 +343,82 @@ $settingMeta = [
 <!-- JAVASCRIPT -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
+
+    // ── Retrain maintenance model ──────────────────────────────────────────
+    document.querySelector("#trainModelBtn").addEventListener("click", () => {
+        const btn = document.querySelector("#trainModelBtn");
+        const resultBox = document.querySelector("#model-result");
+        const statsRow = document.querySelector("#model-stats-row");
+
+        btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i> Training...';
+        btn.disabled = true;
+        resultBox.style.display = "none";
+
+        fetch("/api/native/admin/settings/train-maintenance-model", {
+            method: "POST",
+            headers: { "X-Requested-With": "XMLHttpRequest" },
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === "success") {
+                const s = data.model_summary ?? {};
+                const st = data.asset_stats ?? {};
+                const trainedAt = s.trained_at
+                    ? new Date(s.trained_at).toLocaleString("en-MY")
+                    : "just now";
+                const threshold = s.threshold != null
+                    ? (s.threshold * 100).toFixed(0) + "%"
+                    : "-";
+                const f1 = s.metrics?.f1 != null
+                    ? (s.metrics.f1 * 100).toFixed(1) + "%"
+                    : "-";
+
+                statsRow.innerHTML = `
+                    <div class="col-6 col-md-3">
+                        <div class="form-group-glass text-center">
+                            <div class="fs-5 fw-bold" style="color:var(--slams-primary)">${st.high_risk ?? 0}</div>
+                            <div class="form-hint">High Risk Assets</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="form-group-glass text-center">
+                            <div class="fs-5 fw-bold" style="color:var(--slams-primary)">${st.due_soon ?? 0}</div>
+                            <div class="form-hint">Due Soon</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="form-group-glass text-center">
+                            <div class="fs-5 fw-bold" style="color:var(--slams-primary)">${threshold}</div>
+                            <div class="form-hint">Decision Threshold</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="form-group-glass text-center">
+                            <div class="fs-5 fw-bold" style="color:var(--slams-primary)">${f1}</div>
+                            <div class="form-hint">Test F1 Score</div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="small text-muted">Trained ${trainedAt}</div>
+                    </div>
+                `;
+                resultBox.style.display = "block";
+                btn.innerHTML = '<i class="bi bi-check-circle me-2"></i> Retrain Again';
+            } else {
+                alert("Training failed: " + (data.message ?? "Unknown error"));
+                btn.innerHTML = '<i class="bi bi-arrow-repeat me-2"></i> Retrain Maintenance Model';
+            }
+        })
+        .catch(() => {
+            alert("An unexpected error occurred during model training.");
+            btn.innerHTML = '<i class="bi bi-arrow-repeat me-2"></i> Retrain Maintenance Model';
+        })
+        .finally(() => {
+            btn.disabled = false;
+        });
+    });
+
+    // ── Booking slots ──────────────────────────────────────────────────────
     const slotTable = document.querySelector("#slotTable tbody");
 
     // Add a new empty row

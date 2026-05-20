@@ -35,10 +35,12 @@ class NativeMaintenanceController extends WebMaintenanceController
         $records = $recordsQuery->orderBy('maintenance_records.created_at', 'DESC')->findAll();
         $statusLabels = $this->maintenanceModel->workflowLabels();
         $openStatuses = $this->maintenanceModel->openStatuses();
-        $predictiveAlerts = array_slice(array_values(array_filter(
+        $allPredictiveAlerts = array_values(array_filter(
             (new MaintenanceForecastService())->getUpcomingForecasts(90),
             static fn(array $item): bool => in_array((string) ($item['decision_priority'] ?? 'low'), ['high', 'medium'], true)
-        )), 0, 8);
+        ));
+        $predictiveTotal  = count($allPredictiveAlerts);
+        $predictiveAlerts = array_slice($allPredictiveAlerts, 0, 8);
 
         return $this->response->setJSON([
             'status' => 'success',
@@ -53,13 +55,16 @@ class NativeMaintenanceController extends WebMaintenanceController
                 'testing' => (int) (new \App\Models\MaintenanceRecordModel())
                     ->where('status', 'testing')
                     ->countAllResults(),
-                'predictive' => count($predictiveAlerts),
+                // predictive reflects the full actionable set, not just the capped display slice
+                'predictive' => $predictiveTotal,
             ],
             'status_labels' => $statusLabels,
             'issue_types' => ['preventive', 'inspection', 'calibration', 'other'],
             'priorities' => ['low', 'medium', 'high', 'critical'],
             'assets' => array_map(fn(array $asset): array => $this->serializeAssetOption($asset), $this->assetOptions()),
             'records' => array_map(fn(array $record): array => $this->serializeRecord($record), $records),
+            'predictive_total' => $predictiveTotal,
+            'predictive_shown' => count($predictiveAlerts),
             'predictive_alerts' => array_map(static function (array $forecast): array {
                 return [
                     'asset_id' => (int) ($forecast['asset_id'] ?? 0),

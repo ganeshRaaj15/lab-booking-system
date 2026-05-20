@@ -124,6 +124,7 @@ class MaintenancePredictionService
 
         $modelProbability = $this->trainer->predictProbability($features, $model);
         $probability = max($modelProbability, $this->ruleBasedFloor($features));
+        $probability = $this->dampByHistoryConfidence($probability, $features);
         $threshold = (float) ($model['threshold'] ?? 0.5);
 
         return array_merge($asset, [
@@ -173,11 +174,16 @@ class MaintenancePredictionService
 
     public function decision(float $probability, array $features, float $threshold): array
     {
-        $plannedGapDelta = (float) ($features['planned_gap_delta'] ?? 0.0);
+        $plannedGapDelta  = (float) ($features['planned_gap_delta'] ?? 0.0);
         $correctiveRecent = (float) ($features['corrective_last_120d'] ?? 0.0);
-        $highPriority = (float) ($features['high_priority_last_180d'] ?? 0.0);
+        $highPriority     = (float) ($features['high_priority_last_180d'] ?? 0.0);
+        $bookingCount90   = (float) ($features['booking_count_90d'] ?? 0.0);
 
-        if ($probability >= 0.72 || $plannedGapDelta >= 45.0 || $correctiveRecent >= 2.0 || $highPriority >= 1.0) {
+        // schedule_now: requires strong combined evidence, not just one flag
+        $strongCorrectiveCombination    = $correctiveRecent >= 2.0 && $highPriority >= 1.0;
+        $badlyOverdueWithUsageEvidence  = $plannedGapDelta >= 45.0 && ($correctiveRecent >= 1.0 || $bookingCount90 >= 10.0);
+
+        if ($probability >= 0.85 || $strongCorrectiveCombination || $badlyOverdueWithUsageEvidence) {
             return [
                 'action' => 'schedule_now',
                 'label' => 'Schedule preventive maintenance now',
@@ -185,7 +191,10 @@ class MaintenancePredictionService
             ];
         }
 
-        if ($probability >= max($threshold, 0.45) || $plannedGapDelta >= 14.0) {
+        // inspect_soon: moderate evidence or approaching/exceeded average interval
+        $moderateEvidence = $correctiveRecent >= 1.0 || $highPriority >= 1.0;
+
+        if ($probability >= max($threshold, 0.60) || $plannedGapDelta >= 30.0 || ($plannedGapDelta >= 14.0 && $moderateEvidence)) {
             return [
                 'action' => 'inspect_soon',
                 'label' => 'Inspect within 14 days',
@@ -202,10 +211,10 @@ class MaintenancePredictionService
 
     protected function riskBand(float $probability): string
     {
-        if ($probability >= 0.72) {
+        if ($probability >= 0.85) {
             return 'high';
         }
-        if ($probability >= 0.45) {
+        if ($probability >= 0.60) {
             return 'medium';
         }
 
@@ -261,35 +270,56 @@ class MaintenancePredictionService
         return array_slice($reasons, 0, 3);
     }
 
+    protected function dampByHistoryConfidence(float $probability, array $features): float
+    {
+        $eventsLast365  = (float) ($features['events_last_365d'] ?? $features['events_last_90d'] ?? 0.0);
+        $plannedLifetime = (float) ($features['planned_events_lifetime'] ?? 0.0);
+        $bookingCount90  = (float) ($features['booking_count_90d'] ?? 0.0);
+        $depthScore      = (float) ($features['history_depth_score'] ?? 0.0);
+
+        // Very sparse: almost no evidence — cap aggressive scores from rule-based floors.
+        if ($eventsLast365 <= 1.0 && $plannedLifetime <= 1.0 && $bookingCount90 <= 5.0) {
+            return $probability * 0.70;
+        }
+
+        // Thin history: limited basis for a confident prediction.
+        if ($depthScore <= 0.25 && $eventsLast365 <= 3.0) {
+            return $probability * 0.82;
+        }
+
+        return $probability;
+    }
+
     protected function ruleBasedFloor(array $features): float
     {
+        // Floors are intentionally modest — sparsity damping handles further reduction.
         if ((float) ($features['corrective_last_120d'] ?? 0.0) >= 2.0) {
-            return 0.82;
+            return 0.68;
         }
 
         if ((float) ($features['high_priority_last_180d'] ?? 0.0) >= 1.0 && (float) ($features['events_last_30d'] ?? 0.0) >= 1.0) {
-            return 0.74;
+            return 0.62;
         }
 
         if ((float) ($features['planned_gap_delta'] ?? 0.0) >= 45.0) {
-            return 0.76;
-        }
-
-        if ((float) ($features['planned_gap_delta'] ?? 0.0) >= 14.0) {
-            return 0.52;
-        }
-
-        if ((float) ($features['corrective_ratio_365d'] ?? 0.0) >= 0.45 && (float) ($features['events_last_30d'] ?? 0.0) >= 1.0) {
             return 0.58;
         }
 
-        // Heavily booked assets with no recent planned maintenance warrant elevated monitoring.
+        if ((float) ($features['planned_gap_delta'] ?? 0.0) >= 14.0) {
+            return 0.42;
+        }
+
+        if ((float) ($features['corrective_ratio_365d'] ?? 0.0) >= 0.45 && (float) ($features['events_last_30d'] ?? 0.0) >= 1.0) {
+            return 0.48;
+        }
+
+        // Booking pressure alone is not sufficient for high risk; keep floors modest.
         if ((float) ($features['booking_count_90d'] ?? 0.0) >= 20.0 && (float) ($features['planned_last_180d'] ?? 0.0) === 0.0) {
-            return 0.55;
+            return 0.44;
         }
 
         if ((float) ($features['booking_hours_90d'] ?? 0.0) >= 100.0 && (float) ($features['planned_last_180d'] ?? 0.0) === 0.0) {
-            return 0.50;
+            return 0.40;
         }
 
         return 0.0;

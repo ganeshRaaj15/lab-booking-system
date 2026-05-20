@@ -48,6 +48,12 @@ class MaintenanceFeatureExtractor
             'booking_count_30d',
             'booking_count_90d',
             'booking_hours_90d',
+            // History-strength features (used for confidence damping and richer training signal)
+            'events_last_365d',
+            'planned_events_lifetime',
+            'has_any_planned_history',
+            'bookings_days_active_90d',
+            'history_depth_score',
         ];
     }
 
@@ -279,6 +285,7 @@ class MaintenanceFeatureExtractor
         $bookingCount30 = 0;
         $bookingCount90 = 0;
         $bookingHours90 = 0.0;
+        $bookingActiveDays90 = [];
 
         foreach ($bookings as $booking) {
             $bookedAt = $booking['booked_at'];
@@ -288,11 +295,16 @@ class MaintenanceFeatureExtractor
             if ($bookedAt >= $cutoff90) {
                 $bookingCount90++;
                 $bookingHours90 += (float) ($booking['hours'] ?? 0.0);
+                $bookingActiveDays90[$bookedAt->format('Y-m-d')] = true;
             }
             if ($bookedAt >= $cutoff30) {
                 $bookingCount30++;
             }
         }
+
+        $plannedEventsLifetime = count($plannedEvents);
+        $depthFromTotal        = min(count($pastEvents) / 10.0, 1.0);
+        $depthFromPlanned      = min($plannedEventsLifetime / 5.0, 1.0);
 
         return [
             'total_quantity' => (float) $totalQuantity,
@@ -313,6 +325,11 @@ class MaintenanceFeatureExtractor
             'booking_count_30d' => (float) $bookingCount30,
             'booking_count_90d' => (float) $bookingCount90,
             'booking_hours_90d' => round($bookingHours90, 2),
+            'events_last_365d' => (float) count($eventsLast365),
+            'planned_events_lifetime' => (float) $plannedEventsLifetime,
+            'has_any_planned_history' => $plannedEventsLifetime > 0 ? 1.0 : 0.0,
+            'bookings_days_active_90d' => (float) count($bookingActiveDays90),
+            'history_depth_score' => round($depthFromTotal * 0.6 + $depthFromPlanned * 0.4, 3),
         ];
     }
 
