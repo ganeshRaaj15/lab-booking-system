@@ -362,10 +362,32 @@ $pendingExternalPic = $pendingExternalPic ?? [];
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="bookingDetails">
-                <!-- Content loaded via AJAX -->
-                <div class="text-center py-4">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
+                <div class="slams-skeleton-modal" aria-hidden="true">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="slams-skeleton-panel">
+                                <div class="skeleton-row skeleton-row-60"></div>
+                                <div class="skeleton-row skeleton-row-full"></div>
+                                <div class="skeleton-row skeleton-row-80"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="slams-skeleton-panel">
+                                <div class="skeleton-row skeleton-row-60"></div>
+                                <div class="skeleton-row skeleton-row-full"></div>
+                                <div class="skeleton-row skeleton-row-80"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slams-skeleton-panel">
+                        <div class="skeleton-row skeleton-row-60"></div>
+                        <div class="skeleton-row skeleton-row-full"></div>
+                        <div class="skeleton-row skeleton-row-full"></div>
+                    </div>
+                    <div class="slams-skeleton-panel">
+                        <div class="skeleton-row skeleton-row-60"></div>
+                        <div class="skeleton-row skeleton-row-80"></div>
+                        <div class="skeleton-row skeleton-row-full"></div>
                     </div>
                 </div>
             </div>
@@ -389,6 +411,39 @@ let currentBookingId = null;
 const csrfHeaderName = "X-CSRF-TOKEN";
 const csrfTokenValue = "<?= csrf_hash() ?>";
 
+function bookingDetailsSkeleton() {
+    return `
+        <div class="slams-skeleton-modal" aria-hidden="true">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="slams-skeleton-panel">
+                        <div class="skeleton-row skeleton-row-60"></div>
+                        <div class="skeleton-row skeleton-row-full"></div>
+                        <div class="skeleton-row skeleton-row-80"></div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="slams-skeleton-panel">
+                        <div class="skeleton-row skeleton-row-60"></div>
+                        <div class="skeleton-row skeleton-row-full"></div>
+                        <div class="skeleton-row skeleton-row-80"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="slams-skeleton-panel">
+                <div class="skeleton-row skeleton-row-60"></div>
+                <div class="skeleton-row skeleton-row-full"></div>
+                <div class="skeleton-row skeleton-row-full"></div>
+            </div>
+            <div class="slams-skeleton-panel">
+                <div class="skeleton-row skeleton-row-60"></div>
+                <div class="skeleton-row skeleton-row-80"></div>
+                <div class="skeleton-row skeleton-row-full"></div>
+            </div>
+        </div>
+    `;
+}
+
 // Initialize tooltips
 document.addEventListener('DOMContentLoaded', function() {
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
@@ -411,13 +466,7 @@ function viewBookingDetails(id) {
     const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
     
     // Show loading
-    document.getElementById('bookingDetails').innerHTML = `
-        <div class="text-center py-4">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-        </div>
-    `;
+    document.getElementById('bookingDetails').innerHTML = bookingDetailsSkeleton();
     
     // Fetch booking details
     fetch(`/dashboard/pic/booking/${id}`, {

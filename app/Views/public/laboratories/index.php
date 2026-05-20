@@ -56,8 +56,23 @@
             </span>
         </div>
 
-        <!-- Loading Spinner -->
-        <div class="loading-spinner" id="loadingSpinner"></div>
+        <!-- Loading Skeleton -->
+        <div class="slams-skeleton-grid" id="labsLoadingSkeleton" aria-hidden="true">
+            <?php for ($i = 0; $i < 6; $i++): ?>
+                <div class="skeleton-card slams-skeleton-card-shell">
+                    <div class="skeleton-pulse slams-skeleton-media"></div>
+                    <div class="slams-skeleton-card-body">
+                        <div class="skeleton-row skeleton-row-60"></div>
+                        <div class="skeleton-row skeleton-row-80"></div>
+                        <div class="skeleton-row skeleton-row-full"></div>
+                        <div class="skeleton-row skeleton-row-60"></div>
+                        <div class="slams-skeleton-actions">
+                            <div class="skeleton-pulse slams-skeleton-button"></div>
+                        </div>
+                    </div>
+                </div>
+            <?php endfor; ?>
+        </div>
 
         <!-- If no labs found (Initially hidden) -->
         <div class="no-results" id="noResults" style="display: <?= empty($labs) ? 'block' : 'none' ?>;">
@@ -158,11 +173,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const clearFilterBtnAlt = document.getElementById('clearFilterBtnAlt');
     const searchIndicator = document.getElementById('searchIndicator');
     const searchIndicatorText = searchIndicator ? searchIndicator.querySelector('span') : null;
-    const loadingSpinner = document.getElementById('loadingSpinner');
+    const labsGrid = document.getElementById('labsGrid');
+    const loadingSkeleton = document.getElementById('labsLoadingSkeleton');
 
     let filterTimeout;
     let isFiltering = false;
     let filterGeneration = 0;
+
+    function setGridLoading(isLoading) {
+        if (loadingSkeleton) {
+            loadingSkeleton.classList.toggle('is-active', isLoading);
+        }
+        if (labsGrid) {
+            labsGrid.style.display = isLoading ? 'none' : '';
+        }
+    }
 
     // Synchronously reset to "show all" state without any async setTimeout.
     // Used on init and on bfcache restoration when there is no search term,
@@ -181,7 +206,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function filterLabs(searchTerm) {
         const gen = ++filterGeneration;
         isFiltering = true;
-        loadingSpinner.style.display = 'block';
+        setGridLoading(true);
 
         labItems.forEach(item => {
             item.classList.add('lab-hidden');
@@ -210,7 +235,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (gen !== filterGeneration) return;
             updateResults(visibleCount, searchTerm);
             isFiltering = false;
-            loadingSpinner.style.display = 'none';
+            setGridLoading(false);
             animateVisibleCards();
         }, 300);
     }
@@ -265,10 +290,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const searchTerm = this.value.trim();
 
         clearTimeout(filterTimeout);
-
-        if (searchTerm.length > 1 && !isFiltering) {
-            loadingSpinner.style.display = 'block';
-        }
 
         filterTimeout = setTimeout(() => {
             filterLabs(searchTerm);

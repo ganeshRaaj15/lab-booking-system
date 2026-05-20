@@ -829,12 +829,33 @@ $topAtRisk = $equipmentHealth['topAtRisk'] ?? [];
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="bookingDetails">
-                <!-- Content loaded via AJAX -->
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
+                <div class="slams-skeleton-modal" aria-hidden="true">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="slams-skeleton-panel">
+                                <div class="skeleton-row skeleton-row-60"></div>
+                                <div class="skeleton-row skeleton-row-full"></div>
+                                <div class="skeleton-row skeleton-row-80"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="slams-skeleton-panel">
+                                <div class="skeleton-row skeleton-row-60"></div>
+                                <div class="skeleton-row skeleton-row-full"></div>
+                                <div class="skeleton-row skeleton-row-80"></div>
+                            </div>
+                        </div>
                     </div>
-                    <p class="text-muted mt-3">Loading booking details...</p>
+                    <div class="slams-skeleton-panel">
+                        <div class="skeleton-row skeleton-row-60"></div>
+                        <div class="skeleton-row skeleton-row-full"></div>
+                        <div class="skeleton-row skeleton-row-full"></div>
+                    </div>
+                    <div class="slams-skeleton-panel">
+                        <div class="skeleton-row skeleton-row-60"></div>
+                        <div class="skeleton-row skeleton-row-80"></div>
+                        <div class="skeleton-row skeleton-row-full"></div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer border-0 bg-light rounded-bottom-3">
@@ -857,6 +878,39 @@ let currentBookingId = null;
 let trendChart = null;
 const csrfHeaderName = "X-CSRF-TOKEN";
 const csrfTokenValue = "<?= csrf_hash() ?>";
+
+function bookingDetailsSkeleton() {
+    return `
+        <div class="slams-skeleton-modal" aria-hidden="true">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="slams-skeleton-panel">
+                        <div class="skeleton-row skeleton-row-60"></div>
+                        <div class="skeleton-row skeleton-row-full"></div>
+                        <div class="skeleton-row skeleton-row-80"></div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="slams-skeleton-panel">
+                        <div class="skeleton-row skeleton-row-60"></div>
+                        <div class="skeleton-row skeleton-row-full"></div>
+                        <div class="skeleton-row skeleton-row-80"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="slams-skeleton-panel">
+                <div class="skeleton-row skeleton-row-60"></div>
+                <div class="skeleton-row skeleton-row-full"></div>
+                <div class="skeleton-row skeleton-row-full"></div>
+            </div>
+            <div class="slams-skeleton-panel">
+                <div class="skeleton-row skeleton-row-60"></div>
+                <div class="skeleton-row skeleton-row-80"></div>
+                <div class="skeleton-row skeleton-row-full"></div>
+            </div>
+        </div>
+    `;
+}
 
 // Initialize tooltips and charts
 document.addEventListener('DOMContentLoaded', function() {
@@ -1180,13 +1234,7 @@ function viewBookingDetails(id) {
     }
     const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
     
-    document.getElementById('bookingDetails').innerHTML = `
-        <div class="text-center py-4">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-        </div>
-    `;
+    document.getElementById('bookingDetails').innerHTML = bookingDetailsSkeleton();
     
     fetch(`/dashboard/manager/booking/${id}`, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },

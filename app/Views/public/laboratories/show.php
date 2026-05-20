@@ -921,6 +921,35 @@ document.addEventListener("DOMContentLoaded", function () {
     // -------------------------------
     const daySlotPanel = document.getElementById("daySlotPanel");
 
+    function buildDaySlotSkeleton(formattedDate) {
+        return `
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <i class="bi bi-calendar-event" style="font-size:1.2rem;color:var(--slams-primary)"></i>
+                <span style="font-size:1rem;font-weight:800;color:var(--slams-heading);letter-spacing:-0.02em;">${formattedDate}</span>
+            </div>
+            <div class="slams-skeleton-inline-grid">
+                <div class="slams-skeleton-inline-card">
+                    <div class="skeleton-row skeleton-row-60"></div>
+                    <div class="skeleton-row skeleton-row-80"></div>
+                    <div class="skeleton-row skeleton-row-full"></div>
+                    <div class="skeleton-row skeleton-row-60"></div>
+                </div>
+                <div class="slams-skeleton-inline-card">
+                    <div class="skeleton-row skeleton-row-60"></div>
+                    <div class="skeleton-row skeleton-row-80"></div>
+                    <div class="skeleton-row skeleton-row-full"></div>
+                    <div class="skeleton-row skeleton-row-60"></div>
+                </div>
+                <div class="slams-skeleton-inline-card">
+                    <div class="skeleton-row skeleton-row-60"></div>
+                    <div class="skeleton-row skeleton-row-80"></div>
+                    <div class="skeleton-row skeleton-row-full"></div>
+                    <div class="skeleton-row skeleton-row-60"></div>
+                </div>
+            </div>
+        `;
+    }
+
     function hideDaySlotPanel() {
         if (!daySlotPanel) return;
         daySlotPanel.classList.add("d-none");
@@ -951,16 +980,7 @@ document.addEventListener("DOMContentLoaded", function () {
             weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
         });
 
-        daySlotPanel.innerHTML = `
-            <div class="d-flex align-items-center gap-2 mb-3">
-                <i class="bi bi-calendar-event" style="font-size:1.2rem;color:var(--slams-primary)"></i>
-                <span style="font-size:1rem;font-weight:800;color:var(--slams-heading);letter-spacing:-0.02em;">${formattedDate}</span>
-            </div>
-            <div class="d-flex align-items-center gap-2 py-3" style="color:var(--slams-muted);font-size:13px;">
-                <span class="spinner-border spinner-border-sm" style="color:var(--slams-primary)" role="status"></span>
-                Loading sessions…
-            </div>
-        `;
+        daySlotPanel.innerHTML = buildDaySlotSkeleton(formattedDate);
         daySlotPanel.classList.remove("d-none");
         daySlotPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
