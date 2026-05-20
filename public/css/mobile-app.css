@@ -97,7 +97,7 @@ body.slams-mobile-app {
     }
 
     body.slams-mobile-app {
-        padding-bottom: calc(var(--slams-mobile-nav-height) + env(safe-area-inset-bottom, 0px));
+        padding-bottom: env(safe-area-inset-bottom, 0px);
     }
 
     .glass-navbar .navbar-collapse {
@@ -111,7 +111,7 @@ body.slams-mobile-app {
 
     .slams-mobile-app .slams-main,
     .slams-mobile-app .content-area {
-        padding-bottom: calc(var(--slams-mobile-nav-height) + 1.5rem) !important;
+        padding-bottom: 1.5rem !important;
     }
 
     .slams-mobile-app .glass-navbar {
@@ -128,7 +128,7 @@ body.slams-mobile-app {
         position: fixed;
         right: calc(0.75rem + var(--floating-control-size) + var(--floating-panel-gap));
         left: auto;
-        bottom: calc(var(--slams-mobile-nav-height) + 0.85rem + env(safe-area-inset-bottom, 0px));
+        bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px));
         width: min(340px, calc(100vw - 112px));
         max-width: calc(100vw - 112px);
         max-height: min(64vh, 520px);
@@ -138,14 +138,14 @@ body.slams-mobile-app {
     .slams-mobile-app .theme-toggle {
         right: auto;
         left: 0.75rem;
-        bottom: calc(var(--slams-mobile-nav-height) + 0.85rem + env(safe-area-inset-bottom, 0px));
+        bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px));
         z-index: 1046;
     }
 
     .slams-mobile-app .slams-chatbot {
         left: auto;
         right: 0.75rem;
-        bottom: calc(var(--slams-mobile-nav-height) + 0.85rem + env(safe-area-inset-bottom, 0px));
+        bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px));
         z-index: 1046;
     }
 

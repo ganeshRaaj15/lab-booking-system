@@ -53,7 +53,6 @@ $pushLoggedIn = function_exists('auth') && auth()->loggedIn();
     <?= $this->include('components/chatbot') ?>
     <?= $this->include('components/theme_toggle') ?>
     <?= $this->include('components/mobile_quick_actions') ?>
-    <?= $this->include('components/mobile_bottom_nav') ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="<?= slams_asset('js/mobile-app.js') ?>"></script>
