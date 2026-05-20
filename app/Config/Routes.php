@@ -50,6 +50,7 @@ use App\Controllers\Dashboard\TechnicianDashboard;
 use App\Controllers\Dashboard\IssueReportController;
 use App\Controllers\Dashboard\ApprovalsController;
 use App\Controllers\Dashboard\ProfileController;
+use App\Controllers\Dashboard\AnalyticsController;
 use App\Controllers\Dashboard\ReportController;
 use App\Controllers\Dashboard\NotificationController;
 use App\Controllers\Dashboard\EmailInboxController;
@@ -426,6 +427,7 @@ $routes->get('dashboard', [DashboardController::class, 'index'], ['filter' => 's
 $routes->group('dashboard', ['filter' => 'session'], function ($routes) {
     $routes->get('profile', [ProfileController::class, 'index']);
     $routes->post('profile/update', [ProfileController::class, 'update']);
+    $routes->get('reports/analytics', [AnalyticsController::class, 'index'], ['filter' => 'group:pic,manager,admin']);
     $routes->get('reports/pdf', [ReportController::class, 'download'], ['filter' => 'group:pic,manager,admin']);
     $routes->get('reports/csv', [ReportController::class, 'downloadCsv'], ['filter' => 'group:pic,manager,admin']);
     $routes->get('notifications', [NotificationController::class, 'index']);

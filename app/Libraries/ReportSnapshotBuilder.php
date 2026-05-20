@@ -198,6 +198,88 @@ class ReportSnapshotBuilder
             + $maintenanceStatus['in_progress']
             + $maintenanceStatus['testing'];
 
+        // Lab utilization
+        $labUtilization = [];
+        if ($labs !== []) {
+            $utilBuilder = $db->table('bookings b')
+                ->select("
+                    b.lab_id,
+                    SUM(CASE WHEN UPPER(b.status) = 'APPROVED' THEN 1 ELSE 0 END) AS total_bookings,
+                    SUM(CASE WHEN UPPER(b.status) = 'APPROVED' THEN TIMESTAMPDIFF(MINUTE, b.start_time, b.end_time) ELSE 0 END) AS used_minutes
+                ", false)
+                ->groupBy('b.lab_id');
+            $applyLabScope($utilBuilder);
+            $utilStats = [];
+            foreach ($utilBuilder->get()->getResultArray() as $row) {
+                $utilStats[(int) $row['lab_id']] = $row;
+            }
+
+            $peakBuilder = $db->table('bookings b')
+                ->select("
+                    b.lab_id,
+                    DAYNAME(b.date) AS peak_day,
+                    CASE
+                        WHEN b.start_time >= '08:00:00' AND b.start_time < '10:00:00' THEN '08:00-10:00'
+                        WHEN b.start_time >= '10:00:00' AND b.start_time < '12:00:00' THEN '10:00-12:00'
+                        WHEN b.start_time >= '13:00:00' AND b.start_time < '15:00:00' THEN '13:00-15:00'
+                        WHEN b.start_time >= '15:00:00' AND b.start_time < '17:00:00' THEN '15:00-17:00'
+                        ELSE 'Other'
+                    END AS peak_slot,
+                    COUNT(*) AS total
+                ", false)
+                ->where("UPPER(b.status) = " . $db->escape('APPROVED'), null, false)
+                ->groupBy('b.lab_id, DAYNAME(b.date), peak_slot')
+                ->orderBy('total', 'DESC');
+            $applyLabScope($peakBuilder);
+            $labPeaks = [];
+            foreach ($peakBuilder->get()->getResultArray() as $row) {
+                $lid = (int) $row['lab_id'];
+                if (! isset($labPeaks[$lid])) {
+                    $labPeaks[$lid] = [
+                        'peak_day'  => (string) ($row['peak_day'] ?? 'N/A'),
+                        'peak_slot' => (string) ($row['peak_slot'] ?? 'N/A'),
+                    ];
+                }
+            }
+
+            $availableHours = max(130 * 8.0, 8.0);
+            foreach ($labs as $lab) {
+                $lid = (int) ($lab['id'] ?? 0);
+                $s = $utilStats[$lid] ?? [];
+                $usedHours = round(((int) ($s['used_minutes'] ?? 0)) / 60, 1);
+                $labUtilization[] = [
+                    'laboratory_name'  => (string) ($lab['name'] ?? 'Unknown'),
+                    'laboratory_room'  => (string) ($lab['room'] ?? ''),
+                    'total_bookings'   => (int) ($s['total_bookings'] ?? 0),
+                    'total_used_hours' => $usedHours,
+                    'usage_percentage' => $availableHours > 0
+                        ? round(min(($usedHours / $availableHours) * 100, 100), 1)
+                        : 0.0,
+                    'peak_usage_day'   => $labPeaks[$lid]['peak_day'] ?? 'N/A',
+                    'peak_usage_time'  => $labPeaks[$lid]['peak_slot'] ?? 'N/A',
+                ];
+            }
+            usort($labUtilization, static fn(array $a, array $b): int => $b['usage_percentage'] <=> $a['usage_percentage']);
+        }
+
+        // Peak hours (system-wide, approved bookings)
+        $peakHoursBuilder = $db->table('bookings b')
+            ->select("
+                CASE
+                    WHEN b.start_time >= '08:00:00' AND b.start_time < '10:00:00' THEN '08:00-10:00'
+                    WHEN b.start_time >= '10:00:00' AND b.start_time < '12:00:00' THEN '10:00-12:00'
+                    WHEN b.start_time >= '13:00:00' AND b.start_time < '15:00:00' THEN '13:00-15:00'
+                    WHEN b.start_time >= '15:00:00' AND b.start_time < '17:00:00' THEN '15:00-17:00'
+                    ELSE 'Other'
+                END AS time_slot,
+                COUNT(*) AS total
+            ", false)
+            ->where("UPPER(b.status) = " . $db->escape('APPROVED'), null, false)
+            ->groupBy('time_slot')
+            ->orderBy('total', 'DESC');
+        $applyLabScope($peakHoursBuilder);
+        $peakHours = $peakHoursBuilder->get()->getResultArray();
+
         return [
             'reportTitle' => strtoupper($role) . ' Analytics Report',
             'scopeLabel' => $role === 'pic' ? 'PIC Scope (Assigned Labs)' : 'System-wide Scope',
@@ -225,6 +307,8 @@ class ReportSnapshotBuilder
             'maintenanceTrend' => $maintenanceTrend,
             'topMaintenanceAssets' => $topMaintenanceAssets,
             'upcomingBookings' => $upcomingBookings,
+            'labUtilization' => $labUtilization,
+            'peakHours' => $peakHours,
             'role' => $role,
         ];
     }
