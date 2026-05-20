@@ -48,6 +48,13 @@ use CodeIgniter\Shield\Entities\User;
                 Send Verification Code
             </button>
         </form>
+
+        <div class="auth-footer">
+            <a href="<?= url_to('logout') ?>" class="register-btn">
+                <i class="bi bi-arrow-left me-1"></i>
+                Back to Login
+            </a>
+        </div>
     </div>
 </div>
 
