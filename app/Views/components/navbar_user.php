@@ -24,6 +24,10 @@ if (function_exists('auth') && auth()->loggedIn()) {
             <?= $this->include('components/navbar_app_controls') ?>
         </div>
 
+        <button class="navbar-toggler border-0 ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#userNavbar" aria-controls="userNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
         <div class="collapse navbar-collapse" id="userNavbar">
             <ul class="navbar-nav ms-auto align-items-lg-center">
                 <li class="nav-item me-2"><a class="nav-link position-relative" href="/"><i class="bi bi-house-door me-1"></i> Home<span class="nav-indicator"></span></a></li>
