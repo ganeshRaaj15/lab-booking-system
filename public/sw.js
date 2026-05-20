@@ -1,4 +1,4 @@
-const SLAMS_STATIC_CACHE = "slams-mobile-static-v4";
+const SLAMS_STATIC_CACHE = "slams-mobile-static-v5";
 const SLAMS_PAGE_CACHE = "slams-mobile-pages-v1";
 const SLAMS_IMAGE_CACHE = "slams-mobile-images-v1";
 const SLAMS_SCOPE = new URL(self.registration.scope);
@@ -87,7 +87,6 @@ self.addEventListener("install", (event) => {
     event.waitUntil(
         caches.open(SLAMS_STATIC_CACHE)
             .then((cache) => cache.addAll(STATIC_ASSETS))
-            .then(() => self.skipWaiting())
     );
 });
 
