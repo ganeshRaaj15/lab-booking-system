@@ -1848,10 +1848,6 @@ input::placeholder {
 }
 
 .login-options .form-check {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding-left: 0;
     margin-bottom: 0;
 }
 
@@ -1859,8 +1855,6 @@ input::placeholder {
     width: 1.1rem;
     height: 1.1rem;
     min-height: unset;
-    margin-top: 0;
-    flex-shrink: 0;
 }
 
 .auth-footer,
