@@ -62,15 +62,18 @@
                     <input type="checkbox" name="remember" id="remember" class="form-check-input">
                     <label for="remember" class="form-check-label">Remember me</label>
                 </div>
-                <a href="<?= url_to('magic-link') ?>" class="magic-link">
-                    <i class="bi bi-key me-1"></i>Forgot password?
-                </a>
             </div>
 
             <button type="submit" class="login-btn">
                 <i class="bi bi-box-arrow-in-right me-2"></i>
                 Login to Account
             </button>
+
+            <div class="text-end mt-2">
+                <a href="<?= url_to('magic-link') ?>" class="magic-link">
+                    <i class="bi bi-key me-1"></i>Forgot password?
+                </a>
+            </div>
         </form>
 
         <div class="auth-footer">
