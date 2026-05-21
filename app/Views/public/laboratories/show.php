@@ -272,62 +272,61 @@ if ($picPhone === '') {
             </div>
         </div>
 
-        <div class="card border-0 shadow-sm mt-4">
-            <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                    <div>
-                        <h2 class="h4 mb-1 text-primary">
-                            <i class="bi bi-list-check me-2"></i>
-                            Available Services
-                        </h2>
-                        <p class="text-muted mb-0">Choose the service you need. The system will align the linked equipment automatically.</p>
-                    </div>
-                    <span class="badge text-bg-primary px-3 py-2">
-                        <?= count($services) ?> <?= count($services) === 1 ? 'Service' : 'Services' ?>
-                    </span>
+        <div class="slams-service-section mt-4">
+            <div class="slams-service-section-head">
+                <div>
+                    <h2 class="slams-service-section-title">
+                        <i class="bi bi-list-check"></i>
+                        Available Services
+                    </h2>
+                    <p class="slams-service-section-sub">Choose the service you need. The system will align the linked equipment automatically.</p>
                 </div>
+                <span class="calib-badge calib-badge--count">
+                    <?= count($services) ?> <?= count($services) === 1 ? 'Service' : 'Services' ?>
+                </span>
+            </div>
 
                 <?php if ($services === []): ?>
-                    <div class="text-center text-muted py-4">
+                    <div class="text-center py-4" style="color: var(--slams-muted)">
                         No services have been imported for this laboratory yet.
                     </div>
                 <?php else: ?>
-                    <div class="list-group list-group-flush">
+                    <div class="slams-service-list">
                         <?php foreach ($services as $service): ?>
                             <?php
                             $serviceCalibration = strtolower(trim((string) ($service['calibration_status'] ?? 'unknown')));
                             $calibrationClass = $serviceCalibration === 'valid'
-                                ? 'text-bg-success'
-                                : ($serviceCalibration === 'expired' ? 'text-bg-warning' : 'text-bg-secondary');
+                                ? 'calib-badge calib-badge--valid'
+                                : ($serviceCalibration === 'expired' ? 'calib-badge calib-badge--expired' : 'calib-badge calib-badge--unknown');
                             $equipmentModels = trim((string) ($service['equipment_models'] ?? ''));
                             $criteriaText = trim((string) ($service['acceptance_criteria'] ?? ''));
                             ?>
-                            <div class="list-group-item px-0 py-3 border-bottom">
-                                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
-                                    <div>
-                                        <div class="fw-semibold"><?= esc($service['service_name'] ?? '') ?></div>
+                            <div class="slams-service-item">
+                                <div class="slams-service-item-head">
+                                    <div class="slams-service-item-meta">
+                                        <div class="slams-service-name"><?= esc($service['service_name'] ?? '') ?></div>
                                         <?php if (!empty($service['field_name'])): ?>
-                                            <div class="small text-muted mt-1">
-                                                <i class="bi bi-diagram-3 me-1"></i>
+                                            <div class="slams-service-field">
+                                                <i class="bi bi-diagram-3"></i>
                                                 <?= esc($service['field_name']) ?>
                                             </div>
                                         <?php endif; ?>
                                     </div>
-                                    <span class="badge <?= esc($calibrationClass) ?>">
+                                    <span class="<?= esc($calibrationClass) ?>">
                                         Calibration: <?= esc(ucfirst($serviceCalibration)) ?>
                                     </span>
                                 </div>
 
                                 <?php if ($equipmentModels !== ''): ?>
-                                    <div class="small mt-2">
-                                        <span class="fw-semibold">Equipment models:</span>
+                                    <div class="slams-service-detail">
+                                        <span class="slams-service-detail-label">Equipment models:</span>
                                         <?= esc(str_replace(' | ', ', ', $equipmentModels)) ?>
                                     </div>
                                 <?php endif; ?>
 
                                 <?php if ($criteriaText !== ''): ?>
-                                    <div class="small text-muted mt-2">
-                                        <span class="fw-semibold text-dark">Acceptance criteria:</span>
+                                    <div class="slams-service-detail">
+                                        <span class="slams-service-detail-label">Acceptance criteria:</span>
                                         <?= esc($criteriaText) ?>
                                     </div>
                                 <?php endif; ?>
