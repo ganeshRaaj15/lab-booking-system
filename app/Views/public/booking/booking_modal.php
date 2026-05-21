@@ -144,6 +144,8 @@ if ($picPhone === '') {
                         <div id="selectedServiceMeta" class="text-muted"></div>
                     </div>
 
+                    <div id="wizardViewport" class="wizard-viewport">
+
                     <!-- ====================== STEP 1 ====================== -->
                     <div id="step1" class="wizard-step">
                         <h5 class="fw-semibold mb-3">Applicant Information</h5>
@@ -269,6 +271,7 @@ if ($picPhone === '') {
                         <input type="file" name="pdf" class="form-control required-field">
                     </div>
 
+                    </div><!-- end wizardViewport -->
                 </form>
             </div>
 
@@ -302,6 +305,7 @@ if ($picPhone === '') {
 document.addEventListener("DOMContentLoaded", () => {
 
     let currentStep = 1;
+    let isAnimating = false;
 
     const form        = document.getElementById("bookingForm");
     const prevBtn     = document.getElementById("prevBtn");
@@ -641,26 +645,69 @@ document.addEventListener("DOMContentLoaded", () => {
     // ----------------------------
     // Step switching
     // ----------------------------
-    function showStep(step) {
-        document.querySelectorAll(".wizard-step").forEach(s => s.classList.add("d-none"));
-        const stepEl = document.getElementById("step" + step);
-        if (stepEl) stepEl.classList.remove("d-none");
-
+    function updateWizardNav(step) {
         wizardLabel.textContent = labels[step];
         wizardProg.style.width  = widths[step] + "%";
-
         prevBtn.classList.toggle("d-none", step === 1);
         nextBtn.classList.toggle("d-none", step === 3);
         submitBtn.classList.toggle("d-none", step !== 3);
-
         clearError();
+    }
 
+    function onStepShown(step) {
         if (step === 2) {
             refreshRecommendedSlots();
             refreshDaySlots();
             renderSelectedSessionLabel();
             checkSlotConflict();
         }
+    }
+
+    // Instant show — used for reset/init only, no animation
+    function showStep(step) {
+        document.querySelectorAll(".wizard-step").forEach(s => s.classList.add("d-none"));
+        const stepEl = document.getElementById("step" + step);
+        if (stepEl) stepEl.classList.remove("d-none");
+        updateWizardNav(step);
+        onStepShown(step);
+    }
+
+    // Animated transition between steps
+    function transitionToStep(fromStep, toStep) {
+        const fromEl = document.getElementById("step" + fromStep);
+        const toEl   = document.getElementById("step" + toStep);
+        if (!fromEl || !toEl || isAnimating) return;
+        isAnimating = true;
+
+        const forward = toStep > fromStep;
+        updateWizardNav(toStep);
+
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+            fromEl.classList.add("d-none");
+            toEl.classList.remove("d-none");
+            isAnimating = false;
+            onStepShown(toStep);
+            return;
+        }
+
+        const viewport = document.getElementById("wizardViewport");
+        if (viewport) viewport.style.minHeight = fromEl.offsetHeight + "px";
+
+        const exitCls  = forward ? "wiz-exit-fwd"  : "wiz-exit-back";
+        const enterCls = forward ? "wiz-enter-fwd" : "wiz-enter-back";
+
+        fromEl.classList.add(exitCls);
+        toEl.classList.remove("d-none");
+        toEl.classList.add(enterCls);
+
+        setTimeout(() => {
+            fromEl.classList.remove(exitCls);
+            fromEl.classList.add("d-none");
+            toEl.classList.remove(enterCls);
+            if (viewport) viewport.style.minHeight = "";
+            isAnimating = false;
+            onStepShown(toStep);
+        }, 340);
     }
 
     // Expose reset function for external scripts (e.g., show.php)
@@ -815,6 +862,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Next / Prev buttons
     // ----------------------------
     nextBtn.addEventListener("click", async () => {
+        if (isAnimating) return;
         if (!validateStep(currentStep)) return;
         if (currentStep === 2) {
             const ok = await checkSlotConflict();
@@ -823,13 +871,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
         }
-        if (currentStep < 3) currentStep++;
-        showStep(currentStep);
+        if (currentStep < 3) {
+            const from = currentStep++;
+            transitionToStep(from, currentStep);
+        }
     });
 
     prevBtn.addEventListener("click", () => {
-        if (currentStep > 1) currentStep--;
-        showStep(currentStep);
+        if (isAnimating) return;
+        if (currentStep > 1) {
+            const from = currentStep--;
+            transitionToStep(from, currentStep);
+        }
     });
 
     // ----------------------------

@@ -4477,6 +4477,58 @@ body.slams-app {
 }
 
 /* ============================================================
+   Booking wizard step transitions
+   ============================================================ */
+.wizard-viewport {
+    position: relative;
+    overflow: hidden;
+}
+
+@keyframes wizard-exit-fwd {
+    from { transform: translateX(0);     opacity: 1; }
+    to   { transform: translateX(-28px); opacity: 0; }
+}
+@keyframes wizard-exit-back {
+    from { transform: translateX(0);    opacity: 1; }
+    to   { transform: translateX(28px); opacity: 0; }
+}
+@keyframes wizard-enter-fwd {
+    from { transform: translateX(28px);  opacity: 0; }
+    to   { transform: translateX(0);     opacity: 1; }
+}
+@keyframes wizard-enter-back {
+    from { transform: translateX(-28px); opacity: 0; }
+    to   { transform: translateX(0);     opacity: 1; }
+}
+
+.wiz-exit-fwd {
+    position: absolute !important;
+    inset: 0;
+    pointer-events: none;
+    animation: wizard-exit-fwd 0.2s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+.wiz-exit-back {
+    position: absolute !important;
+    inset: 0;
+    pointer-events: none;
+    animation: wizard-exit-back 0.2s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+.wiz-enter-fwd {
+    animation: wizard-enter-fwd 0.28s cubic-bezier(0, 0, 0.2, 1) 0.08s both;
+}
+.wiz-enter-back {
+    animation: wizard-enter-back 0.28s cubic-bezier(0, 0, 0.2, 1) 0.08s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .wiz-exit-fwd, .wiz-exit-back,
+    .wiz-enter-fwd, .wiz-enter-back {
+        animation: none !important;
+        position: static !important;
+    }
+}
+
+/* ============================================================
    Scroll Progress Bar — home page storytelling
    ============================================================ */
 .slams-scroll-progress {
