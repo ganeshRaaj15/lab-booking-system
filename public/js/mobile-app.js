@@ -254,6 +254,17 @@
         return !!(window.isSecureContext && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window);
     }
 
+    function isIosBrowserNotStandalone() {
+        // iOS only supports web push for sites installed as a home-screen PWA (standalone mode).
+        // Detect iOS Safari running in a regular browser tab so we can guide the user instead
+        // of silently failing when they try to enable notifications.
+        if (!/iphone|ipad|ipod/i.test(navigator.userAgent)) {
+            return false;
+        }
+        var standalone = window.navigator.standalone || window.matchMedia("(display-mode: standalone)").matches;
+        return !standalone;
+    }
+
     function showUpdateBanner(registration) {
         var banner = ensureUpdateBanner();
         if (!banner) {
@@ -332,6 +343,28 @@
         });
     }
 
+    function subscribeToPush(registration) {
+        return registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(appConfig.pushPublicKey)
+        }).then(function (subscription) {
+            var payload = Object.assign({}, subscription.toJSON(), {
+                contentEncoding: supportedContentEncoding()
+            });
+
+            return postJson(appConfig.subscribeUrl, payload).then(function () {
+                updatePushButtons("enabled");
+                showStatusBanner("online", "Push notifications enabled for this device.", true);
+                if (appConfig.testUrl) {
+                    return postJson(appConfig.testUrl, {}).catch(function () {
+                        return {};
+                    });
+                }
+                return {};
+            });
+        });
+    }
+
     function handlePushToggle() {
         if (!appConfig.loggedIn) {
             showStatusBanner("offline", "Sign in first before enabling push notifications.", true);
@@ -361,64 +394,71 @@
             return;
         }
 
-        serviceWorkerRegistrationPromise.then(function (registration) {
-            if (!registration || !registration.pushManager) {
-                throw new Error("Push manager is unavailable.");
-            }
+        if (isIosBrowserNotStandalone()) {
+            showStatusBanner(“offline”, “To enable push notifications on iOS, add SLAMS to your Home Screen first: tap the Share button in Safari then select “Add to Home Screen”.”, true);
+            return;
+        }
 
-            return registration.pushManager.getSubscription().then(function (existingSubscription) {
-                if (existingSubscription) {
-                    if (!window.confirm("Disable push notifications for this device?")) {
-                        return null;
-                    }
-
-                    return postJson(appConfig.unsubscribeUrl, {
-                        endpoint: existingSubscription.endpoint
-                    }).catch(function () {
-                        return {};
-                    }).then(function () {
-                        return existingSubscription.unsubscribe().catch(function () {
-                            return false;
-                        }).then(function () {
-                            updatePushButtons("default");
-                            showStatusBanner("online", "Push notifications disabled for this device.", true);
-                            return null;
-                        });
-                    });
+        // Permission already granted — check for an existing subscription and toggle it.
+        if (Notification.permission === "granted") {
+            serviceWorkerRegistrationPromise.then(function (registration) {
+                if (!registration || !registration.pushManager) {
+                    throw new Error("Push manager is unavailable.");
                 }
 
-                return Notification.requestPermission().then(function (permission) {
-                    if (permission !== "granted") {
-                        updatePushButtons(permission === "denied" ? "blocked" : "default");
-                        throw new Error(permission === "denied"
-                            ? "Push notifications were blocked by the browser."
-                            : "Push permission was not granted.");
+                return registration.pushManager.getSubscription().then(function (existingSubscription) {
+                    if (existingSubscription) {
+                        if (!window.confirm("Disable push notifications for this device?")) {
+                            return null;
+                        }
+
+                        return postJson(appConfig.unsubscribeUrl, {
+                            endpoint: existingSubscription.endpoint
+                        }).catch(function () {
+                            return {};
+                        }).then(function () {
+                            return existingSubscription.unsubscribe().catch(function () {
+                                return false;
+                            }).then(function () {
+                                updatePushButtons("default");
+                                showStatusBanner("online", "Push notifications disabled for this device.", true);
+                                return null;
+                            });
+                        });
                     }
 
-                    return registration.pushManager.subscribe({
-                        userVisibleOnly: true,
-                        applicationServerKey: urlBase64ToUint8Array(appConfig.pushPublicKey)
-                    }).then(function (subscription) {
-                        var payload = Object.assign({}, subscription.toJSON(), {
-                            contentEncoding: supportedContentEncoding()
-                        });
-
-                        return postJson(appConfig.subscribeUrl, payload).then(function () {
-                            updatePushButtons("enabled");
-                            showStatusBanner("online", "Push notifications enabled for this device.", true);
-                            if (appConfig.testUrl) {
-                                return postJson(appConfig.testUrl, {}).catch(function () {
-                                    return {};
-                                });
-                            }
-                            return {};
-                        });
-                    });
+                    return subscribeToPush(registration);
                 });
+            }).catch(function (error) {
+                updatePushButtons(Notification.permission === "denied" ? "blocked" : "default");
+                showStatusBanner("offline", error && error.message ? error.message : "Push notifications could not be changed.", true);
             });
-        }).catch(function (error) {
-            updatePushButtons(Notification.permission === "denied" ? "blocked" : "default");
-            showStatusBanner("offline", error && error.message ? error.message : "Push notifications could not be changed.", true);
+            return;
+        }
+
+        // Permission is "default" — request it immediately, directly in the click handler,
+        // before any async service-worker chains. Mobile browsers (especially Safari) require
+        // the permission prompt to be triggered within the user gesture and will silently skip
+        // it if it is called inside nested Promise callbacks.
+        Notification.requestPermission().then(function (permission) {
+            if (permission !== "granted") {
+                updatePushButtons(permission === "denied" ? "blocked" : "default");
+                if (permission === "denied") {
+                    showStatusBanner("offline", "Push notifications were blocked by the browser.", true);
+                }
+                return;
+            }
+
+            serviceWorkerRegistrationPromise.then(function (registration) {
+                if (!registration || !registration.pushManager) {
+                    throw new Error("Push manager is unavailable.");
+                }
+
+                return subscribeToPush(registration);
+            }).catch(function (error) {
+                updatePushButtons(Notification.permission === "denied" ? "blocked" : "default");
+                showStatusBanner("offline", error && error.message ? error.message : "Push notifications could not be changed.", true);
+            });
         });
     }
 
