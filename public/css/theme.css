@@ -4481,7 +4481,7 @@ body.slams-app {
    ============================================================ */
 .wizard-viewport {
     position: relative;
-    overflow: hidden;
+    /* overflow toggled via JS only during slide animation */
 }
 
 @keyframes wizard-exit-fwd {

@@ -691,7 +691,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         const viewport = document.getElementById("wizardViewport");
-        if (viewport) viewport.style.minHeight = fromEl.offsetHeight + "px";
+        if (viewport) {
+            viewport.style.minHeight = fromEl.offsetHeight + "px";
+            viewport.style.overflow  = "hidden";
+        }
 
         const exitCls  = forward ? "wiz-exit-fwd"  : "wiz-exit-back";
         const enterCls = forward ? "wiz-enter-fwd" : "wiz-enter-back";
@@ -704,7 +707,10 @@ document.addEventListener("DOMContentLoaded", () => {
             fromEl.classList.remove(exitCls);
             fromEl.classList.add("d-none");
             toEl.classList.remove(enterCls);
-            if (viewport) viewport.style.minHeight = "";
+            if (viewport) {
+                viewport.style.overflow  = "";
+                viewport.style.minHeight = "";
+            }
             isAnimating = false;
             onStepShown(toStep);
         }, 340);
@@ -982,6 +988,40 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
+
+    // Lock viewport to the tallest step on every modal open so the
+    // window never shrinks/grows as the user navigates between steps.
+    document.getElementById("bookingModal").addEventListener("shown.bs.modal", () => {
+        const viewport = document.getElementById("wizardViewport");
+        if (!viewport) return;
+
+        const steps  = Array.from(document.querySelectorAll(".wizard-step"));
+        const hidden = steps.map(s => s.classList.contains("d-none"));
+
+        // Reveal all steps invisibly to measure their natural heights
+        steps.forEach((s, i) => {
+            if (hidden[i]) {
+                s.classList.remove("d-none");
+                s.style.visibility = "hidden";
+                s.style.position   = "absolute";
+                s.style.width      = viewport.offsetWidth + "px";
+            }
+        });
+
+        const maxH = Math.max(...steps.map(s => s.scrollHeight));
+
+        // Restore
+        steps.forEach((s, i) => {
+            if (hidden[i]) {
+                s.classList.add("d-none");
+                s.style.visibility = "";
+                s.style.position   = "";
+                s.style.width      = "";
+            }
+        });
+
+        viewport.style.minHeight = maxH + "px";
+    });
 
     // Initial
     renderSelectedServiceSummary(null);
