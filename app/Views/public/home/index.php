@@ -12,6 +12,7 @@ $approvedCount = (int) ($homeStats['approved'] ?? 0);
      HERO SECTION
      ============================================================ -->
 <div class="home-page">
+<div class="slams-scroll-progress" aria-hidden="true"></div>
 <section class="hero-section">
     <div class="video-background" aria-hidden="true">
         <video class="hero-video" autoplay muted loop playsinline preload="auto">
