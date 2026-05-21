@@ -222,7 +222,7 @@
                 const el = entry.target;
                 const target = parseInt(el.textContent.replace(/\D/g, ""), 10);
                 if (isNaN(target) || target === 0) return;
-                const duration = 2200;
+                const duration = 1600;
                 const start = performance.now();
                 function tick(now) {
                     const progress = Math.min((now - start) / duration, 1);
