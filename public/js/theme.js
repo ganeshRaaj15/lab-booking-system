@@ -222,11 +222,15 @@
                 const el = entry.target;
                 const target = parseInt(el.textContent.replace(/\D/g, ""), 10);
                 if (isNaN(target) || target === 0) return;
-                const duration = 1200;
+                const duration = 2200;
                 const start = performance.now();
                 function tick(now) {
                     const progress = Math.min((now - start) / duration, 1);
-                    const eased = 1 - Math.pow(1 - progress, 3);
+                    // easeInOutCubic — starts slow so the user sees it begin from near 0,
+                    // accelerates through the middle, then decelerates into the final value
+                    const eased = progress < 0.5
+                        ? 4 * progress * progress * progress
+                        : 1 - Math.pow(-2 * progress + 2, 3) / 2;
                     el.textContent = Math.round(eased * target);
                     if (progress < 1) requestAnimationFrame(tick);
                 }
