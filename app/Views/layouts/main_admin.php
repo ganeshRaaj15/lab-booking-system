@@ -1,9 +1,5 @@
 <?php
 helper(['url', 'asset', 'auth']);
-use App\Libraries\WebPushConfiguration;
-
-$webPushClient = (new WebPushConfiguration())->clientConfig();
-$pushLoggedIn = function_exists('auth') && auth()->loggedIn();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -30,15 +26,7 @@ $pushLoggedIn = function_exists('auth') && auth()->loggedIn();
     <?= $this->renderSection('styles') ?>
 </head>
 
-<body
-    class="slams-app slams-mobile-app slams-layout-admin"
-    data-user-logged-in="<?= $pushLoggedIn ? '1' : '0' ?>"
-    data-push-configured="<?= !empty($webPushClient['configured']) ? '1' : '0' ?>"
-    data-push-public-key="<?= esc($webPushClient['publicKey'] ?? '') ?>"
-    data-push-subscribe-url="/dashboard/push/subscribe"
-    data-push-unsubscribe-url="/dashboard/push/unsubscribe"
-    data-push-test-url="/dashboard/push/test"
->
+<body class="slams-app slams-mobile-app slams-layout-admin">
     <?= $this->include('components/sidebar_admin') ?>
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 

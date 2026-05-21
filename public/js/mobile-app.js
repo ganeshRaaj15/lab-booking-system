@@ -1,101 +1,10 @@
 (function () {
     "use strict";
 
-    var serviceWorkerRegistrationPromise = null;
     var pendingServiceWorker = null;
     var shouldReloadForUpdate = false;
     var updateBanner = null;
     var statusBanner = null;
-    var pushControls = [];
-    var mobilePushPills = [];
-    var appConfig = {
-        loggedIn: false,
-        pushConfigured: false,
-        pushPublicKey: "",
-        subscribeUrl: "",
-        unsubscribeUrl: "",
-        testUrl: ""
-    };
-
-    function readAppConfig() {
-        var body = document.body;
-        if (!body) {
-            return;
-        }
-
-        appConfig.loggedIn = body.dataset.userLoggedIn === "1";
-        appConfig.pushConfigured = body.dataset.pushConfigured === "1";
-        appConfig.pushPublicKey = body.dataset.pushPublicKey || "";
-        appConfig.subscribeUrl = body.dataset.pushSubscribeUrl || "";
-        appConfig.unsubscribeUrl = body.dataset.pushUnsubscribeUrl || "";
-        appConfig.testUrl = body.dataset.pushTestUrl || "";
-    }
-
-    function csrfHeaders() {
-        var meta = document.getElementById("slams-csrf-meta");
-        if (!meta) {
-            return {};
-        }
-
-        var headers = {};
-        headers[meta.name] = meta.content;
-        return headers;
-    }
-
-    function postJson(url, payload) {
-        var headers = csrfHeaders();
-        headers["Content-Type"] = "application/json";
-        headers["X-Requested-With"] = "XMLHttpRequest";
-
-        return fetch(url, {
-            method: "POST",
-            headers: headers,
-            credentials: "same-origin",
-            body: JSON.stringify(payload || {})
-        }).then(function (response) {
-            return response.json().catch(function () {
-                return {};
-            }).then(function (data) {
-                if (!response.ok) {
-                    var error = new Error(data.message || "Request failed.");
-                    error.payload = data;
-                    throw error;
-                }
-
-                return data;
-            });
-        });
-    }
-
-    function urlBase64ToUint8Array(base64String) {
-        var padding = "=".repeat((4 - base64String.length % 4) % 4);
-        var base64 = (base64String + padding)
-            .replace(/-/g, "+")
-            .replace(/_/g, "/");
-
-        var rawData = window.atob(base64);
-        var outputArray = new Uint8Array(rawData.length);
-
-        for (var i = 0; i < rawData.length; ++i) {
-            outputArray[i] = rawData.charCodeAt(i);
-        }
-
-        return outputArray;
-    }
-
-    function supportedContentEncoding() {
-        if (window.PushManager && Array.isArray(window.PushManager.supportedContentEncodings)) {
-            if (window.PushManager.supportedContentEncodings.indexOf("aes128gcm") !== -1) {
-                return "aes128gcm";
-            }
-
-            if (window.PushManager.supportedContentEncodings.indexOf("aesgcm") !== -1) {
-                return "aesgcm";
-            }
-        }
-
-        return "aes128gcm";
-    }
 
     function ensureStatusBanner() {
         if (!statusBanner) {
@@ -196,75 +105,6 @@
         }
     }
 
-    function setPushStatus(text, state) {
-        mobilePushPills.forEach(function (pill) {
-            pill.textContent = text;
-            pill.classList.remove("is-enabled", "is-blocked");
-            if (state === "enabled") {
-                pill.classList.add("is-enabled");
-            } else if (state === "blocked") {
-                pill.classList.add("is-blocked");
-            }
-        });
-    }
-
-    function updatePushButtons(mode) {
-        var iconClass = "bi-bell";
-        var label = "Enable push notifications";
-        var title = "Enable push notifications";
-        var state = "default";
-
-        if (mode === "enabled") {
-            iconClass = "bi-bell-fill";
-            label = "Disable push notifications";
-            title = "Disable push notifications";
-            state = "enabled";
-            setPushStatus("Push on", "enabled");
-        } else if (mode === "blocked") {
-            iconClass = "bi-bell-slash-fill";
-            label = "Push notifications blocked by browser";
-            title = "Push notifications blocked by browser";
-            state = "blocked";
-            setPushStatus("Push blocked", "blocked");
-        } else if (mode === "unsupported") {
-            label = "Push notifications unavailable on this browser";
-            title = "Push notifications unavailable on this browser";
-            setPushStatus("Push unsupported", "blocked");
-        } else if (mode === "unavailable") {
-            label = "Push notifications are not configured on the server";
-            title = "Push notifications are not configured on the server";
-            setPushStatus("Push unavailable", "blocked");
-        } else {
-            setPushStatus("Push off", "default");
-        }
-
-        pushControls.forEach(function (button) {
-            button.hidden = mode === "unsupported";
-            button.setAttribute("aria-label", label);
-            button.setAttribute("title", title);
-            button.classList.toggle("is-enabled", state === "enabled");
-            button.classList.toggle("is-blocked", state === "blocked");
-            if (button.querySelector("i")) {
-                button.querySelector("i").className = "bi " + iconClass;
-            }
-        });
-    }
-
-    function pushSupported() {
-        return !!(window.isSecureContext && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window);
-    }
-
-    function isIosBrowserNotStandalone() {
-        // iOS only supports web push for sites installed as a home-screen PWA (standalone mode).
-        // Detect iOS Safari running in a regular browser tab so we can guide the user instead
-        // of silently failing when they try to enable notifications.
-        if (!/iphone|ipad|ipod/i.test(navigator.userAgent)) {
-            return false;
-        }
-        var standalone = window.navigator.standalone || window.matchMedia("(display-mode: standalone)").matches;
-        return !standalone;
-    }
-
     function showUpdateBanner(registration) {
         var banner = ensureUpdateBanner();
         if (!banner) {
@@ -316,152 +156,6 @@
         });
     }
 
-    function syncExistingPushSubscription() {
-        if (!pushSupported() || !appConfig.loggedIn || !appConfig.pushConfigured || Notification.permission !== "granted" || !serviceWorkerRegistrationPromise) {
-            return Promise.resolve();
-        }
-
-        return serviceWorkerRegistrationPromise.then(function (registration) {
-            if (!registration || !registration.pushManager) {
-                return;
-            }
-
-            return registration.pushManager.getSubscription().then(function (subscription) {
-                if (!subscription) {
-                    updatePushButtons("default");
-                    return;
-                }
-
-                return postJson(appConfig.subscribeUrl, Object.assign({}, subscription.toJSON(), {
-                    contentEncoding: supportedContentEncoding()
-                })).then(function () {
-                    updatePushButtons("enabled");
-                }).catch(function () {
-                    updatePushButtons("default");
-                });
-            });
-        });
-    }
-
-    function subscribeToPush(registration) {
-        return registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(appConfig.pushPublicKey)
-        }).then(function (subscription) {
-            var payload = Object.assign({}, subscription.toJSON(), {
-                contentEncoding: supportedContentEncoding()
-            });
-
-            return postJson(appConfig.subscribeUrl, payload).then(function () {
-                updatePushButtons("enabled");
-                showStatusBanner("online", "Push notifications enabled for this device.", true);
-                if (appConfig.testUrl) {
-                    return postJson(appConfig.testUrl, {}).catch(function () {
-                        return {};
-                    });
-                }
-                return {};
-            });
-        });
-    }
-
-    function handlePushToggle() {
-        if (!appConfig.loggedIn) {
-            showStatusBanner("offline", "Sign in first before enabling push notifications.", true);
-            return;
-        }
-
-        if (!pushSupported()) {
-            updatePushButtons("unsupported");
-            showStatusBanner("offline", "This browser does not support web push notifications.", true);
-            return;
-        }
-
-        if (!appConfig.pushConfigured || !appConfig.pushPublicKey) {
-            updatePushButtons("unavailable");
-            showStatusBanner("offline", "Web push is not configured on the server yet.", true);
-            return;
-        }
-
-        if (Notification.permission === "denied") {
-            updatePushButtons("blocked");
-            showStatusBanner("offline", "Push notifications are blocked in your browser settings.", true);
-            return;
-        }
-
-        if (!serviceWorkerRegistrationPromise) {
-            showStatusBanner("offline", "The mobile worker is still starting. Try again in a moment.", true);
-            return;
-        }
-
-        if (isIosBrowserNotStandalone()) {
-            showStatusBanner(“offline”, “To enable push notifications on iOS, add SLAMS to your Home Screen first: tap the Share button in Safari then select “Add to Home Screen”.”, true);
-            return;
-        }
-
-        // Permission already granted — check for an existing subscription and toggle it.
-        if (Notification.permission === "granted") {
-            serviceWorkerRegistrationPromise.then(function (registration) {
-                if (!registration || !registration.pushManager) {
-                    throw new Error("Push manager is unavailable.");
-                }
-
-                return registration.pushManager.getSubscription().then(function (existingSubscription) {
-                    if (existingSubscription) {
-                        if (!window.confirm("Disable push notifications for this device?")) {
-                            return null;
-                        }
-
-                        return postJson(appConfig.unsubscribeUrl, {
-                            endpoint: existingSubscription.endpoint
-                        }).catch(function () {
-                            return {};
-                        }).then(function () {
-                            return existingSubscription.unsubscribe().catch(function () {
-                                return false;
-                            }).then(function () {
-                                updatePushButtons("default");
-                                showStatusBanner("online", "Push notifications disabled for this device.", true);
-                                return null;
-                            });
-                        });
-                    }
-
-                    return subscribeToPush(registration);
-                });
-            }).catch(function (error) {
-                updatePushButtons(Notification.permission === "denied" ? "blocked" : "default");
-                showStatusBanner("offline", error && error.message ? error.message : "Push notifications could not be changed.", true);
-            });
-            return;
-        }
-
-        // Permission is "default" — request it immediately, directly in the click handler,
-        // before any async service-worker chains. Mobile browsers (especially Safari) require
-        // the permission prompt to be triggered within the user gesture and will silently skip
-        // it if it is called inside nested Promise callbacks.
-        Notification.requestPermission().then(function (permission) {
-            if (permission !== "granted") {
-                updatePushButtons(permission === "denied" ? "blocked" : "default");
-                if (permission === "denied") {
-                    showStatusBanner("offline", "Push notifications were blocked by the browser.", true);
-                }
-                return;
-            }
-
-            serviceWorkerRegistrationPromise.then(function (registration) {
-                if (!registration || !registration.pushManager) {
-                    throw new Error("Push manager is unavailable.");
-                }
-
-                return subscribeToPush(registration);
-            }).catch(function (error) {
-                updatePushButtons(Notification.permission === "denied" ? "blocked" : "default");
-                showStatusBanner("offline", error && error.message ? error.message : "Push notifications could not be changed.", true);
-            });
-        });
-    }
-
     if ("serviceWorker" in navigator) {
         window.addEventListener("load", function () {
             var currentScript = document.currentScript || document.querySelector('script[src*="mobile-app.js"]');
@@ -472,15 +166,12 @@
 
             serviceWorkerUrl.search = scriptUrl.search;
 
-            serviceWorkerRegistrationPromise = navigator.serviceWorker.register(serviceWorkerUrl.href, {
+            navigator.serviceWorker.register(serviceWorkerUrl.href, {
                 updateViaCache: "none"
             }).then(function (registration) {
                 bindServiceWorkerLifecycle(registration);
-                syncExistingPushSubscription();
-                return registration;
             }).catch(function () {
                 // The app still works normally if service worker registration is unavailable.
-                return null;
             });
         });
 
@@ -508,38 +199,12 @@
     });
 
     document.addEventListener("DOMContentLoaded", function () {
-        readAppConfig();
         setupUpdateButton();
         loadLastSync();
         refreshNetworkStatus();
-        pushControls = Array.prototype.slice.call(document.querySelectorAll("[data-push-toggle], [data-mobile-push-toggle]"));
-        mobilePushPills = Array.prototype.slice.call(document.querySelectorAll("[data-mobile-push-status]"));
-
-        if (!pushSupported()) {
-            updatePushButtons("unsupported");
-        } else if (!appConfig.loggedIn) {
-            updatePushButtons("unsupported");
-        } else if (!appConfig.pushConfigured) {
-            updatePushButtons("unavailable");
-        } else if (Notification.permission === "denied") {
-            updatePushButtons("blocked");
-            pushControls.forEach(function (button) {
-                button.hidden = false;
-            });
-        } else {
-            updatePushButtons("default");
-            pushControls.forEach(function (button) {
-                button.hidden = false;
-            });
-        }
-
-        pushControls.forEach(function (button) {
-            button.addEventListener("click", handlePushToggle);
-        });
 
         if (navigator.onLine !== false) {
             updateLastSync(new Date());
         }
-
     });
 })();
