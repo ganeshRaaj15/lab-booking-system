@@ -14,8 +14,7 @@
         "codeigniter4/framework": "^4.0",
         "codeigniter4/shield": "^1.2",
         "dompdf/dompdf": "^3.1",
-        "minishlink/web-push": "^8.0",
-        "phpoffice/phpspreadsheet": "^5.7"
+        "minishlink/web-push": "^8.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.9",

@@ -39,9 +39,8 @@ class NativeReportController extends BaseController
             'status' => 'success',
             'report' => $report,
             'exports' => [
-                'pdf_url'   => base_url('/api/native/reports/export/pdf'),
-                'csv_url'   => base_url('/api/native/reports/export/csv'),
-                'excel_url' => base_url('/api/native/reports/export/excel'),
+                'pdf_url' => base_url('/api/native/reports/export/pdf'),
+                'csv_url' => base_url('/api/native/reports/export/csv'),
             ],
         ]);
     }
@@ -81,22 +80,6 @@ class NativeReportController extends BaseController
             ->setHeader('Content-Type', 'text/csv; charset=UTF-8')
             ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
             ->setBody($this->builder->buildCsv($data));
-    }
-
-    public function downloadExcel()
-    {
-        $user = $this->authorizedUser();
-        if (! $user instanceof User) {
-            return $user;
-        }
-
-        $data = $this->builder->build($user);
-        $filename = 'slams-report-' . $data['role'] . '-' . date('Ymd_His') . '.xlsx';
-
-        return $this->response
-            ->setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
-            ->setBody($this->builder->buildExcel($data));
     }
 
     protected function authorizedUser()

@@ -13,34 +13,13 @@
             <div class="small text-muted mt-2">Scope: <?= esc($scopeLabel) ?></div>
         </div>
         <div class="reports-export-group">
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-                <label class="form-label mb-0 text-muted small">Export report as</label>
-                <div class="input-group input-group-sm" style="width:auto">
-                    <select id="exportFormatSelect" class="form-select form-select-sm">
-                        <option value="pdf">PDF</option>
-                        <option value="excel">Excel (.xlsx)</option>
-                        <option value="csv">CSV</option>
-                    </select>
-                    <a id="exportFormatBtn" href="<?= esc($summaryExportUrls['pdf']) ?>" class="btn btn-primary btn-sm">
-                        <i class="bi bi-download me-1"></i> Export
-                    </a>
-                </div>
-            </div>
+            <a href="<?= esc($summaryExportUrls['pdf']) ?>" class="btn btn-outline-primary">
+                <i class="bi bi-file-earmark-pdf me-1"></i> Export Summary PDF
+            </a>
+            <a href="<?= esc($summaryExportUrls['csv']) ?>" class="btn btn-outline-success">
+                <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export Summary CSV
+            </a>
         </div>
-        <script>
-        (function () {
-            var urls = {
-                pdf:   '<?= esc($summaryExportUrls['pdf'], 'js') ?>',
-                excel: '<?= esc($summaryExportUrls['excel'], 'js') ?>',
-                csv:   '<?= esc($summaryExportUrls['csv'], 'js') ?>'
-            };
-            var select = document.getElementById('exportFormatSelect');
-            var btn    = document.getElementById('exportFormatBtn');
-            if (select && btn) {
-                select.addEventListener('change', function () { btn.href = urls[this.value] || '#'; });
-            }
-        })();
-        </script>
     </div>
 
     <?= view('reports/partials/module_nav', ['navItems' => $navItems]) ?>

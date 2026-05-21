@@ -44,27 +44,6 @@ class ReportController extends BaseController
             ->setBody($this->buildCsv($data));
     }
 
-    public function downloadExcel()
-    {
-        $data = $this->buildReportData();
-        if (! is_array($data)) {
-            return $data;
-        }
-
-        $filename = 'slams-report-' . $data['role'] . '-' . date('Ymd_His') . '.xlsx';
-
-        return $this->response
-            ->setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
-            ->setBody($this->buildExcel($data));
-    }
-
-    private function buildExcel(array $data): string
-    {
-        $builder = new \App\Libraries\ReportSnapshotBuilder();
-        return $builder->buildExcel($data);
-    }
-
     private function buildReportData()
     {
         helper('auth');
