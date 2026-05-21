@@ -13,13 +13,34 @@
             <div class="small text-muted mt-2">Scope: <?= esc($scopeLabel) ?></div>
         </div>
         <div class="reports-export-group">
-            <a href="<?= esc($exportUrls['pdf']) ?>" class="btn btn-outline-primary">
-                <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
-            </a>
-            <a href="<?= esc($exportUrls['csv']) ?>" class="btn btn-outline-success">
-                <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
-            </a>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <label class="form-label mb-0 text-muted small">Export report as</label>
+                <div class="input-group input-group-sm" style="width:auto">
+                    <select id="exportFormatSelect" class="form-select form-select-sm">
+                        <option value="pdf">PDF</option>
+                        <option value="excel">Excel (.xlsx)</option>
+                        <option value="csv">CSV</option>
+                    </select>
+                    <a id="exportFormatBtn" href="<?= esc($exportUrls['pdf']) ?>" class="btn btn-primary btn-sm">
+                        <i class="bi bi-download me-1"></i> Export
+                    </a>
+                </div>
+            </div>
         </div>
+        <script>
+        (function () {
+            var urls = {
+                pdf:   '<?= esc($exportUrls['pdf'], 'js') ?>',
+                excel: '<?= esc($exportUrls['excel'], 'js') ?>',
+                csv:   '<?= esc($exportUrls['csv'], 'js') ?>'
+            };
+            var select = document.getElementById('exportFormatSelect');
+            var btn    = document.getElementById('exportFormatBtn');
+            if (select && btn) {
+                select.addEventListener('change', function () { btn.href = urls[this.value] || '#'; });
+            }
+        })();
+        </script>
     </div>
 
     <?= view('reports/partials/module_nav', ['navItems' => $navItems]) ?>

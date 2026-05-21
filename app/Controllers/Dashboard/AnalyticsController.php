@@ -244,8 +244,9 @@ class AnalyticsController extends BaseController
             'scopeLabel'                => $scopeLabel,
             'summaryCards'              => $summaryCards,
             'summaryExportUrls'         => [
-                'pdf' => site_url('/dashboard/reports/pdf'),
-                'csv' => site_url('/dashboard/reports/csv'),
+                'pdf'   => site_url('/dashboard/reports/pdf'),
+                'excel' => site_url('/dashboard/reports/excel'),
+                'csv'   => site_url('/dashboard/reports/csv'),
             ],
             'charts'                    => $charts,
             'mostUsedLabs'              => $mostUsedLabs,

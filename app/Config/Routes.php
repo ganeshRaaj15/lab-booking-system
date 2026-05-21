@@ -114,6 +114,7 @@ $routes->group('api/native', ['filter' => 'tokens'], static function ($routes) {
     $routes->get('reports', [NativeReportController::class, 'show']);
     $routes->get('reports/export/pdf', [NativeReportController::class, 'downloadPdf']);
     $routes->get('reports/export/csv', [NativeReportController::class, 'downloadCsv']);
+    $routes->get('reports/export/excel', [NativeReportController::class, 'downloadExcel']);
 
     $routes->get('bookings', [NativeBookingController::class, 'index']);
     $routes->get('bookings/(:num)', [NativeBookingController::class, 'show/$1']);
@@ -434,6 +435,7 @@ $routes->group('dashboard', ['filter' => 'session'], function ($routes) {
     $routes->get('reports/analytics', [AnalyticsController::class, 'index'], ['filter' => 'group:pic,manager,admin']);
     $routes->get('reports/pdf', [ReportController::class, 'download'], ['filter' => 'group:pic,manager,admin']);
     $routes->get('reports/csv', [ReportController::class, 'downloadCsv'], ['filter' => 'group:pic,manager,admin']);
+    $routes->get('reports/excel', [ReportController::class, 'downloadExcel'], ['filter' => 'group:pic,manager,admin']);
     $routes->get('notifications', [NotificationController::class, 'index']);
     $routes->post('notifications/read/(:num)', [NotificationController::class, 'markRead/$1']);
     $routes->post('notifications/mark-all-read', [NotificationController::class, 'markAllRead']);

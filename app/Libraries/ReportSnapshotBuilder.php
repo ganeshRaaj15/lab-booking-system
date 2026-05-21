@@ -399,6 +399,142 @@ class ReportSnapshotBuilder
         return $csv ?: '';
     }
 
+    public function buildExcel(array $data): string
+    {
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $spreadsheet->getProperties()
+            ->setTitle($data['reportTitle'] ?? 'SLAMS Report')
+            ->setCreator('SLAMS');
+
+        $this->excelSheet($spreadsheet, 'Summary', [
+            ['SLAMS Report', $data['reportTitle'] ?? ''],
+            ['Scope', $data['scopeLabel'] ?? ''],
+            ['Generated', $data['generatedAt'] ?? ''],
+            [],
+            ['KPI', 'Value'],
+            ...array_filter(
+                array_map(
+                    static fn($label, $value) => $value !== null
+                        ? [ucwords(str_replace('_', ' ', (string) $label)), $value]
+                        : null,
+                    array_keys($data['kpis'] ?? []),
+                    array_values($data['kpis'] ?? [])
+                ),
+                static fn($row) => $row !== null
+            ),
+        ]);
+
+        $bookingRows = [['Status', 'Total']];
+        foreach (($data['statusMap'] ?? []) as $status => $total) {
+            $bookingRows[] = [$status, $total];
+        }
+        $this->excelSheet($spreadsheet, 'Bookings', $bookingRows);
+
+        $maintRows = [['Status', 'Total']];
+        foreach (($data['maintenanceStatus'] ?? []) as $status => $total) {
+            $maintRows[] = [ucwords(str_replace('_', ' ', (string) $status)), $total];
+        }
+        $this->excelSheet($spreadsheet, 'Maintenance', $maintRows);
+
+        $assetRows = [['Status', 'Total']];
+        foreach (($data['assetTotals'] ?? []) as $status => $total) {
+            $assetRows[] = [ucwords((string) $status), $total];
+        }
+        $this->excelSheet($spreadsheet, 'Assets', $assetRows);
+
+        $labRows = [['Lab Name', 'Bookings']];
+        foreach (($data['topLabs'] ?? []) as $lab) {
+            $labRows[] = [$lab['lab_name'] ?? '-', $lab['total'] ?? 0];
+        }
+        $this->excelSheet($spreadsheet, 'Top Labs', $labRows);
+
+        $trendRows = [['Month', 'Bookings', 'Maintenance']];
+        $bookingByMonth = [];
+        foreach (($data['monthlyTrend'] ?? []) as $m) {
+            $bookingByMonth[$m['month'] ?? ''] = $m['total'] ?? 0;
+        }
+        $maintByMonth = [];
+        foreach (($data['maintenanceTrend'] ?? []) as $m) {
+            $maintByMonth[$m['month'] ?? ''] = $m['total'] ?? 0;
+        }
+        $allMonths = array_unique(array_merge(array_keys($bookingByMonth), array_keys($maintByMonth)));
+        sort($allMonths);
+        foreach ($allMonths as $month) {
+            $trendRows[] = [$month, $bookingByMonth[$month] ?? 0, $maintByMonth[$month] ?? 0];
+        }
+        $this->excelSheet($spreadsheet, 'Monthly Trend', $trendRows);
+
+        $upcomingRows = [['Laboratory', 'Date', 'Time', 'Status', 'Flow']];
+        foreach (($data['upcomingBookings'] ?? []) as $booking) {
+            $upcomingRows[] = [
+                $booking['lab_name'] ?? '-',
+                $booking['date'] ?? '-',
+                trim(($booking['start_time'] ?? '-') . ' - ' . ($booking['end_time'] ?? '-')),
+                $booking['status'] ?? '-',
+                $booking['approval_flow'] ?? '-',
+            ];
+        }
+        $this->excelSheet($spreadsheet, 'Upcoming', $upcomingRows);
+
+        $labInfoRows = [['Lab Name', 'Room', 'PIC', 'PIC Email']];
+        foreach (($data['labs'] ?? []) as $lab) {
+            $labInfoRows[] = [
+                $lab['name'] ?? '-',
+                $lab['room'] ?? '-',
+                $lab['pic_name'] ?? '-',
+                $lab['pic_email'] ?? '-',
+            ];
+        }
+        $this->excelSheet($spreadsheet, 'Laboratories', $labInfoRows);
+
+        $spreadsheet->setActiveSheetIndex(0);
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        ob_start();
+        $writer->save('php://output');
+        return (string) ob_get_clean();
+    }
+
+    private function excelSheet(\PhpOffice\PhpSpreadsheet\Spreadsheet $spreadsheet, string $title, array $rows): void
+    {
+        static $sheetIndex = 0;
+
+        if ($sheetIndex === 0) {
+            $sheet = $spreadsheet->getActiveSheet();
+        } else {
+            $sheet = $spreadsheet->createSheet();
+        }
+        $sheetIndex++;
+
+        $sheet->setTitle($title);
+
+        foreach ($rows as $rowIndex => $row) {
+            if (empty($row)) {
+                continue;
+            }
+            foreach (array_values($row) as $colIndex => $value) {
+                $sheet->setCellValueByColumnAndRow($colIndex + 1, $rowIndex + 1, $value);
+            }
+        }
+
+        if (!empty($rows[0])) {
+            $headerStyle = [
+                'font' => ['bold' => true],
+                'fill' => [
+                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => 'DBEAFE'],
+                ],
+            ];
+            $colCount = count($rows[0]);
+            $lastCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colCount);
+            $sheet->getStyle("A1:{$lastCol}1")->applyFromArray($headerStyle);
+        }
+
+        foreach (range(1, count($rows[0] ?? [1])) as $col) {
+            $sheet->getColumnDimensionByColumn($col)->setAutoSize(true);
+        }
+    }
+
     protected function reportRole(User $user): string
     {
         return $this->roleResolver->approvalRole($user) ?? 'user';
