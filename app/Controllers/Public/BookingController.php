@@ -354,7 +354,7 @@ class BookingController extends BaseController
         $assetsRaw = $this->request->getPost('asset_selection');
 
         if ($serviceId <= 0 || $this->findLabService($labId, $serviceId) === null) {
-            return $this->response->setJSON([
+            return $this->slotJson([
                 'conflict' => true,
                 'reason' => 'Please choose a valid laboratory service before checking availability.'
             ]);
@@ -363,7 +363,7 @@ class BookingController extends BaseController
         $selected = $this->resolveSelectedAssets($labId, $serviceId, is_string($assetsRaw) ? $assetsRaw : null);
 
         if (!$labId || !$date || !$startTime || !$endTime || empty($selected)) {
-            return $this->response->setJSON([
+            return $this->slotJson([
                 'conflict' => true,
                 'reason' => 'Missing data or no linked equipment is available for the selected service.'
             ]);
@@ -372,14 +372,14 @@ class BookingController extends BaseController
         $start = $this->normalizeTime($startTime);
         $end   = $this->normalizeTime($endTime);
         if ($start >= $end) {
-            return $this->response->setJSON([
+            return $this->slotJson([
                 'conflict' => true,
                 'reason'   => 'End time must be later than start time.'
             ]);
         }
 
         if ($this->findMatchingSlotDefinition($start, $end) === null) {
-            return $this->response->setJSON([
+            return $this->slotJson([
                 'conflict' => true,
                 'reason'   => 'Please choose one of the configured booking sessions for this laboratory.',
             ]);
@@ -389,7 +389,7 @@ class BookingController extends BaseController
         $now   = date('H:i:s');
 
         if ($date < $today || ($date === $today && $end <= $now)) {
-            return $this->response->setJSON([
+            return $this->slotJson([
                 'conflict' => true,
                 'reason'   => 'Slot is already in the past.'
             ]);
@@ -397,7 +397,7 @@ class BookingController extends BaseController
 
         $bookingModel = new BookingModel();
         if ($bookingModel->hasLabConflict($labId, $date, $start, $end)) {
-            return $this->response->setJSON([
+            return $this->slotJson([
                 'conflict' => true,
                 'reason'   => 'This laboratory already has an active booking for that time.'
             ]);
@@ -409,11 +409,22 @@ class BookingController extends BaseController
 
         foreach ($selected as $id => $need) {
             if (($remaining[$id] ?? 0) < $need) {
-                return $this->response->setJSON(['conflict' => true]);
+                return $this->slotJson(['conflict' => true]);
             }
         }
 
-        return $this->response->setJSON(['conflict' => false]);
+        return $this->slotJson(['conflict' => false]);
+    }
+
+    // Appends the refreshed CSRF token to every check-slot response so the client
+    // can update its local token before the subsequent submit request. CI4 regenerates
+    // the token on every successful CSRF validation, so the value baked into the page
+    // at render time is stale after the first POST.
+    private function slotJson(array $data): ResponseInterface
+    {
+        return $this->response->setJSON(array_merge($data, [
+            csrf_token() => csrf_hash(),
+        ]));
     }
 
     /*

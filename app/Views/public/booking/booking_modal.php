@@ -543,6 +543,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 body: fd
             });
             const data = await res.json();
+
+            // CI4 regenerates the CSRF token on every validated POST. Refresh the local
+            // variable and the hidden form field so the subsequent submit uses the new hash.
+            const freshToken = data[csrfTokenName];
+            if (freshToken) {
+                csrfTokenValue = freshToken;
+                const csrfInput = form.querySelector(`input[name="${csrfTokenName}"]`);
+                if (csrfInput) csrfInput.value = freshToken;
+            }
+
             slotConflict = !!data.conflict;
 
             if (slotConflict) {
