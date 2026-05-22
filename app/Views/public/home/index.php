@@ -16,7 +16,7 @@ $approvedCount = (int) ($homeStats['approved'] ?? 0);
 <section class="hero-section">
     <div class="video-background" aria-hidden="true">
         <video class="hero-video" autoplay muted loop playsinline preload="auto">
-            <source src="<?= base_url('images/uthm-aerial-compressed.mp4') ?>" type="video/mp4">
+            <source src="<?= slams_asset('images/uthm-aerial-compressed.mp4') ?>" type="video/mp4">
         </video>
     </div>
     
