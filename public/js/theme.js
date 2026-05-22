@@ -258,7 +258,15 @@
             return;
         }
 
+        const videoBackground = heroVideo.closest(".video-background");
+
         let playAttempted = false;
+
+        const setVideoReady = function (ready) {
+            if (videoBackground) {
+                videoBackground.classList.toggle("video-ready", ready);
+            }
+        };
 
         const attemptPlay = function () {
             if (document.visibilityState === "hidden") {
@@ -278,9 +286,22 @@
             if (playPromise && typeof playPromise.catch === "function") {
                 playPromise.catch(function () {
                     // Leave the CSS fallback image visible when autoplay is denied.
+                    setVideoReady(false);
                 });
             }
         };
+
+        heroVideo.addEventListener("playing", function () {
+            setVideoReady(true);
+        });
+
+        heroVideo.addEventListener("error", function () {
+            setVideoReady(false);
+        });
+
+        heroVideo.addEventListener("emptied", function () {
+            setVideoReady(false);
+        });
 
         heroVideo.addEventListener("canplay", attemptPlay, { once: true });
         heroVideo.addEventListener("loadeddata", attemptPlay, { once: true });

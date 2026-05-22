@@ -2105,6 +2105,10 @@ input::placeholder {
     filter: var(--slams-hero-video-filter);
 }
 
+.video-background.video-ready {
+    background: none;
+}
+
 .hero-video {
     position: absolute;
     inset: 0;
