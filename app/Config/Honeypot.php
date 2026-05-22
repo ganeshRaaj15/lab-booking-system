@@ -31,7 +31,7 @@ class Honeypot extends BaseConfig
      *
      * If you enabled CSP, you can remove `style="display:none"`.
      */
-    public string $container = '<div style="display:none">{template}</div>';
+    public string $container = '<div>{template}</div>';
 
     /**
      * The id attribute for Honeypot container tag
