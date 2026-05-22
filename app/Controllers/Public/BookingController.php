@@ -418,12 +418,13 @@ class BookingController extends BaseController
 
     // Appends the refreshed CSRF token to every check-slot response so the client
     // can update its local token before the subsequent submit request. CI4 regenerates
-    // the token on every successful CSRF validation, so the value baked into the page
-    // at render time is stale after the first POST.
+    // both the token name and value on every successful CSRF validation when tokenRandomize
+    // is enabled, so fixed keys are used here rather than the dynamic token name.
     private function slotJson(array $data): ResponseInterface
     {
         return $this->response->setJSON(array_merge($data, [
-            csrf_token() => csrf_hash(),
+            'csrf_name' => csrf_token(),
+            'csrf_hash' => csrf_hash(),
         ]));
     }
 

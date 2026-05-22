@@ -328,8 +328,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const serviceMetaEl = document.getElementById("selectedServiceMeta");
 
     const defaultFacultyId = "<?= esc($defaultFacultyId ?? '') ?>";
-    const csrfTokenName = "<?= csrf_token() ?>";
-    const csrfTokenValue = "<?= csrf_hash() ?>";
+    let csrfTokenName = "<?= csrf_token() ?>";
+    let csrfTokenValue = "<?= csrf_hash() ?>";
 
     const labels = {
         1: "Step 1 of 3 - Applicant Details",
@@ -544,13 +544,16 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             const data = await res.json();
 
-            // CI4 regenerates the CSRF token on every validated POST. Refresh the local
-            // variable and the hidden form field so the subsequent submit uses the new hash.
-            const freshToken = data[csrfTokenName];
-            if (freshToken) {
-                csrfTokenValue = freshToken;
+            // CI4 with tokenRandomize=true regenerates both the token name and value on
+            // every validated POST. The response carries the fresh pair under fixed keys.
+            if (data.csrf_name && data.csrf_hash) {
                 const csrfInput = form.querySelector(`input[name="${csrfTokenName}"]`);
-                if (csrfInput) csrfInput.value = freshToken;
+                csrfTokenName = data.csrf_name;
+                csrfTokenValue = data.csrf_hash;
+                if (csrfInput) {
+                    csrfInput.name = csrfTokenName;
+                    csrfInput.value = csrfTokenValue;
+                }
             }
 
             slotConflict = !!data.conflict;
