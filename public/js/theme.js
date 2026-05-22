@@ -252,6 +252,59 @@
         update();
     }
 
+    function initHeroVideo() {
+        const heroVideo = document.querySelector(".hero-video");
+        if (!(heroVideo instanceof HTMLVideoElement)) {
+            return;
+        }
+
+        let playAttempted = false;
+
+        const attemptPlay = function () {
+            if (document.visibilityState === "hidden") {
+                return;
+            }
+
+            heroVideo.muted = true;
+            heroVideo.defaultMuted = true;
+            heroVideo.playsInline = true;
+            heroVideo.setAttribute("muted", "");
+            heroVideo.setAttribute("playsinline", "");
+            heroVideo.setAttribute("webkit-playsinline", "");
+
+            const playPromise = heroVideo.play();
+            playAttempted = true;
+
+            if (playPromise && typeof playPromise.catch === "function") {
+                playPromise.catch(function () {
+                    // Leave the CSS fallback image visible when autoplay is denied.
+                });
+            }
+        };
+
+        heroVideo.addEventListener("canplay", attemptPlay, { once: true });
+        heroVideo.addEventListener("loadeddata", attemptPlay, { once: true });
+
+        document.addEventListener("visibilitychange", function () {
+            if (document.visibilityState === "visible" && heroVideo.paused) {
+                attemptPlay();
+            }
+        });
+
+        if (heroVideo.readyState >= 2) {
+            attemptPlay();
+            return;
+        }
+
+        heroVideo.load();
+
+        window.setTimeout(function () {
+            if (!playAttempted && heroVideo.paused) {
+                attemptPlay();
+            }
+        }, 250);
+    }
+
     document.addEventListener("DOMContentLoaded", function () {
         applyTheme(root.getAttribute("data-theme") || savedTheme());
         bindThemeToggle();
@@ -261,6 +314,7 @@
         initReveal();
         initCounters();
         initScrollProgress();
+        initHeroVideo();
     });
 
     window.slamsPrepareModal = ensureModalRoot;
