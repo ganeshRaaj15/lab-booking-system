@@ -261,23 +261,11 @@
         const videoBackground = heroVideo.closest(".video-background");
 
         let playAttempted = false;
-        let frameCallbackRequested = false;
 
         const setVideoReady = function (ready) {
             if (videoBackground) {
                 videoBackground.classList.toggle("video-ready", ready);
             }
-        };
-
-        const watchForRenderedFrame = function () {
-            if (frameCallbackRequested || typeof heroVideo.requestVideoFrameCallback !== "function") {
-                return;
-            }
-
-            frameCallbackRequested = true;
-            heroVideo.requestVideoFrameCallback(function () {
-                setVideoReady(true);
-            });
         };
 
         const attemptPlay = function () {
@@ -294,7 +282,6 @@
 
             const playPromise = heroVideo.play();
             playAttempted = true;
-            watchForRenderedFrame();
 
             if (playPromise && typeof playPromise.catch === "function") {
                 playPromise.catch(function () {
@@ -305,19 +292,6 @@
         };
 
         heroVideo.addEventListener("playing", function () {
-            watchForRenderedFrame();
-        });
-
-        heroVideo.addEventListener("timeupdate", function () {
-            if (heroVideo.currentTime > 0) {
-                setVideoReady(true);
-            }
-        });
-
-        heroVideo.addEventListener("loadeddata", function () {
-            if (!heroVideo.paused && heroVideo.currentTime > 0) {
-                setVideoReady(true);
-            }
             setVideoReady(true);
         });
 
@@ -326,14 +300,7 @@
         });
 
         heroVideo.addEventListener("emptied", function () {
-            frameCallbackRequested = false;
             setVideoReady(false);
-        });
-
-        heroVideo.addEventListener("pause", function () {
-            if (heroVideo.currentTime === 0) {
-                setVideoReady(false);
-            }
         });
 
         heroVideo.addEventListener("canplay", attemptPlay, { once: true });
@@ -355,9 +322,6 @@
         window.setTimeout(function () {
             if (!playAttempted && heroVideo.paused) {
                 attemptPlay();
-            }
-            if (!heroVideo.paused && heroVideo.currentTime > 0) {
-                setVideoReady(true);
             }
         }, 250);
     }
