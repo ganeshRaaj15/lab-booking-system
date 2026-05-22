@@ -6,6 +6,8 @@ $homeStats = $stats ?? [];
 $labCount = (int) ($homeStats['lab_count'] ?? 0);
 $bookingCount = (int) ($homeStats['total_bookings'] ?? 0);
 $approvedCount = (int) ($homeStats['approved'] ?? 0);
+$heroVideoUrl = base_url('images/uthm-aerial-compressed.mp4');
+$heroFallbackUrl = base_url('images/fkmp/FKMP.jpeg');
 ?>
 
 <!-- ============================================================
@@ -13,10 +15,10 @@ $approvedCount = (int) ($homeStats['approved'] ?? 0);
      ============================================================ -->
 <div class="home-page">
 <div class="slams-scroll-progress" aria-hidden="true"></div>
-<section class="hero-section">
+<section class="hero-section" style="--slams-hero-fallback-image: url('<?= esc($heroFallbackUrl, 'attr') ?>');">
     <div class="video-background" aria-hidden="true">
-        <video class="hero-video" autoplay muted loop playsinline preload="auto">
-            <source src="/images/uthm-aerial-compressed.mp4" type="video/mp4">
+        <video class="hero-video" autoplay muted loop playsinline preload="auto" poster="<?= esc($heroFallbackUrl, 'attr') ?>">
+            <source src="<?= esc($heroVideoUrl, 'attr') ?>" type="video/mp4">
         </video>
     </div>
     

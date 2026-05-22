@@ -2101,7 +2101,7 @@ input::placeholder {
 .video-background {
     background:
         linear-gradient(135deg, rgba(15, 23, 42, 0.48), rgba(13, 148, 136, 0.22)),
-        url("/images/fkmp/FKMP.jpeg") center/cover no-repeat;
+        var(--slams-hero-fallback-image, url("/images/fkmp/FKMP.jpeg")) center/cover no-repeat;
     filter: var(--slams-hero-video-filter);
 }
 
