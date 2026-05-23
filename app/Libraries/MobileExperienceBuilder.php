@@ -123,11 +123,21 @@ class MobileExperienceBuilder
                 $picLabIds = $this->picLabIds((string) $user->email);
                 $pendingApprovals = $this->countPicPendingApprovals($picLabIds);
                 $externalReviewCount = $this->countExternalReviewQueue($role, $picLabIds);
-                $state['attentionCount'] = $pendingApprovals + $externalReviewCount;
+                $openMaintenanceCount = 0;
+                if ($picLabIds !== []) {
+                    $picMaintenanceModel = new MaintenanceRecordModel();
+                    $openMaintenanceCount = (int) db_connect()
+                        ->table('maintenance_records mr')
+                        ->join('assets pic_a', 'pic_a.id = mr.asset_id', 'inner')
+                        ->whereIn('pic_a.lab_id', $picLabIds)
+                        ->whereIn('mr.status', $picMaintenanceModel->openStatuses())
+                        ->countAllResults();
+                }
+                $state['attentionCount'] = $pendingApprovals + $externalReviewCount + $openMaintenanceCount;
                 $state['attentionLabel'] = $state['attentionCount'] > 0 ? $state['attentionCount'] . ' items waiting' : 'Queue is clear';
-                $state['attentionMeta'] = 'Approve bookings for your labs and review external intake from one place.';
+                $state['attentionMeta'] = 'Approve bookings for your labs, handle maintenance cases, and review external intake from one place.';
                 $state['sheetTitle'] = 'PIC Mobile Actions';
-                $state['sheetDescription'] = 'Jump straight into booking approvals and external review work from your phone.';
+                $state['sheetDescription'] = 'Jump straight into booking approvals, maintenance work, and external review from your phone.';
                 $state['quickActions'] = [
                     [
                         'href' => '/dashboard/pic',
@@ -135,6 +145,13 @@ class MobileExperienceBuilder
                         'label' => 'Booking Queue',
                         'meta' => 'Approve or reject booking requests for assigned labs.',
                         'badge' => $pendingApprovals,
+                    ],
+                    [
+                        'href' => '/technician/maintenance',
+                        'icon' => 'bi-tools',
+                        'label' => 'Maintenance',
+                        'meta' => 'View and manage open maintenance cases for your labs.',
+                        'badge' => $openMaintenanceCount,
                     ],
                     [
                         'href' => '/dashboard/external-requests',
@@ -149,12 +166,6 @@ class MobileExperienceBuilder
                         'label' => 'Alerts',
                         'meta' => 'Catch booking and maintenance updates quickly.',
                         'badge' => $notificationCount,
-                    ],
-                    [
-                        'href' => '/laboratories',
-                        'icon' => 'bi-building',
-                        'label' => 'Lab Directory',
-                        'meta' => 'Open lab details while reviewing a request.',
                     ],
                 ];
                 break;
@@ -237,53 +248,6 @@ class MobileExperienceBuilder
                 ];
                 break;
 
-            case 'technician':
-                $maintenanceModel = new MaintenanceRecordModel();
-                $openStatuses = $maintenanceModel->openStatuses();
-                $openCases = (new MaintenanceRecordModel())
-                    ->whereIn('status', $openStatuses)
-                    ->countAllResults();
-                $assignedToMe = (new MaintenanceRecordModel())
-                    ->where('assigned_technician_id', $user->id)
-                    ->whereIn('status', $openStatuses)
-                    ->countAllResults();
-
-                $state['attentionCount'] = $assignedToMe > 0 ? $assignedToMe : $openCases;
-                $state['attentionLabel'] = $assignedToMe > 0 ? $assignedToMe . ' assigned case' . ($assignedToMe === 1 ? '' : 's') : ($openCases > 0 ? $openCases . ' open cases' : 'No open cases');
-                $state['attentionMeta'] = 'Move repairs forward without navigating the full technician dashboard.';
-                $state['sheetTitle'] = 'Technician Mobile Actions';
-                $state['sheetDescription'] = 'Open the maintenance queue, jump to assigned work, or schedule a new case from your phone.';
-                $state['quickActions'] = [
-                    [
-                        'href' => '/dashboard/technician',
-                        'icon' => 'bi-tools',
-                        'label' => 'My Queue',
-                        'meta' => 'Open technician stats and recent maintenance cases.',
-                        'badge' => $assignedToMe,
-                    ],
-                    [
-                        'href' => '/technician/maintenance',
-                        'icon' => 'bi-list-check',
-                        'label' => 'All Cases',
-                        'meta' => 'Review the full maintenance workflow queue.',
-                        'badge' => $openCases,
-                    ],
-                    [
-                        'href' => '/technician/maintenance/create',
-                        'icon' => 'bi-plus-square',
-                        'label' => 'Schedule Case',
-                        'meta' => 'Create a new maintenance record quickly.',
-                    ],
-                    [
-                        'href' => '/dashboard/notifications',
-                        'icon' => 'bi-bell',
-                        'label' => 'Alerts',
-                        'meta' => 'See new assignments and workflow changes.',
-                        'badge' => $notificationCount,
-                    ],
-                ];
-                break;
-
             case 'student':
             default:
                 $activeBookings = (new BookingModel())
@@ -339,9 +303,6 @@ class MobileExperienceBuilder
         if ($user->inGroup('admin')) {
             return 'admin';
         }
-        if ($user->inGroup('technician')) {
-            return 'technician';
-        }
         if ($user->inGroup('pic')) {
             return 'pic';
         }
@@ -359,7 +320,6 @@ class MobileExperienceBuilder
     {
         return match ($role) {
             'admin' => '/dashboard/admin',
-            'technician' => '/dashboard/technician',
             'pic' => '/dashboard/pic',
             'manager' => '/dashboard/manager',
             'external' => '/dashboard/external',
@@ -372,7 +332,6 @@ class MobileExperienceBuilder
     {
         return match ($role) {
             'admin' => 'Admin',
-            'technician' => 'Tech',
             'pic' => 'PIC',
             'manager' => 'Manager',
             'external' => 'Requests',

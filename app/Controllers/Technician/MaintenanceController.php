@@ -7,6 +7,7 @@ use App\Libraries\NotificationService;
 use App\Libraries\MaintenanceForecastService;
 use App\Libraries\MaintenancePredictionService;
 use App\Models\AssetModel;
+use App\Models\LaboratoryModel;
 use App\Models\MaintenanceLogModel;
 use App\Models\MaintenanceRecordModel;
 
@@ -40,7 +41,18 @@ class MaintenanceController extends BaseController
         $assetId = (int) $this->request->getGet('asset_id');
         $scope = trim((string) $this->request->getGet('scope'));
 
+        $labModel = new LaboratoryModel();
+        $picEmail = strtolower(trim((string) $user->email));
+        $picLabIds = array_column(
+            $labModel->where("LOWER(TRIM(pic_email)) =", $picEmail)->findAll(),
+            'id'
+        );
+
         $recordsQuery = $this->maintenanceModel->withRelations();
+        if ($picLabIds !== []) {
+            $recordsQuery->join('assets pic_assets', 'pic_assets.id = maintenance_records.asset_id', 'inner')
+                         ->whereIn('pic_assets.lab_id', $picLabIds);
+        }
         if ($status !== '') {
             $recordsQuery->where('maintenance_records.status', $status);
         }
@@ -56,16 +68,18 @@ class MaintenanceController extends BaseController
 
         $forecastService = new MaintenanceForecastService();
         $upcomingForecasts = $forecastService->getUpcomingForecasts(90);
-        if ($assetId > 0) {
-            $upcomingForecasts = array_values(array_filter($upcomingForecasts, fn(array $row): bool => (int) ($row['asset_id'] ?? 0) === $assetId));
-        }
+        $upcomingForecasts = array_values(array_filter($upcomingForecasts, function (array $row) use ($picLabIds, $assetId): bool {
+            $inLab = $picLabIds === [] || in_array((int) ($row['lab_id'] ?? 0), $picLabIds, true);
+            $matchesAsset = $assetId <= 0 || (int) ($row['asset_id'] ?? 0) === $assetId;
+            return $inLab && $matchesAsset;
+        }));
         $predictionService = new MaintenancePredictionService();
 
 
         return view('technician/maintenance/index', [
             'title' => 'Maintenance Records | FKMP Smart Lab',
             'page' => 'Maintenance Records',
-            'roleLabel' => 'Technician',
+            'roleLabel' => 'PIC',
             'user' => $user,
             'records' => $records,
             'upcomingForecasts' => $upcomingForecasts,
@@ -338,59 +352,13 @@ class MaintenanceController extends BaseController
             ->with('success', 'Maintenance case moved to ' . $this->maintenanceModel->statusLabel($targetStatus) . '.');
     }
 
-    public function claim(int $id)
-    {
-        if ($redirect = $this->ensureTechnician()) {
-            return $redirect;
-        }
-
-        $user = auth()->user();
-        $record = $this->maintenanceModel->find($id);
-        if (! $record) {
-            return redirect()->to('/technician/maintenance')->with('error', 'Maintenance record not found.');
-        }
-
-        if ($record['status'] !== 'reported') {
-            return redirect()->to('/technician/maintenance/edit/' . $id)->with('error', 'Only unscheduled reported cases can be claimed.');
-        }
-
-        if (! empty($record['assigned_technician_id'])) {
-            return redirect()->to('/technician/maintenance/edit/' . $id)->with('error', 'This case has already been claimed by another technician.');
-        }
-
-        $db = \Config\Database::connect();
-        $db->transStart();
-        $this->maintenanceModel->update($id, ['assigned_technician_id' => $user->id]);
-        $this->logModel->insert([
-            'maintenance_id' => $id,
-            'changed_by' => $user->id,
-            'from_status' => 'reported',
-            'to_status' => 'reported',
-            'notes' => 'Technician claimed ownership of this case.',
-            'created_at' => date('Y-m-d H:i:s'),
-        ]);
-        $db->transComplete();
-
-        if (! $db->transStatus()) {
-            return redirect()->to('/technician/maintenance/edit/' . $id)->with('error', 'Unable to claim this case at the moment.');
-        }
-
-        NotificationService::dispatchSafely(
-            fn(NotificationService $notifications) => $notifications->notifyMaintenanceClaimed($id, (int) $user->id),
-            'maintenance claimed'
-        );
-
-        return redirect()->to('/technician/maintenance/edit/' . $id)
-            ->with('success', 'You have claimed this maintenance case. Other technicians have been notified.');
-    }
-
     protected function ensureTechnician()
     {
         helper('auth');
         if (! auth()->loggedIn()) {
             return redirect()->to('/login');
         }
-        if (! auth()->user()->inGroup('technician')) {
+        if (! auth()->user()->inGroup('pic') && ! auth()->user()->inGroup('admin')) {
             return redirect()->to('/dashboard')->with('error', 'Access denied.');
         }
         return null;
@@ -601,12 +569,25 @@ class MaintenanceController extends BaseController
 
     protected function assetOptions(): array
     {
-        return $this->assetModel
+        $query = $this->assetModel
             ->select('assets.id, assets.name, assets.asset_code, assets.status, assets.quantity, assets.total_quantity, laboratories.name AS lab_name')
             ->join('laboratories', 'laboratories.id = assets.lab_id', 'left')
             ->orderBy('laboratories.name', 'ASC')
-            ->orderBy('assets.name', 'ASC')
-            ->findAll();
+            ->orderBy('assets.name', 'ASC');
+
+        $user = auth()->user();
+        if ($user) {
+            $picEmail = strtolower(trim((string) $user->email));
+            $picLabIds = array_column(
+                (new LaboratoryModel())->where('LOWER(TRIM(pic_email)) =', $picEmail)->findAll(),
+                'id'
+            );
+            if ($picLabIds !== []) {
+                $query->whereIn('assets.lab_id', $picLabIds);
+            }
+        }
+
+        return $query->findAll();
     }
 
     protected function editableQuantityCapacity(int $assetId, ?array $record = null): int

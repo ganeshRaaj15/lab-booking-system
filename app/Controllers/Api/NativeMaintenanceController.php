@@ -6,6 +6,7 @@ use App\Controllers\Technician\MaintenanceController as WebMaintenanceController
 use App\Libraries\MaintenanceForecastService;
 use App\Libraries\NotificationService;
 use App\Libraries\MaintenancePredictionService;
+use App\Models\LaboratoryModel;
 use CodeIgniter\Shield\Entities\User;
 
 class NativeMaintenanceController extends WebMaintenanceController
@@ -21,7 +22,18 @@ class NativeMaintenanceController extends WebMaintenanceController
         $assetId = (int) $this->request->getGet('asset_id');
         $scope = trim((string) $this->request->getGet('scope'));
 
+        $labModel = new LaboratoryModel();
+        $picEmail = strtolower(trim((string) $user->email));
+        $picLabIds = array_column(
+            $labModel->where("LOWER(TRIM(pic_email)) =", $picEmail)->findAll(),
+            'id'
+        );
+
         $recordsQuery = $this->maintenanceModel->withRelations();
+        if ($picLabIds !== []) {
+            $recordsQuery->join('assets pic_assets', 'pic_assets.id = maintenance_records.asset_id', 'inner')
+                         ->whereIn('pic_assets.lab_id', $picLabIds);
+        }
         if ($status !== '') {
             $recordsQuery->where('maintenance_records.status', $status);
         }
@@ -37,22 +49,37 @@ class NativeMaintenanceController extends WebMaintenanceController
         $openStatuses = $this->maintenanceModel->openStatuses();
         $allPredictiveAlerts = array_values(array_filter(
             (new MaintenanceForecastService())->getUpcomingForecasts(90),
-            static fn(array $item): bool => in_array((string) ($item['decision_priority'] ?? 'low'), ['high', 'medium'], true)
+            function (array $item) use ($picLabIds): bool {
+                $inLab = $picLabIds === [] || in_array((int) ($item['lab_id'] ?? 0), $picLabIds, true);
+                return $inLab && in_array((string) ($item['decision_priority'] ?? 'low'), ['high', 'medium'], true);
+            }
         ));
         $predictiveTotal  = count($allPredictiveAlerts);
         $predictiveAlerts = array_slice($allPredictiveAlerts, 0, 8);
 
+        $statsModel = new \App\Models\MaintenanceRecordModel();
+        $statsModelOpen = new \App\Models\MaintenanceRecordModel();
+        $statsModelTesting = new \App\Models\MaintenanceRecordModel();
+        if ($picLabIds !== []) {
+            $statsModel->join('assets sm_a', 'sm_a.id = maintenance_records.asset_id', 'inner')
+                       ->whereIn('sm_a.lab_id', $picLabIds);
+            $statsModelOpen->join('assets smo_a', 'smo_a.id = maintenance_records.asset_id', 'inner')
+                           ->whereIn('smo_a.lab_id', $picLabIds);
+            $statsModelTesting->join('assets smt_a', 'smt_a.id = maintenance_records.asset_id', 'inner')
+                              ->whereIn('smt_a.lab_id', $picLabIds);
+        }
+
         return $this->response->setJSON([
             'status' => 'success',
             'stats' => [
-                'assigned' => (int) (new \App\Models\MaintenanceRecordModel())
+                'assigned' => (int) $statsModel
                     ->where('assigned_technician_id', $user->id)
                     ->whereIn('status', $openStatuses)
                     ->countAllResults(),
-                'open_total' => (int) (new \App\Models\MaintenanceRecordModel())
+                'open_total' => (int) $statsModelOpen
                     ->whereIn('status', $openStatuses)
                     ->countAllResults(),
-                'testing' => (int) (new \App\Models\MaintenanceRecordModel())
+                'testing' => (int) $statsModelTesting
                     ->where('status', 'testing')
                     ->countAllResults(),
                 // predictive reflects the full actionable set, not just the capped display slice
@@ -330,56 +357,7 @@ class NativeMaintenanceController extends WebMaintenanceController
             return null;
         }
 
-        return $user->inGroup('technician') ? $user : null;
-    }
-
-    public function claim(int $id)
-    {
-        $user = $this->technicianUser();
-        if (! $user instanceof User) {
-            return $this->unauthenticatedOrForbidden();
-        }
-
-        $record = $this->maintenanceModel->find($id);
-        if (! $record) {
-            return $this->notFound('Maintenance record not found.');
-        }
-
-        if ($record['status'] !== 'reported') {
-            return $this->unprocessable('Only unscheduled reported cases can be claimed.');
-        }
-
-        if (! empty($record['assigned_technician_id'])) {
-            return $this->unprocessable('This case has already been claimed by another technician.');
-        }
-
-        $db = \Config\Database::connect();
-        $db->transStart();
-        $this->maintenanceModel->update($id, ['assigned_technician_id' => $user->id]);
-        $this->logModel->insert([
-            'maintenance_id' => $id,
-            'changed_by' => $user->id,
-            'from_status' => 'reported',
-            'to_status' => 'reported',
-            'notes' => 'Technician claimed ownership of this case.',
-            'created_at' => date('Y-m-d H:i:s'),
-        ]);
-        $db->transComplete();
-
-        if (! $db->transStatus()) {
-            return $this->unprocessable('Unable to claim this case at the moment.');
-        }
-
-        NotificationService::dispatchSafely(
-            fn(NotificationService $notifications) => $notifications->notifyMaintenanceClaimed($id, (int) $user->id),
-            'maintenance claimed'
-        );
-
-        return $this->response->setJSON([
-            'status' => 'success',
-            'message' => 'You have claimed this maintenance case. Other technicians have been notified.',
-            'maintenance_id' => $id,
-        ]);
+        return ($user->inGroup('pic') || $user->inGroup('admin')) ? $user : null;
     }
 
     private function serializeRecord(array $record): array

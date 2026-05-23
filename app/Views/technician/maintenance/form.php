@@ -1,4 +1,4 @@
-<?= $this->extend('layouts/main_technician') ?>
+<?= $this->extend('layouts/main_user') ?>
 <?= $this->section('content') ?>
 <?php
 $statusLabel = $statusLabels[$record['status'] ?? 'reported'] ?? ucwords(str_replace('_', ' ', $record['status'] ?? 'reported'));
@@ -191,7 +191,7 @@ $stageChecklist = match ($stageMode) {
                             <div class="col-md-8">
                                 <label class="form-label">Short Case Title</label>
                                 <input type="text" name="title" class="form-control" value="<?= esc(old('title', $record['title'] ?? '')) ?>" placeholder="Example: Preventive maintenance for oscilloscope set A" required>
-                                <div class="form-text">A short label that helps the technician and reporter recognize the case quickly.</div>
+                                <div class="form-text">A short label that helps identify the case at a glance.</div>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Maintenance Category</label>
@@ -279,7 +279,7 @@ $stageChecklist = match ($stageMode) {
                             <div class="col-12">
                                 <div class="rounded-3 p-3" style="background: <?= esc($stageAccentSoft) ?>; border-left: 3px solid <?= esc($stageAccentColor) ?>;">
                                     <div class="fw-semibold mb-1" style="color: <?= esc($stageAccentColor) ?>;">Step 2: Start Repair</div>
-                                    <div class="small text-muted mb-0">No new notes are required yet. Review the schedule and diagnosis, then start repair when the technician begins work.</div>
+                                    <div class="small text-muted mb-0">No new notes are required yet. Review the schedule and diagnosis, then start repair when work begins.</div>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -441,31 +441,6 @@ $stageChecklist = match ($stageMode) {
                 </div>
             <?php endif; ?>
 
-            <?php if ($isEdit): ?>
-                <?php
-                    $assignedName = $record['technician_name'] ?? $record['technician_username'] ?? null;
-                    $isUnclaimed = empty($record['assigned_technician_id']);
-                    $canClaim = $isUnclaimed && $record['status'] === 'reported';
-                ?>
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-white"><h6 class="mb-1 fw-bold"><i class="bi bi-person-check me-2 text-primary"></i>Assignment</h6></div>
-                    <div class="card-body small">
-                        <?php if ($assignedName): ?>
-                            <div class="text-muted mb-1">Claimed by</div>
-                            <div class="fw-semibold text-dark"><?= esc($assignedName) ?></div>
-                        <?php elseif ($canClaim): ?>
-                            <div class="text-muted mb-2">No technician has claimed this case yet.</div>
-                            <form method="post" action="/technician/maintenance/claim/<?= esc($record['id']) ?>">
-                                <?= csrf_field() ?>
-                                <button type="submit" class="btn btn-sm btn-success w-100">Claim This Case</button>
-                            </form>
-                            <div class="text-muted mt-2">Claiming notifies other technicians not to duplicate the work.</div>
-                        <?php else: ?>
-                            <span class="stat-badge stat-badge-neutral">Unassigned</span>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            <?php endif; ?>
 
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white"><h6 class="mb-1 fw-bold"><i class="bi bi-clipboard-data me-2 text-primary"></i>Case Summary</h6></div>
@@ -496,9 +471,9 @@ $stageChecklist = match ($stageMode) {
                 <div class="card-header bg-white"><h6 class="mb-1 fw-bold"><i class="bi bi-diagram-3 me-2 text-primary"></i>Simple Workflow</h6></div>
                 <div class="card-body small text-muted">
                     <p class="mb-2"><strong>1. Reported / Planned</strong>: the issue or planned maintenance work is recorded.</p>
-                    <p class="mb-2"><strong>2. Scheduled</strong>: the technician adds diagnosis and sets the maintenance time.</p>
-                    <p class="mb-2"><strong>3. Repair In Progress</strong>: the technician records the repair or servicing work completed.</p>
-                    <p class="mb-0"><strong>4. Testing / Completed</strong>: the technician verifies the equipment, uploads proof, and closes the case.</p>
+                    <p class="mb-2"><strong>2. Scheduled</strong>: diagnosis is added and the maintenance time is set.</p>
+                    <p class="mb-2"><strong>3. Repair In Progress</strong>: the repair or servicing work completed is recorded.</p>
+                    <p class="mb-0"><strong>4. Testing / Completed</strong>: the equipment is verified, proof is uploaded, and the case is closed.</p>
                 </div>
             </div>
 

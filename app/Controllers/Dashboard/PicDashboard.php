@@ -9,6 +9,7 @@ use App\Models\LaboratoryModel;
 use App\Models\FacultyModel;
 use App\Models\BookingAssetModel;
 use App\Models\AssetModel;
+use App\Models\MaintenanceRecordModel;
 
 class PicDashboard extends BaseController
 {
@@ -55,6 +56,7 @@ class PicDashboard extends BaseController
                 'usageData'          => [],
                 'facultyData'        => [],
                 'maintenanceStats'   => ['open' => 0, 'completed' => 0, 'upcoming' => 0],
+                'maintenanceTasks'   => [],
             ]);
         }
 
@@ -163,7 +165,8 @@ class PicDashboard extends BaseController
         $facultyCounts = $this->getFacultyDistributionForLabs($labIds);
         $usageData = $this->getUsageTrends($labIds);
         $maintenanceStats = $this->getMaintenanceStatsForLabs($labIds);
-        
+        $maintenanceTasks = $this->getMaintenanceTasks($labIds);
+
         // -----------------------------------------------------
         // 5. Render view
         // -----------------------------------------------------
@@ -180,6 +183,7 @@ class PicDashboard extends BaseController
             'facultyCounts'      => $facultyCounts,
             'usageData'          => $usageData,
             'maintenanceStats'   => $maintenanceStats,
+            'maintenanceTasks'   => $maintenanceTasks,
         ]);
     }
 
@@ -320,6 +324,23 @@ private function getUsageTrends(array $labIds): array
             'upcoming' => $upcoming,
         ];
     }
+    private function getMaintenanceTasks(array $labIds): array
+    {
+        if (empty($labIds)) {
+            return [];
+        }
+
+        $maintenanceModel = new MaintenanceRecordModel();
+
+        return $maintenanceModel->withRelations()
+            ->join('assets m_a', 'm_a.id = maintenance_records.asset_id', 'inner')
+            ->whereIn('m_a.lab_id', $labIds)
+            ->whereIn('maintenance_records.status', ['reported', 'scheduled', 'in_progress', 'testing'])
+            ->orderBy('maintenance_records.created_at', 'DESC')
+            ->limit(10)
+            ->findAll();
+    }
+
     /**
      * Get booking details for modal (AJAX endpoint)
      */

@@ -161,7 +161,7 @@ class IssueReportController extends BaseController
             'maintenance reported'
         );
 
-        return redirect()->to('/dashboard/report-issue')->with('success', 'Issue report submitted successfully. The technician can now review it.');
+        return redirect()->to('/dashboard/report-issue')->with('success', 'Issue report submitted successfully. The lab PIC has been notified.');
     }
 
     protected function ensureReporter()

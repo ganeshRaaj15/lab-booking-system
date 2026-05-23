@@ -19,17 +19,12 @@ class AuthGroups extends ShieldAuthGroups
 
         'pic' => [
             'title'       => 'Person In Charge',
-            'description' => 'Approves and manages laboratory bookings.',
+            'description' => 'Approves and manages laboratory bookings, and handles equipment maintenance for assigned labs.',
         ],
 
         'manager' => [
             'title'       => 'Lab Manager',
             'description' => 'Second-stage approver for non-FKMP bookings.',
-        ],
-
-        'technician' => [
-            'title'       => 'Technician',
-            'description' => 'Manages maintenance and lab equipment.',
         ],
 
         'staff' => [

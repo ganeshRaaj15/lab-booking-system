@@ -26,7 +26,6 @@ class HomeController extends BaseController
             if ($user->inGroup('admin'))     return redirect()->to('/dashboard/admin');
             if ($user->inGroup('manager'))   return redirect()->to('/dashboard/manager');
             if ($user->inGroup('pic'))       return redirect()->to('/dashboard/pic');
-            if ($user->inGroup('technician')) return redirect()->to('/dashboard/technician');
             if ($user->inGroup('external'))  return redirect()->to('/dashboard/external');
             if ($user->inGroup('staff'))     return redirect()->to('/dashboard/student');
             if ($user->inGroup('student'))   return redirect()->to('/dashboard/student');

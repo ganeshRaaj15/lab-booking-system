@@ -4,7 +4,6 @@ namespace App\Controllers\Api;
 
 use App\Controllers\BaseController;
 use App\Libraries\AssetIntelligenceService;
-use App\Libraries\MaintenanceForecastService;
 use App\Libraries\NativeUserSerializer;
 use App\Models\BookingModel;
 use App\Models\ExternalRequestModel;
@@ -71,16 +70,9 @@ class NativeBootstrapController extends BaseController
                 ['id' => 'home', 'label' => 'Home'],
                 ['id' => 'labs', 'label' => 'Labs'],
                 ['id' => 'issues', 'label' => 'Issues'],
-                ['id' => 'approvals', 'label' => 'Approvals'],
-                ['id' => 'reports', 'label' => 'Reports'],
-                ['id' => 'requests', 'label' => 'External'],
-                ['id' => 'notifications', 'label' => 'Alerts'],
-                ['id' => 'profile', 'label' => 'Profile'],
-            ],
-            'technician' => [
-                ['id' => 'home', 'label' => 'Home'],
-                ['id' => 'labs', 'label' => 'Labs'],
                 ['id' => 'maintenance', 'label' => 'Maintenance'],
+                ['id' => 'approvals', 'label' => 'Approvals'],
+                ['id' => 'requests', 'label' => 'External'],
                 ['id' => 'notifications', 'label' => 'Alerts'],
                 ['id' => 'profile', 'label' => 'Profile'],
             ],
@@ -121,7 +113,6 @@ class NativeBootstrapController extends BaseController
             'pic' => $this->picSummary($user, $notificationCount),
             'manager' => $this->managerSummary($notificationCount),
             'admin' => $this->adminSummary($notificationCount),
-            'technician' => $this->technicianSummary($user, $notificationCount),
             default => $this->studentSummary($user, $notificationCount),
         };
     }
@@ -242,19 +233,32 @@ class NativeBootstrapController extends BaseController
             ->where('status', 'pending_pic_approval')
             ->countAllResults();
 
+        $openMaintenance = 0;
+        if ($labIds !== []) {
+            $openStatuses = (new MaintenanceRecordModel())->openStatuses();
+            $openMaintenance = (int) db_connect()
+                ->table('maintenance_records mr')
+                ->join('assets pic_a', 'pic_a.id = mr.asset_id', 'inner')
+                ->whereIn('pic_a.lab_id', $labIds)
+                ->whereIn('mr.status', $openStatuses)
+                ->countAllResults();
+        }
+
+        $totalPending = $pendingPic + $externalReview;
+
         return [
             'role' => 'pic',
-            'attention_count' => $pendingPic + $externalReview,
-            'attention_label' => ($pendingPic + $externalReview) > 0 ? ($pendingPic + $externalReview) . ' reviews waiting' : 'Queue is clear',
-            'attention_meta' => 'Review bookings, monitor requests, and oversee assigned laboratories.',
+            'attention_count' => $totalPending + $openMaintenance,
+            'attention_label' => ($totalPending + $openMaintenance) > 0 ? ($totalPending + $openMaintenance) . ' items waiting' : 'Queue is clear',
+            'attention_meta' => 'Approve bookings, review external intake, and manage maintenance for your assigned laboratories.',
             'stats' => [
                 ['id' => 'pending_pic', 'label' => 'Need PIC', 'value' => $pendingPic, 'tone' => 'warning'],
                 ['id' => 'pending_manager', 'label' => 'Mgr Handoff', 'value' => $pendingManager, 'tone' => 'primary'],
                 ['id' => 'external_review', 'label' => 'External', 'value' => $externalReview, 'tone' => 'accent'],
-                ['id' => 'notifications', 'label' => 'Alerts', 'value' => $notificationCount, 'tone' => 'neutral'],
+                ['id' => 'open_maintenance', 'label' => 'Maintenance', 'value' => $openMaintenance, 'tone' => 'danger'],
             ],
             'next_item' => null,
-            'message' => 'Approvals, issue reporting, external requests, and reports are available for your assigned laboratories.',
+            'message' => 'Approvals, issue reporting, external requests, maintenance cases, and reports are available for your assigned laboratories.',
         ];
     }
 
@@ -330,54 +334,6 @@ class NativeBootstrapController extends BaseController
             ],
             'next_item' => null,
             'message' => 'User management, reports, settings, laboratories, and assets are available from the Admin workspace.',
-        ];
-    }
-
-    protected function technicianSummary(User $user, int $notificationCount): array
-    {
-        $maintenanceModel = new MaintenanceRecordModel();
-        $openStatuses = $maintenanceModel->openStatuses();
-        $forecastService = new MaintenanceForecastService();
-        $predictiveAlerts = array_values(array_filter(
-            $forecastService->getUpcomingForecasts(90),
-            static fn(array $item): bool => in_array((string) ($item['decision_priority'] ?? 'low'), ['high', 'medium'], true)
-        ));
-
-        $assigned = (int) (new MaintenanceRecordModel())
-            ->where('assigned_technician_id', $user->id)
-            ->whereIn('status', $openStatuses)
-            ->countAllResults();
-
-        $openTotal = (int) (new MaintenanceRecordModel())
-            ->whereIn('status', $openStatuses)
-            ->countAllResults();
-
-        $testing = (int) (new MaintenanceRecordModel())
-            ->where('status', 'testing')
-            ->countAllResults();
-        $predictiveCount = count($predictiveAlerts);
-        $topAlert = $predictiveAlerts[0] ?? null;
-
-        return [
-            'role' => 'technician',
-            'attention_count' => max($assigned, $openTotal, $predictiveCount),
-            'attention_label' => $predictiveCount > 0
-                ? $predictiveCount . ' predictive alert(s)'
-                : ($assigned > 0 ? $assigned . ' assigned case(s)' : ($openTotal > 0 ? $openTotal . ' open case(s)' : 'No open cases')),
-            'attention_meta' => 'Booking demand, maintenance history, and overdue planned work are combined into technician alerts.',
-            'stats' => [
-                ['id' => 'assigned', 'label' => 'Assigned', 'value' => $assigned, 'tone' => 'primary'],
-                ['id' => 'open_total', 'label' => 'Open', 'value' => $openTotal, 'tone' => 'warning'],
-                ['id' => 'testing', 'label' => 'Testing', 'value' => $testing, 'tone' => 'accent'],
-                ['id' => 'predictive', 'label' => 'Predictive', 'value' => $predictiveCount, 'tone' => 'danger'],
-            ],
-            'next_item' => $topAlert ? [
-                'type' => 'predictive_maintenance',
-                'title' => (string) ($topAlert['name'] ?? 'Asset Alert'),
-                'subtitle' => (string) ($topAlert['decision_label'] ?? 'Inspect soon'),
-                'meta' => 'Risk ' . (int) ($topAlert['risk_percent'] ?? 0) . '%' . (! empty($topAlert['lab_name']) ? ' | ' . $topAlert['lab_name'] : ''),
-            ] : null,
-            'message' => 'Plan, claim, update, test, and close maintenance cases using predictive alerts that prioritize assets likely to need service soon.',
         ];
     }
 

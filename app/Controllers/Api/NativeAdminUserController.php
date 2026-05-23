@@ -16,7 +16,7 @@ class NativeAdminUserController extends BaseController
     protected BaseConnection $db;
     protected FacultyModel $faculties;
     protected UserReclaimService $userReclaimService;
-    protected array $allowedRoles = ['student', 'staff', 'external', 'technician', 'pic', 'manager', 'admin'];
+    protected array $allowedRoles = ['student', 'staff', 'external', 'pic', 'manager', 'admin'];
 
     public function __construct()
     {

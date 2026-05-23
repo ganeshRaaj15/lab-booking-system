@@ -77,10 +77,6 @@ class EmailInboxController extends BaseController
             return 'layouts/main_admin';
         }
 
-        if ($user->inGroup('technician')) {
-            return 'layouts/main_technician';
-        }
-
         return 'layouts/main_user';
     }
 }

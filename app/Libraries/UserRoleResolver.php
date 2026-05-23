@@ -13,7 +13,6 @@ class UserRoleResolver
         'admin',
         'manager',
         'pic',
-        'technician',
         'student',
         'staff',
         'external',

@@ -46,7 +46,7 @@ use App\Controllers\Dashboard\ExternalDashboard;
 use App\Controllers\Dashboard\PicDashboard;
 use App\Controllers\Dashboard\ManagerDashboard;
 use App\Controllers\Dashboard\AdminDashboard;
-use App\Controllers\Dashboard\TechnicianDashboard;
+
 use App\Controllers\Dashboard\IssueReportController;
 use App\Controllers\Dashboard\ApprovalsController;
 use App\Controllers\Dashboard\ProfileController;
@@ -146,7 +146,6 @@ $routes->group('api/native', ['filter' => 'tokens'], static function ($routes) {
     $routes->get('maintenance/(:num)', [NativeMaintenanceController::class, 'show/$1']);
     $routes->post('maintenance', [NativeMaintenanceController::class, 'store']);
     $routes->post('maintenance/(:num)', [NativeMaintenanceController::class, 'update/$1']);
-    $routes->post('maintenance/(:num)/claim', [NativeMaintenanceController::class, 'claim/$1']);
 
     $routes->get('documents/pdf/(:segment)', [DocumentController::class, 'viewPdf/$1']);
     $routes->get('admin/settings', [NativeAdminSettingsController::class, 'show']);
@@ -467,9 +466,6 @@ $routes->group('dashboard', ['filter' => 'session'], function ($routes) {
     // ADMIN DASHBOARD
     $routes->get('admin', [AdminDashboard::class, 'index'], ['filter' => 'group:admin']);
 
-    // TECHNICIAN DASHBOARD
-    $routes->get('technician', [TechnicianDashboard::class, 'index'], ['filter' => 'group:technician']);
-
     // STUDENT/PIC ISSUE REPORTING
     $routes->get('report-issue', [IssueReportController::class, 'create'], ['filter' => 'group:student,staff,pic']);
     $routes->post('report-issue/store', [IssueReportController::class, 'store'], ['filter' => 'group:student,staff,pic']);
@@ -550,14 +546,13 @@ $routes->group('admin', ['filter' => 'group:admin'], function ($routes) {
 // TECHNICIAN ROUTES
 // ====================================================================
 
-$routes->group('technician', ['filter' => 'group:technician'], function ($routes) {
+$routes->group('technician', ['filter' => 'group:pic,admin'], function ($routes) {
     $routes->get('maintenance', [MaintenanceController::class, 'index']);
     $routes->get('maintenance/create', [MaintenanceController::class, 'create']);
     $routes->get('maintenance/create/(:num)', [MaintenanceController::class, 'create/$1']);
     $routes->post('maintenance/store', [MaintenanceController::class, 'store']);
     $routes->get('maintenance/edit/(:num)', [MaintenanceController::class, 'edit/$1']);
     $routes->post('maintenance/update/(:num)', [MaintenanceController::class, 'update/$1']);
-    $routes->post('maintenance/claim/(:num)', [MaintenanceController::class, 'claim/$1']);
 });
 
 

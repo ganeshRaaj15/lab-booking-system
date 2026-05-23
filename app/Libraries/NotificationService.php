@@ -241,20 +241,23 @@ class NotificationService
             return;
         }
 
+        $picEmail = $context['pic_email'] ?? '';
+        $picUserId = $this->findUserIdByEmail($picEmail);
+
         $technicianLink = '/technician/maintenance/edit/' . $maintenanceId;
         $reporterLink = '/dashboard/report-issue';
         $unitText = ! empty($context['unit_reference']) ? ' Unit: ' . $context['unit_reference'] . '.' : '';
-        $technicianMessage = 'A maintenance issue was reported for ' . $context['asset_name'] . ' in ' . $context['lab_name'] . '.' . $unitText;
-        $reporterMessage = 'Your issue report for ' . $context['asset_name'] . ' in ' . $context['lab_name'] . ' has been submitted and is waiting for technician review.';
+        $picMessage = 'A maintenance issue was reported for ' . $context['asset_name'] . ' in ' . $context['lab_name'] . '.' . $unitText;
+        $reporterMessage = 'Your issue report for ' . $context['asset_name'] . ' in ' . $context['lab_name'] . ' has been submitted and is awaiting review.';
 
-        $this->createUserNotifications($this->groupUserIds('technician'), 'maintenance', 'New Maintenance Issue Reported', $technicianMessage, $technicianLink, 'maintenance', $maintenanceId);
+        $this->createUserNotifications($this->compactIds([$picUserId]), 'maintenance', 'New Maintenance Issue Reported', $picMessage, $technicianLink, 'maintenance', $maintenanceId);
         $this->createUserNotifications($this->compactIds([(int) ($context['reported_by'] ?? 0)]), 'maintenance', 'Issue Report Submitted', $reporterMessage, $reporterLink, 'maintenance', $maintenanceId);
 
         $this->sendEmail(
-            $this->emailsForUserIds($this->groupUserIds('technician')),
+            [$picEmail ?: null],
             'FKMP Smart Lab: Maintenance Issue Reported',
             $this->emailTemplate('New Maintenance Issue', [
-                'A new maintenance issue has been reported and needs technician attention.',
+                'A new maintenance issue has been reported for one of your labs.',
                 'Case: ' . ($context['title'] ?? 'Maintenance Issue'),
                 'Laboratory: ' . ($context['lab_name'] ?? '-'),
                 'Equipment: ' . ($context['asset_name'] ?? '-'),
@@ -282,30 +285,31 @@ class NotificationService
         }
 
         $claimer = $this->db->table('users')->select('full_name, username')->where('id', $claimingUserId)->get()->getRowArray();
-        $claimerName = ($claimer['full_name'] ?? '') ?: ($claimer['username'] ?? 'A technician');
+        $claimerName = ($claimer['full_name'] ?? '') ?: ($claimer['username'] ?? 'The PIC');
 
-        $link = '/technician/maintenance/edit/' . $maintenanceId;
-        $message = $claimerName . ' has claimed the maintenance case for ' . ($context['asset_name'] ?? 'an asset') . ' in ' . ($context['lab_name'] ?? 'the lab') . '. No action is needed from you.';
+        $picEmail = $context['pic_email'] ?? '';
+        $picUserId = $this->findUserIdByEmail($picEmail);
 
-        $otherTechnicianIds = array_values(array_filter(
-            $this->groupUserIds('technician'),
-            static fn(int $id): bool => $id !== $claimingUserId
-        ));
+        // Only notify if the PIC did not claim the case themselves
+        if ($picUserId !== $claimingUserId && $picUserId > 0) {
+            $link = '/technician/maintenance/edit/' . $maintenanceId;
+            $message = $claimerName . ' has claimed the maintenance case for ' . ($context['asset_name'] ?? 'an asset') . ' in ' . ($context['lab_name'] ?? 'the lab') . '.';
 
-        $this->createUserNotifications($otherTechnicianIds, 'maintenance', 'Maintenance Case Claimed', $message, $link, 'maintenance', $maintenanceId);
+            $this->createUserNotifications([$picUserId], 'maintenance', 'Maintenance Case Claimed', $message, $link, 'maintenance', $maintenanceId);
 
-        $this->sendEmail(
-            $this->emailsForUserIds($otherTechnicianIds),
-            'FKMP Smart Lab: Maintenance Case Claimed',
-            $this->emailTemplate('Maintenance Case Claimed', [
-                $message,
-                'Case: ' . ($context['title'] ?? 'Maintenance Issue'),
-                'Laboratory: ' . ($context['lab_name'] ?? '-'),
-                'Equipment: ' . ($context['asset_name'] ?? '-'),
-            ], site_url($link), 'Open Maintenance Case'),
-            null,
-            ['entity_type' => 'maintenance', 'entity_id' => $maintenanceId, 'notification_type' => 'maintenance']
-        );
+            $this->sendEmail(
+                [$picEmail],
+                'FKMP Smart Lab: Maintenance Case Claimed',
+                $this->emailTemplate('Maintenance Case Claimed', [
+                    $message,
+                    'Case: ' . ($context['title'] ?? 'Maintenance Issue'),
+                    'Laboratory: ' . ($context['lab_name'] ?? '-'),
+                    'Equipment: ' . ($context['asset_name'] ?? '-'),
+                ], site_url($link), 'Open Maintenance Case'),
+                null,
+                ['entity_type' => 'maintenance', 'entity_id' => $maintenanceId, 'notification_type' => 'maintenance']
+            );
+        }
     }
 
     public function notifyMaintenanceScheduled(int $maintenanceId): void
@@ -395,21 +399,25 @@ class NotificationService
             $message .= ' Reason: ' . trim((string) $reasons[0]);
         }
 
-        $link = '/technician/maintenance?asset_id=' . $assetId;
-        $this->createUserNotifications(
-            $this->groupUserIds('technician'),
-            'maintenance_due',
-            'Maintenance Due Soon',
-            $message,
-            $link,
-            'asset',
-            $assetId
-        );
+        $picEmail = $this->picEmailForAsset($assetId);
+        $picUserId = $picEmail !== '' ? $this->findUserIdByEmail($picEmail) : 0;
 
-        $emails = $this->emailsForUserIds($this->groupUserIds('technician'));
-        if ($emails !== []) {
+        $link = '/technician/maintenance?asset_id=' . $assetId;
+        if ($picUserId > 0) {
+            $this->createUserNotifications(
+                [$picUserId],
+                'maintenance_due',
+                'Maintenance Due Soon',
+                $message,
+                $link,
+                'asset',
+                $assetId
+            );
+        }
+
+        if ($picEmail !== '') {
             $this->sendEmail(
-                $emails,
+                [$picEmail],
                 'FKMP Smart Lab: Preventive Maintenance Due Soon',
                 $this->emailTemplate('Maintenance Due Soon', [
                     $message,
@@ -870,6 +878,21 @@ class NotificationService
             ->getRowArray();
 
         return (int) ($row['user_id'] ?? 0);
+    }
+
+    protected function picEmailForAsset(int $assetId): string
+    {
+        if ($assetId <= 0) {
+            return '';
+        }
+        $row = $this->db->table('assets a')
+            ->select('l.pic_email')
+            ->join('laboratories l', 'l.id = a.lab_id', 'left')
+            ->where('a.id', $assetId)
+            ->get()
+            ->getRowArray();
+
+        return strtolower(trim((string) ($row['pic_email'] ?? '')));
     }
 
     protected function compactIds(array $ids): array

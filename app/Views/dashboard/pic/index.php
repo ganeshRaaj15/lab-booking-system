@@ -24,7 +24,7 @@ $pendingExternalPic = $pendingExternalPic ?? [];
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h2 class="fw-bold text-primary mb-0">PIC Dashboard</h2>
-        <p class="text-muted small">Manage booking requests for your assigned laboratories.</p>
+        <p class="text-muted small">Manage booking requests and equipment maintenance for your assigned laboratories.</p>
         <?php if (!empty($labs)): ?>
             <div class="d-flex flex-wrap gap-2 mt-2">
                 <?php foreach ($labs as $lab): ?>
@@ -38,6 +38,12 @@ $pendingExternalPic = $pendingExternalPic ?? [];
         <?php endif; ?>
     </div>
     <div class="d-flex flex-wrap gap-2">
+        <a href="/technician/maintenance" class="btn btn-outline-warning btn-sm px-3 shadow-sm">
+            <i class="bi bi-wrench me-1"></i> Maintenance Records
+        </a>
+        <a href="/technician/maintenance/create" class="btn btn-outline-secondary btn-sm px-3 shadow-sm">
+            <i class="bi bi-plus-circle me-1"></i> New Maintenance
+        </a>
         <a href="/dashboard/report-issue" class="btn btn-outline-danger btn-sm px-3 shadow-sm">
             <i class="bi bi-tools me-1"></i> Report Asset Issue
         </a>
@@ -144,6 +150,71 @@ $pendingExternalPic = $pendingExternalPic ?? [];
         </div>
     </div>
 </div>
+<!-- MAINTENANCE TASKS -->
+<?php $maintenanceTasks = $maintenanceTasks ?? []; ?>
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="fw-semibold text-warning mb-0">
+            <i class="bi bi-wrench me-2"></i>Open Maintenance Cases
+        </h5>
+        <a href="/technician/maintenance" class="btn btn-outline-warning btn-sm">View All</a>
+    </div>
+    <div class="card-body p-0">
+        <?php if (empty($maintenanceTasks)): ?>
+            <div class="text-center py-4 text-muted">
+                <i class="bi bi-check-circle fs-2"></i>
+                <p class="mt-2 mb-0">No open maintenance cases in your labs.</p>
+            </div>
+        <?php else: ?>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Equipment</th>
+                            <th>Lab</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($maintenanceTasks as $task): ?>
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold"><?= esc($task['title'] ?? $task['asset_name'] ?? '-') ?></div>
+                                    <small class="text-muted"><?= esc($task['asset_name'] ?? '') ?></small>
+                                </td>
+                                <td><?= esc($task['laboratory_name'] ?? $task['lab_name'] ?? '-') ?></td>
+                                <td><span class="badge bg-secondary-subtle text-secondary border"><?= esc(ucfirst($task['issue_type'] ?? '-')) ?></span></td>
+                                <td>
+                                    <?php
+                                    $statusColors = ['reported' => 'danger', 'scheduled' => 'primary', 'in_progress' => 'warning', 'testing' => 'info'];
+                                    $sc = $statusColors[$task['status'] ?? ''] ?? 'secondary';
+                                    ?>
+                                    <span class="badge bg-<?= esc($sc) ?>-subtle text-<?= esc($sc) ?> border"><?= esc(ucwords(str_replace('_', ' ', $task['status'] ?? '-'))) ?></span>
+                                </td>
+                                <td>
+                                    <?php
+                                    $prioColors = ['critical' => 'danger', 'high' => 'warning', 'medium' => 'primary', 'low' => 'secondary'];
+                                    $pc = $prioColors[$task['priority'] ?? ''] ?? 'secondary';
+                                    ?>
+                                    <span class="badge bg-<?= esc($pc) ?>"><?= esc(ucfirst($task['priority'] ?? '-')) ?></span>
+                                </td>
+                                <td class="text-end">
+                                    <a href="/technician/maintenance/edit/<?= esc($task['id']) ?>" class="btn btn-outline-primary btn-sm">
+                                        <i class="bi bi-pencil me-1"></i>Update
+                                    </a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
+
 <!-- CHARTS SECTION -->
 <div class="row mb-4">
     <?php if (!empty($monthlyCounts)): ?>

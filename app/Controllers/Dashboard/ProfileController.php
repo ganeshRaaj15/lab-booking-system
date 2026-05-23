@@ -42,16 +42,12 @@ class ProfileController extends BaseController
         if ($user->inGroup('admin')) {
             $layout = 'layouts/main_admin';
             $backUrl = '/dashboard/admin';
-        } elseif ($user->inGroup('technician')) {
-            $layout = 'layouts/main_technician';
-            $backUrl = '/dashboard/technician';
-            $title = 'Technician Profile | FKMP Smart Lab';
         }
 
         return view('dashboard/profile/index', [
             'layout' => $layout,
             'title' => $title,
-            'roleLabel' => $user->inGroup('technician') ? 'Technician' : null,
+            'roleLabel' => null,
             'backUrl' => $backUrl,
             'user' => $userModel->findById($user->id),
             'email' => $email,

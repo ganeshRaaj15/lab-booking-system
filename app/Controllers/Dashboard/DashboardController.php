@@ -33,10 +33,6 @@ class DashboardController extends BaseController
             return redirect()->to('/dashboard/pic');
         }
 
-        if ($user->inGroup('technician')) {
-            return redirect()->to('/dashboard/technician');
-        }
-
         if ($user->inGroup('external')) {
             return redirect()->to('/dashboard/external');
         }

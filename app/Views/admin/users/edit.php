@@ -247,10 +247,10 @@
                             <?php foreach ($allRoles as $role): ?>
                                 <div class="col-md-6 col-lg-4">
                                     <div class="form-check-glass">
-                                        <input class="form-check-input-glass" 
-                                               type="checkbox" 
-                                               name="roles[]" 
-                                               value="<?= esc($role) ?>" 
+                                        <input class="form-check-input-glass"
+                                               type="radio"
+                                               name="roles[]"
+                                               value="<?= esc($role) ?>"
                                                id="role_<?= esc($role) ?>"
                                                data-role="<?= esc($role) ?>"
                                                <?= in_array($role, $roles) ? 'checked' : '' ?>>
@@ -262,13 +262,13 @@
                                 </div>
                             <?php endforeach; ?>
                         </div>
-                        
+
                         <div class="mt-4">
                             <div class="alert alert-warning glass-card">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-exclamation-triangle-fill me-2"></i>
                                     <div class="small">
-                                        <strong>Warning:</strong> Changing roles will affect user permissions immediately.
+                                        <strong>Warning:</strong> Each user has exactly one role. Changing it takes effect immediately.
                                     </div>
                                 </div>
                             </div>
@@ -394,9 +394,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const selectedRoles = Array.from(document.querySelectorAll('input[name="roles[]"]:checked'));
         if (selectedRoles.length === 0) {
-            if (!confirm('No roles selected. Are you sure you want to remove all roles from this user?')) {
-                e.preventDefault();
-            }
+            e.preventDefault();
+            alert('Please select a role for this user.');
         }
     });
     

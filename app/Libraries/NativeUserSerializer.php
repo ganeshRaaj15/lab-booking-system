@@ -70,9 +70,6 @@ class NativeUserSerializer
         if (in_array('pic', $roles, true)) {
             return '/dashboard/pic';
         }
-        if (in_array('technician', $roles, true)) {
-            return '/dashboard/technician';
-        }
         if (in_array('external', $roles, true)) {
             return '/dashboard/external';
         }

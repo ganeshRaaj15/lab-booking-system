@@ -29,7 +29,7 @@ $priorityBadgeClass = [
     'critical' => 'badge text-bg-danger',
 ];
 ?>
-<?= $this->extend('layouts/main_technician') ?>
+<?= $this->extend('layouts/main_user') ?>
 <?= $this->section('content') ?>
 <div class="container-fluid">
     <?php if (session()->getFlashdata('success')): ?><div class="alert alert-success border-0 shadow-sm"><?= esc(session()->getFlashdata('success')) ?></div><?php endif; ?>
@@ -222,7 +222,7 @@ $priorityBadgeClass = [
             <div class="table-responsive">
                 <table class="table align-middle mb-0">
                     <thead class="table-light">
-                        <tr><th>Case</th><th>Asset</th><th>Stage</th><th>Claimed By</th><th>Priority</th><th>Reporter / Unit</th><th>Updated</th><th class="text-end">Action</th></tr>
+                        <tr><th>Case</th><th>Asset</th><th>Stage</th><th>Priority</th><th>Reporter / Unit</th><th>Updated</th><th class="text-end">Action</th></tr>
                     </thead>
                     <tbody>
                         <?php if (empty($records)): ?>
@@ -233,20 +233,11 @@ $priorityBadgeClass = [
                                 $label  = $statusLabels[$record['status']] ?? ucwords(str_replace('_', ' ', $record['status']));
                                 $sBadge = $statusBadgeClass[$record['status']] ?? 'text-bg-secondary';
                                 $pBadge = $priorityBadgeClass[$record['priority']] ?? 'stat-badge stat-badge-neutral';
-                                $claimedName = $record['technician_name'] ?? $record['technician_username'] ?? null;
-                                $isUnclaimedReported = $record['status'] === 'reported' && empty($record['assigned_technician_id']);
                                 ?>
                                 <tr>
                                     <td><div class="fw-semibold"><?= esc($record['title']) ?></div><small class="text-muted">#<?= esc($record['id']) ?> | <?= esc(ucfirst($record['issue_type'])) ?></small></td>
                                     <td><div><?= esc($record['asset_name'] ?? '-') ?></div><small class="text-muted"><?= esc($record['laboratory_name'] ?? '-') ?></small></td>
                                     <td><span class="badge <?= esc($sBadge) ?>"><?= esc($label) ?></span></td>
-                                    <td>
-                                        <?php if ($claimedName): ?>
-                                            <div class="small fw-semibold"><?= esc($claimedName) ?></div>
-                                        <?php else: ?>
-                                            <span class="stat-badge stat-badge-neutral">Unassigned</span>
-                                        <?php endif; ?>
-                                    </td>
                                     <td><span class="<?= esc($pBadge) ?> text-uppercase"><?= esc($record['priority']) ?></span></td>
                                     <td>
                                         <div class="small"><?= esc($record['reported_by_name'] ?: $record['reported_by_username'] ?: 'System') ?></div>
@@ -254,15 +245,7 @@ $priorityBadgeClass = [
                                     </td>
                                     <td><?= esc($record['updated_at'] ? date('d M Y H:i', strtotime($record['updated_at'])) : '-') ?></td>
                                     <td class="text-end">
-                                        <div class="d-flex justify-content-end gap-1">
-                                            <?php if ($isUnclaimedReported): ?>
-                                                <form method="post" action="/technician/maintenance/claim/<?= esc($record['id']) ?>">
-                                                    <?= csrf_field() ?>
-                                                    <button type="submit" class="btn btn-sm btn-success">Claim</button>
-                                                </form>
-                                            <?php endif; ?>
-                                            <a href="/technician/maintenance/edit/<?= esc($record['id']) ?>" class="btn btn-sm btn-outline-primary">Open Case</a>
-                                        </div>
+                                        <a href="/technician/maintenance/edit/<?= esc($record['id']) ?>" class="btn btn-sm btn-outline-primary">Open Case</a>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

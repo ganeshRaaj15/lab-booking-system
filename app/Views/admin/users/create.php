@@ -188,10 +188,10 @@
                             <?php foreach ($allRoles as $role): ?>
                                 <div class="col-md-6 col-lg-4">
                                     <div class="form-check-glass">
-                                        <input class="form-check-input-glass" 
-                                               type="checkbox" 
-                                               name="roles[]" 
-                                               value="<?= esc($role) ?>" 
+                                        <input class="form-check-input-glass"
+                                               type="radio"
+                                               name="roles[]"
+                                               value="<?= esc($role) ?>"
                                                id="role_<?= esc($role) ?>"
                                                data-role="<?= esc($role) ?>"
                                                <?= old('roles') && in_array($role, old('roles')) ? 'checked' : '' ?>>
@@ -203,13 +203,13 @@
                                 </div>
                             <?php endforeach; ?>
                         </div>
-                        
+
                         <div class="mt-4">
                             <div class="alert alert-warning glass-card">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-exclamation-triangle-fill me-2"></i>
                                     <div class="small">
-                                        <strong>Note:</strong> Users can have multiple roles. Admin roles have full system access.
+                                        <strong>Note:</strong> Select exactly one role. Admin roles have full system access.
                                     </div>
                                 </div>
                             </div>
@@ -278,7 +278,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let message = `New User Preview:\n\n`;
         message += `Username: ${username || '[Not set]'}\n`;
         message += `Email: ${email || '[Not set]'}\n`;
-        message += `Roles: ${selectedRoles.length > 0 ? selectedRoles.join(', ') : '[No roles selected]'}\n\n`;
+        message += `Role: ${selectedRoles.length > 0 ? selectedRoles.join(', ') : '[No role selected]'}\n\n`;
         message += `Click "Create User" to save.`;
         
         alert(message);
@@ -305,9 +305,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const selectedRoles = Array.from(document.querySelectorAll('input[name="roles[]"]:checked'));
         if (selectedRoles.length === 0) {
-            if (!confirm('No roles selected. Are you sure you want to create a user without any roles?')) {
-                e.preventDefault();
-            }
+            e.preventDefault();
+            alert('Please select a role for this user.');
+            return;
         }
     });
     

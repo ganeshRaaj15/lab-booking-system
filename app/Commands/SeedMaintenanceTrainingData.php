@@ -106,7 +106,7 @@ class SeedMaintenanceTrainingData extends BaseCommand
     {
         $timezone = new DateTimeZone('Asia/Kuala_Lumpur');
         $selectedAssets = $this->selectedSeedAssets();
-        $technicianId = $this->firstUserIdForGroup('technician');
+        $technicianId = $this->firstUserIdForGroup('pic');
         $reporterId = $this->firstUserIdForGroup('student') ?: $this->firstUserIdForGroup('pic') ?: $this->firstUserIdForGroup('admin');
 
         $rows = [];

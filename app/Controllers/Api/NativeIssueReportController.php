@@ -175,7 +175,7 @@ class NativeIssueReportController extends WebIssueReportController
 
         return $this->response->setJSON([
             'status' => 'success',
-            'message' => 'Issue report submitted successfully. The technician can now review it.',
+            'message' => 'Issue report submitted successfully. The lab PIC has been notified.',
             'report_id' => (int) $maintenanceId,
         ]);
     }
