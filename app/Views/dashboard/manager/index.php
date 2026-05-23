@@ -175,7 +175,7 @@ $topAtRisk = $equipmentHealth['topAtRisk'] ?? [];
     </div>
     <div class="card-body">
         <?php if ($ehTotal === 0): ?>
-            <p class="text-muted mb-0">No predictive maintenance data available yet. Train the model from the Technician panel to see risk scores.</p>
+            <p class="text-muted mb-0">No predictive maintenance data available yet. Risk scores will appear here once the PIC logs maintenance activity.</p>
         <?php else: ?>
             <!-- Traffic-light summary -->
             <div class="row g-3 mb-4">
