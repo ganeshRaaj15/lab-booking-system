@@ -356,23 +356,23 @@ $pendingExternalPic = $pendingExternalPic ?? [];
                                 </td>
 
                                 <td class="text-end">
-                                    <button class="btn btn-outline-primary btn-sm px-3"
-                                            onclick="viewBookingDetails(<?= $b['id'] ?>)"
-                                            data-bs-toggle="tooltip" title="View Details">
-                                        <i class="bi bi-eye me-1"></i>View
-                                    </button>
-
-                                    <button class="btn btn-success btn-sm px-3"
-                                            onclick="approveBooking(<?= $b['id'] ?>)"
-                                            data-bs-toggle="tooltip" title="Approve">
-                                        <i class="bi bi-check-lg"></i>
-                                    </button>
-
-                                    <button class="btn btn-danger btn-sm px-3"
-                                            onclick="rejectBooking(<?= $b['id'] ?>)"
-                                            data-bs-toggle="tooltip" title="Reject">
-                                        <i class="bi bi-x-lg"></i>
-                                    </button>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button class="btn btn-outline-secondary"
+                                                onclick="viewBookingDetails(<?= $b['id'] ?>)"
+                                                data-bs-toggle="tooltip" title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        <button class="btn btn-success"
+                                                onclick="approveBooking(<?= $b['id'] ?>)"
+                                                data-bs-toggle="tooltip" title="Approve">
+                                            <i class="bi bi-check-lg"></i>
+                                        </button>
+                                        <button class="btn btn-danger"
+                                                onclick="rejectBooking(<?= $b['id'] ?>)"
+                                                data-bs-toggle="tooltip" title="Reject">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
