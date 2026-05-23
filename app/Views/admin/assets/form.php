@@ -178,7 +178,7 @@ $intelligence = $intelligence ?? [
                                         <div class="fw-semibold"><?= esc($record['title']) ?></div>
                                         <div class="small text-muted text-uppercase"><?= esc(str_replace('_', ' ', $record['status'])) ?> | <?= esc($record['priority']) ?></div>
                                         <div class="small text-muted">Affected units: <?= esc((int) ($record['quantity_affected'] ?? 1)) ?></div>
-                                        <div class="small text-muted">Technician: <?= esc($record['technician_name'] ?: $record['technician_username'] ?: '-') ?></div>
+                                        <div class="small text-muted">Assigned PIC: <?= esc($record['technician_name'] ?: $record['technician_username'] ?: '-') ?></div>
                                         <div class="small text-muted">Updated: <?= esc($record['updated_at'] ? date('d M Y H:i', strtotime($record['updated_at'])) : '-') ?></div>
                                         <?php if (!empty($record['resolution_notes'])): ?>
                                             <div class="small mt-2"><?= esc($record['resolution_notes']) ?></div>

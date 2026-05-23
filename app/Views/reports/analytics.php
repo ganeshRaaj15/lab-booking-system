@@ -160,7 +160,7 @@
                                     <th>Laboratory</th>
                                     <th>Status</th>
                                     <th>Priority</th>
-                                    <th>Technician</th>
+                                    <th>Assigned To</th>
                                 </tr>
                             </thead>
                             <tbody>

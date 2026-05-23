@@ -208,7 +208,7 @@ $filters           = $filters ?? ['q' => '', 'status' => '', 'date_from' => '', 
                         <div>
                             <h6 class="fw-bold mb-1">Report Asset Issue</h6>
                             <p class="small text-muted mb-0">
-                                Notify a technician about faulty or damaged equipment.
+                                Notify the lab PIC about faulty or damaged equipment.
                             </p>
                         </div>
                     </div>

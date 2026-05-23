@@ -210,7 +210,7 @@ $stageChecklist = match ($stageMode) {
                             <div class="col-12">
                                 <label class="form-label">Unit / Workstation Reference</label>
                                 <input type="text" name="unit_reference" class="form-control" value="<?= esc(old('unit_reference', $record['unit_reference'] ?? '')) ?>" placeholder="Example: PC-07, Seat B3, Projector Unit 2">
-                                <div class="form-text">Required for multi-unit equipment so the technician knows the exact physical unit involved.</div>
+                                <div class="form-text">Required for multi-unit equipment to identify the exact physical unit involved.</div>
                             </div>
                             <div class="col-12">
                                 <label class="form-label">Problem Or Work Description</label>

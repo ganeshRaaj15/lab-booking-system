@@ -72,12 +72,12 @@ $recentReports = $recentReports ?? [];
                         <div class="col-12">
                             <label class="form-label">Problem Description</label>
                             <textarea name="description" rows="6" class="form-control" placeholder="Describe what is wrong, what you observed, and when it happened..." required><?= esc(old('description')) ?></textarea>
-                            <div class="form-text">Explain the symptoms, what you tried, and anything the technician should notice first.</div>
+                            <div class="form-text">Explain the symptoms, what you tried, and anything the PIC should notice first.</div>
                         </div>
                         <div class="col-12">
                             <label class="form-label">Photo Evidence</label>
                             <input type="file" name="report_photo" class="form-control" accept="image/png,image/jpeg,image/webp">
-                            <div class="form-text">Optional, but recommended. A clear photo helps the technician identify the exact issue faster.</div>
+                            <div class="form-text">Optional, but recommended. A clear photo helps identify the exact issue faster.</div>
                         </div>
                         <div class="col-12 d-flex justify-content-end"><button type="submit" class="btn btn-primary"><i class="bi bi-send me-2"></i>Submit Report</button></div>
                     </form>
