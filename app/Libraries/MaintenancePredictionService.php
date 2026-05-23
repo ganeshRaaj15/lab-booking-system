@@ -174,6 +174,8 @@ class MaintenancePredictionService
         $threshold = $modelAvailable ? $this->trainer->resolveThreshold($features, $model) : 0.60;
         $thresholdSegment = $modelAvailable ? $this->trainer->thresholdSegment($features, $model) : 'rule_based_only';
 
+        $decision = $this->decision($probability, $features, $threshold);
+
         return array_merge($asset, [
             'risk_probability' => $probability,
             'model_probability_raw' => $modelProbabilityRaw,
@@ -181,8 +183,8 @@ class MaintenancePredictionService
             'model_available' => $modelAvailable,
             'risk_percent' => (int) round($probability * 100),
             'risk_band' => $this->riskBand($probability, $threshold),
-            'decision' => $this->decision($probability, $features, $threshold),
-            'reasons' => $this->reasons($features),
+            'decision' => $decision,
+            'reasons' => $this->reasons($features, $probability, $threshold, $decision),
             'features' => $features,
             'threshold' => $threshold,
             'threshold_segment' => $thresholdSegment,
@@ -279,7 +281,7 @@ class MaintenancePredictionService
         return min(0.98, max($threshold + 0.12, $threshold * 1.22));
     }
 
-    protected function reasons(array $features): array
+    protected function reasons(array $features, float $probability, float $threshold, array $decision): array
     {
         $reasons = [];
         $hasCompletedPlannedHistory = (float) ($features['has_completed_planned_history'] ?? 0.0) >= 1.0;
@@ -314,6 +316,12 @@ class MaintenancePredictionService
             $reasons[] = 'This asset has been booked heavily (' . (int) $bookingCount90 . ' sessions in the last 90 days), increasing wear exposure.';
         } elseif ($bookingHours90 >= 80.0) {
             $reasons[] = 'High cumulative usage hours (' . (int) $bookingHours90 . ' h in 90 days) detected from booking records.';
+        }
+
+        if ($reasons === [] && ($decision['action'] ?? 'monitor') === 'schedule_now' && $probability >= $this->scheduleThreshold($threshold)) {
+            $reasons[] = 'The learned risk score exceeded the scheduling threshold based on the asset\'s maintenance pattern.';
+        } elseif ($reasons === [] && ($decision['action'] ?? 'monitor') === 'inspect_soon' && $probability >= $threshold) {
+            $reasons[] = 'The learned risk score exceeded the inspection threshold based on the asset\'s maintenance pattern.';
         }
 
         if ($reasons === []) {
