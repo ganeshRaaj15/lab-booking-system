@@ -39,7 +39,8 @@ class TrainMaintenanceModel extends BaseCommand
             CLI::write('Test precision: ' . $this->formatPercent((float) ($metrics['precision'] ?? 0.0)), 'green');
             CLI::write('Test recall: ' . $this->formatPercent((float) ($metrics['recall'] ?? 0.0)), 'green');
             CLI::write('Test F1: ' . $this->formatPercent((float) ($metrics['f1'] ?? 0.0)), 'green');
-            CLI::write('Decision threshold: ' . number_format((float) ($model['threshold'] ?? 0.5), 2), 'green');
+            CLI::write('Default decision threshold: ' . number_format((float) ($model['threshold'] ?? 0.5), 2), 'green');
+            CLI::write('Learned threshold segments: ' . count((array) ($model['threshold_policy']['segments'] ?? [])), 'green');
         } catch (\Throwable $e) {
             log_message('error', 'Maintenance model training failed: ' . $e->getMessage());
             CLI::error('Maintenance model training failed: ' . $e->getMessage());

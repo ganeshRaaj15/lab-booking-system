@@ -132,6 +132,7 @@ class MaintenancePredictionService
             'path' => $this->modelPath,
             'trained_at' => $model['trained_at'] ?? null,
             'threshold' => (float) ($model['threshold'] ?? 0.5),
+            'threshold_policy' => $model['threshold_policy'] ?? [],
             'metrics' => $model['metrics']['test'] ?? [],
             'dataset' => $model['dataset'] ?? [],
             'training' => $model['training'] ?? [],
@@ -160,6 +161,9 @@ class MaintenancePredictionService
 
         $ruleFloor = $this->ruleBasedFloor($features);
         $modelAvailable = is_array($model) && ($model['feature_names'] ?? []) !== [];
+        $modelProbabilityRaw = $modelAvailable
+            ? $this->trainer->predictRawProbability($features, $model)
+            : null;
         $modelProbability = $modelAvailable
             ? $this->trainer->predictProbability($features, $model)
             : null;
@@ -167,18 +171,21 @@ class MaintenancePredictionService
             ? max((float) $modelProbability, $ruleFloor)
             : $ruleFloor;
         $probability = $this->dampByHistoryConfidence($probability, $features);
-        $threshold = $modelAvailable ? (float) ($model['threshold'] ?? 0.5) : 0.60;
+        $threshold = $modelAvailable ? $this->trainer->resolveThreshold($features, $model) : 0.60;
+        $thresholdSegment = $modelAvailable ? $this->trainer->thresholdSegment($features, $model) : 'rule_based_only';
 
         return array_merge($asset, [
             'risk_probability' => $probability,
-            'model_probability_raw' => $modelProbability,
+            'model_probability_raw' => $modelProbabilityRaw,
+            'model_probability_calibrated' => $modelProbability,
             'model_available' => $modelAvailable,
             'risk_percent' => (int) round($probability * 100),
-            'risk_band' => $this->riskBand($probability),
+            'risk_band' => $this->riskBand($probability, $threshold),
             'decision' => $this->decision($probability, $features, $threshold),
             'reasons' => $this->reasons($features),
             'features' => $features,
             'threshold' => $threshold,
+            'threshold_segment' => $thresholdSegment,
         ]);
     }
 
@@ -218,12 +225,13 @@ class MaintenancePredictionService
         $correctiveRecent = (float) ($features['corrective_last_120d'] ?? 0.0);
         $highPriority     = (float) ($features['high_priority_last_180d'] ?? 0.0);
         $bookingCount90   = (float) ($features['booking_count_90d'] ?? 0.0);
+        $scheduleThreshold = $this->scheduleThreshold($threshold);
 
         // schedule_now: requires strong combined evidence, not just one flag
         $strongCorrectiveCombination    = $correctiveRecent >= 2.0 && $highPriority >= 1.0;
         $badlyOverdueWithUsageEvidence  = $plannedGapDelta >= 45.0 && ($correctiveRecent >= 1.0 || $bookingCount90 >= 10.0);
 
-        if ($probability >= 0.85 || $strongCorrectiveCombination || $badlyOverdueWithUsageEvidence) {
+        if ($probability >= $scheduleThreshold || $strongCorrectiveCombination || $badlyOverdueWithUsageEvidence) {
             return [
                 'action' => 'schedule_now',
                 'label' => 'Schedule preventive maintenance now',
@@ -234,7 +242,7 @@ class MaintenancePredictionService
         // inspect_soon: moderate evidence or approaching/exceeded average interval
         $moderateEvidence = $correctiveRecent >= 1.0 || $highPriority >= 1.0;
 
-        if ($probability >= max($threshold, 0.60) || $plannedGapDelta >= 30.0 || ($plannedGapDelta >= 14.0 && $moderateEvidence)) {
+        if ($probability >= $threshold || $plannedGapDelta >= 30.0 || ($plannedGapDelta >= 14.0 && $moderateEvidence)) {
             return [
                 'action' => 'inspect_soon',
                 'label' => 'Inspect within 14 days',
@@ -249,16 +257,21 @@ class MaintenancePredictionService
         ];
     }
 
-    protected function riskBand(float $probability): string
+    protected function riskBand(float $probability, float $threshold): string
     {
-        if ($probability >= 0.85) {
+        if ($probability >= $this->scheduleThreshold($threshold)) {
             return 'high';
         }
-        if ($probability >= 0.60) {
+        if ($probability >= $threshold) {
             return 'medium';
         }
 
         return 'low';
+    }
+
+    protected function scheduleThreshold(float $threshold): float
+    {
+        return min(0.98, max($threshold + 0.12, $threshold * 1.22));
     }
 
     protected function reasons(array $features): array
