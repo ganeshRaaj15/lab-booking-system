@@ -45,30 +45,6 @@ $priorityBadgeClass = [
         </a>
     </div>
 
-    <?php if (! empty($modelSummary['available'])): ?>
-        <?php
-            $metrics = $modelSummary['metrics'] ?? [];
-            $dataset = $modelSummary['dataset'] ?? [];
-            $trainedAt = ! empty($modelSummary['trained_at']) ? date('d M Y H:i', strtotime((string) $modelSummary['trained_at'])) : '-';
-        ?>
-        <div class="card border-0 shadow-sm mb-4 overflow-hidden">
-            <div class="card-header border-0 d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 py-3"
-                 style="background: var(--slams-primary-soft); border-left: 4px solid var(--slams-primary) !important;">
-                <div>
-                    <h6 class="fw-bold mb-1" style="color: var(--slams-primary);">
-                        <i class="bi bi-cpu me-2"></i>Local Predictive Maintenance Model
-                    </h6>
-                    <small class="text-muted">Runs entirely on the server using local maintenance history. Last trained: <?= esc($trainedAt) ?></small>
-                </div>
-                <div class="d-flex flex-wrap gap-2">
-                    <span class="stat-badge stat-badge-primary">Accuracy <?= esc(number_format(((float) ($metrics['accuracy'] ?? 0.0)) * 100, 1)) ?>%</span>
-                    <span class="stat-badge stat-badge-primary">Precision <?= esc(number_format(((float) ($metrics['precision'] ?? 0.0)) * 100, 1)) ?>%</span>
-                    <span class="stat-badge stat-badge-primary">Recall <?= esc(number_format(((float) ($metrics['recall'] ?? 0.0)) * 100, 1)) ?>%</span>
-                    <span class="stat-badge stat-badge-neutral">Samples <?= esc((int) ($dataset['samples_total'] ?? 0)) ?></span>
-                </div>
-            </div>
-        </div>
-    <?php endif; ?>
 
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white border-0 py-3">
