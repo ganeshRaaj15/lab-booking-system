@@ -6,10 +6,17 @@ namespace App\Libraries;
 
 class MaintenanceModelTrainer
 {
+    public const MINIMUM_SAMPLES = 8;
+
+    public function minimumSamples(): int
+    {
+        return self::MINIMUM_SAMPLES;
+    }
+
     public function train(array $samples, int $iterations = 2500, float $learningRate = 0.08, float $l2 = 0.01): array
     {
-        if (count($samples) < 12) {
-            throw new \RuntimeException('At least 12 training samples are required to train the maintenance model.');
+        if (count($samples) < self::MINIMUM_SAMPLES) {
+            throw new \RuntimeException('At least ' . self::MINIMUM_SAMPLES . ' training samples are required to train the maintenance model.');
         }
 
         usort($samples, static fn(array $a, array $b): int => strcmp((string) $a['anchor_date'], (string) $b['anchor_date']));

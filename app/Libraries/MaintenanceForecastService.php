@@ -95,10 +95,8 @@ class MaintenanceForecastService
         $forecasts = $this->buildForecasts($assetIds);
         $predictionService = new MaintenancePredictionService($this->db, $this->timezone);
         $predictions = [];
-        if ($predictionService->modelExists()) {
-            foreach ($predictionService->predictAllAssets() as $prediction) {
-                $predictions[(int) ($prediction['id'] ?? 0)] = $prediction;
-            }
+        foreach ($predictionService->predictAllAssets() as $prediction) {
+            $predictions[(int) ($prediction['id'] ?? 0)] = $prediction;
         }
 
         // Suppress assets that already have an open maintenance record — no duplicate alerting.

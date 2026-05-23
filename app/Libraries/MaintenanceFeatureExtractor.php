@@ -85,6 +85,9 @@ class MaintenanceFeatureExtractor
             $anchor = $firstEventAt > $globalStart ? $firstEventAt : $globalStart;
             $anchor = $anchor->setTime(0, 0);
 
+            // Adjacent anchors can still have overlapping future-label windows when
+            // stepDays is smaller than horizonDays. This is temporal autocorrelation,
+            // not direct leakage across the train/test split, but it can inflate metrics.
             while ($anchor <= $maxAnchor) {
                 $features = $this->extractFeaturesFromHistory($asset, $history, $anchor, $bookings);
                 if (($features['events_last_90d'] ?? 0.0) > 0.0 || ($features['days_since_last_event'] ?? 999.0) < 365.0) {
@@ -183,7 +186,7 @@ class MaintenanceFeatureExtractor
         $rows = $this->db->table('maintenance_records')
             ->select('asset_id, issue_type, priority, status, quantity_affected, created_at, updated_at, scheduled_for, started_at, completed_at')
             ->whereIn('asset_id', $assetIds)
-            ->whereIn('status', ['scheduled', 'in_progress', 'testing', 'completed', 'cancelled'])
+            ->whereIn('status', ['reported', 'scheduled', 'in_progress', 'testing', 'completed', 'cancelled'])
             ->orderBy('created_at', 'ASC')
             ->get()
             ->getResultArray();
@@ -203,6 +206,7 @@ class MaintenanceFeatureExtractor
                 'status' => strtolower(trim((string) ($row['status'] ?? 'reported'))),
                 'quantity_affected' => max((int) ($row['quantity_affected'] ?? 1), 1),
                 'event_at' => $eventAt,
+                'contributes_to_label' => strtolower(trim((string) ($row['status'] ?? 'reported'))) !== 'reported',
             ];
         }
 
@@ -237,7 +241,7 @@ class MaintenanceFeatureExtractor
 
         foreach ($history as $event) {
             $eventAt = $event['event_at'];
-            if ($eventAt > $anchor && $eventAt <= $cutoff) {
+            if (($event['contributes_to_label'] ?? true) && $eventAt > $anchor && $eventAt <= $cutoff) {
                 return true;
             }
         }
@@ -265,9 +269,13 @@ class MaintenanceFeatureExtractor
         $eventsLast365 = $this->eventsInWindow($pastEvents, $anchor, 365);
         $correctiveLast365 = array_values(array_filter($eventsLast365, static fn(array $event): bool => $event['issue_type'] === 'corrective'));
         $plannedEvents = array_values(array_filter($pastEvents, fn(array $event): bool => $this->isPlanned($event['issue_type'])));
+        $completedPlannedEvents = array_values(array_filter(
+            $plannedEvents,
+            static fn(array $event): bool => ($event['status'] ?? '') === 'completed'
+        ));
 
         $avgGap = $this->averageGapDays($pastEvents, 6, 180.0);
-        $avgPlannedGap = $this->averageGapDays($plannedEvents, 4, 240.0);
+        $avgPlannedGap = $this->averageGapDays($completedPlannedEvents, 4, 240.0);
         $daysSinceLastPlanned = $this->daysSince($anchor, $lastPlanned['event_at'] ?? null, 365.0);
 
         $recentFive = array_slice($pastEvents, -5);

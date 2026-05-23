@@ -261,20 +261,23 @@ class NativeAdminSettingsController extends BaseController
 
         $payload = $this->requestPayload();
         $horizonDays = max((int) ($payload['horizon_days'] ?? 60), 14);
-        $stepDays = max((int) ($payload['step_days'] ?? 7), 7);
+        $stepDays = max((int) ($payload['step_days'] ?? 14), 7);
         $lookbackDays = max((int) ($payload['lookback_days'] ?? 540), 180);
 
         try {
             $predictionService = new MaintenancePredictionService();
-            $predictionService->trainAndPersist($horizonDays, $stepDays, $lookbackDays);
+            $model = $predictionService->trainAndPersist($horizonDays, $stepDays, $lookbackDays);
             $summary = $predictionService->getModelSummary();
             $assetIntelligenceService = new AssetIntelligenceService();
             $intelligenceMap = $assetIntelligenceService->mapForAssets();
 
             return $this->response->setJSON([
                 'status' => 'success',
-                'message' => 'Maintenance model trained successfully.',
+                'message' => ($model['available'] ?? true) === false
+                    ? (string) ($model['notice'] ?? 'Model training was skipped; rule-based fallback remains active.')
+                    : 'Maintenance model trained successfully.',
                 'model_summary' => $summary,
+                'training_result' => $model,
                 'asset_stats' => $assetIntelligenceService->stats($intelligenceMap),
             ]);
         } catch (\Throwable $e) {

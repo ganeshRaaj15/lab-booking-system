@@ -62,16 +62,52 @@ class MaintenancePredictionService
         file_put_contents($this->modelPath, json_encode($model, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 
-    public function trainAndPersist(int $horizonDays = 60, int $stepDays = 7, int $lookbackDays = 540): array
+    public function removeModel(): void
+    {
+        if ($this->modelExists()) {
+            unlink($this->modelPath);
+        }
+    }
+
+    public function trainAndPersist(int $horizonDays = 60, int $stepDays = 14, int $lookbackDays = 540): array
     {
         $samples = $this->featureExtractor->buildTrainingSamples($horizonDays, $stepDays, $lookbackDays);
+        $recordsUsed = $this->db->table('maintenance_records')->countAllResults();
+        $assetsUsed = $this->db->table('assets')->countAllResults();
+
+        if (count($samples) < $this->trainer->minimumSamples()) {
+            $this->removeModel();
+
+            return [
+                'available' => false,
+                'mode' => 'rule_based_only',
+                'notice' => 'Insufficient training samples after migration; predictive scoring will use rule-based fallback only.',
+                'dataset' => [
+                    'samples_total' => count($samples),
+                    'samples_train' => 0,
+                    'samples_test' => 0,
+                    'positive_train' => 0,
+                    'positive_test' => 0,
+                ],
+                'training' => [
+                    'horizon_days' => $horizonDays,
+                    'step_days' => $stepDays,
+                    'lookback_days' => $lookbackDays,
+                    'records_used' => $recordsUsed,
+                    'assets_used' => $assetsUsed,
+                    'minimum_samples_required' => $this->trainer->minimumSamples(),
+                ],
+            ];
+        }
+
         $model = $this->trainer->train($samples);
         $model['training'] = [
             'horizon_days' => $horizonDays,
             'step_days' => $stepDays,
             'lookback_days' => $lookbackDays,
-            'records_used' => $this->db->table('maintenance_records')->countAllResults(),
-            'assets_used' => $this->db->table('assets')->countAllResults(),
+            'records_used' => $recordsUsed,
+            'assets_used' => $assetsUsed,
+            'minimum_samples_required' => $this->trainer->minimumSamples(),
         ];
         $this->saveModel($model);
 
@@ -84,12 +120,15 @@ class MaintenancePredictionService
         if (! $model) {
             return [
                 'available' => false,
+                'mode' => 'rule_based_only',
+                'notice' => 'No trained maintenance model is available. Rule-based predictive scoring remains active.',
                 'path' => $this->modelPath,
             ];
         }
 
         return [
             'available' => true,
+            'mode' => 'model_plus_rules',
             'path' => $this->modelPath,
             'trained_at' => $model['trained_at'] ?? null,
             'threshold' => (float) ($model['threshold'] ?? 0.5),
@@ -102,9 +141,6 @@ class MaintenancePredictionService
     public function predictAsset(int $assetId, ?array $model = null): ?array
     {
         $model = $model ?? $this->loadModel();
-        if (! $model) {
-            return null;
-        }
 
         $asset = $this->db->table('assets a')
             ->select('a.id, a.name, a.asset_code, a.status, a.total_quantity, a.quantity, l.name AS lab_name, l.room AS lab_room')
@@ -122,14 +158,21 @@ class MaintenancePredictionService
             return null;
         }
 
-        $modelProbability = $this->trainer->predictProbability($features, $model);
-        $probability = max($modelProbability, $this->ruleBasedFloor($features));
+        $ruleFloor = $this->ruleBasedFloor($features);
+        $modelAvailable = is_array($model) && ($model['feature_names'] ?? []) !== [];
+        $modelProbability = $modelAvailable
+            ? $this->trainer->predictProbability($features, $model)
+            : null;
+        $probability = $modelAvailable
+            ? max((float) $modelProbability, $ruleFloor)
+            : $ruleFloor;
         $probability = $this->dampByHistoryConfidence($probability, $features);
-        $threshold = (float) ($model['threshold'] ?? 0.5);
+        $threshold = $modelAvailable ? (float) ($model['threshold'] ?? 0.5) : 0.60;
 
         return array_merge($asset, [
             'risk_probability' => $probability,
             'model_probability_raw' => $modelProbability,
+            'model_available' => $modelAvailable,
             'risk_percent' => (int) round($probability * 100),
             'risk_band' => $this->riskBand($probability),
             'decision' => $this->decision($probability, $features, $threshold),
@@ -142,9 +185,6 @@ class MaintenancePredictionService
     public function predictAllAssets(?array $model = null): array
     {
         $model = $model ?? $this->loadModel();
-        if (! $model) {
-            return [];
-        }
 
         $assets = $this->db->table('assets')
             ->select('id')

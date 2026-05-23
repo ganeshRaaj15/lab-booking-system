@@ -18,7 +18,7 @@ class TrainMaintenanceModel extends BaseCommand
     public function run(array $params)
     {
         $horizonDays = max((int) ($params[0] ?? 60), 14);
-        $stepDays = max((int) ($params[1] ?? 7), 7);
+        $stepDays = max((int) ($params[1] ?? 14), 7);
         $lookbackDays = max((int) ($params[2] ?? 540), 180);
 
         try {
@@ -29,6 +29,11 @@ class TrainMaintenanceModel extends BaseCommand
 
             CLI::write('Maintenance model trained successfully.', 'green');
             CLI::write('Model path: ' . ($summary['path'] ?? $service->modelPath()), 'green');
+            if (($model['available'] ?? true) === false) {
+                CLI::write((string) ($model['notice'] ?? 'Model training was skipped; rule-based fallback remains active.'), 'yellow');
+                CLI::write('Training samples: ' . (int) ($model['dataset']['samples_total'] ?? 0), 'yellow');
+                return;
+            }
             CLI::write('Training samples: ' . (int) ($summary['dataset']['samples_total'] ?? 0), 'green');
             CLI::write('Test accuracy: ' . $this->formatPercent((float) ($metrics['accuracy'] ?? 0.0)), 'green');
             CLI::write('Test precision: ' . $this->formatPercent((float) ($metrics['precision'] ?? 0.0)), 'green');
