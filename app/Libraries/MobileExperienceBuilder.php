@@ -278,7 +278,7 @@ class MobileExperienceBuilder
                         'href' => '/dashboard/report-issue',
                         'icon' => 'bi-tools',
                         'label' => 'Report Issue',
-                        'meta' => 'Send an asset issue to the technician workflow.',
+                        'meta' => 'Send an asset issue to the lab PIC.',
                     ],
                     [
                         'href' => '/dashboard/notifications',

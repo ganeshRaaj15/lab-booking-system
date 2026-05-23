@@ -14,6 +14,12 @@ class MaintenanceFeatureExtractor
     protected \CodeIgniter\Database\BaseConnection $db;
     protected DateTimeZone $timezone;
     protected array $plannedIssueTypes = ['preventive', 'inspection', 'calibration'];
+    protected array $highMaintenanceCategories = [
+        'computer', 'laptop', 'desktop', 'projector', 'printer', 'scanner',
+        'microscope', 'centrifuge', 'instrument', 'analyser', 'analyzer',
+        'spectrometer', 'oscilloscope', 'equipment', 'machine', 'device',
+        'electronic', 'sensor', 'camera', 'monitor', 'server',
+    ];
     protected array $priorityWeights = [
         'low' => 0.25,
         'medium' => 0.5,
@@ -54,6 +60,7 @@ class MaintenanceFeatureExtractor
             'has_any_planned_history',
             'bookings_days_active_90d',
             'history_depth_score',
+            'is_high_maintenance_category',
         ];
     }
 
@@ -111,7 +118,7 @@ class MaintenanceFeatureExtractor
     public function extractCurrentAssetFeatures(int $assetId, ?DateTimeImmutable $anchor = null): ?array
     {
         $asset = $this->db->table('assets')
-            ->select('id, lab_id, name, quantity, total_quantity, status')
+            ->select('id, lab_id, name, category, quantity, total_quantity, status')
             ->where('id', $assetId)
             ->get()
             ->getRowArray();
@@ -130,7 +137,7 @@ class MaintenanceFeatureExtractor
     public function assetRows(): array
     {
         return $this->db->table('assets')
-            ->select('id, lab_id, name, quantity, total_quantity, status')
+            ->select('id, lab_id, name, category, quantity, total_quantity, status')
             ->orderBy('id', 'ASC')
             ->get()
             ->getResultArray();
@@ -338,7 +345,25 @@ class MaintenanceFeatureExtractor
             'has_any_planned_history' => $plannedEventsLifetime > 0 ? 1.0 : 0.0,
             'bookings_days_active_90d' => (float) count($bookingActiveDays90),
             'history_depth_score' => round($depthFromTotal * 0.6 + $depthFromPlanned * 0.4, 3),
+            'is_high_maintenance_category' => $this->categoryMaintenanceFactor((string) ($asset['category'] ?? '')),
         ];
+    }
+
+    protected function categoryMaintenanceFactor(string $category): float
+    {
+        if ($category === '') {
+            return 0.0;
+        }
+
+        $lower = strtolower(trim($category));
+
+        foreach ($this->highMaintenanceCategories as $keyword) {
+            if (str_contains($lower, $keyword)) {
+                return 1.0;
+            }
+        }
+
+        return 0.0;
     }
 
     protected function isPlanned(string $issueType): bool

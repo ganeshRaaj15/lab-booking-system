@@ -440,7 +440,7 @@ class NativeMaintenanceController extends WebMaintenanceController
             ->setStatusCode(403)
             ->setJSON([
                 'status' => 'error',
-                'message' => 'Maintenance access is limited to technician users.',
+                'message' => 'Maintenance access is limited to PIC users.',
             ]);
     }
 

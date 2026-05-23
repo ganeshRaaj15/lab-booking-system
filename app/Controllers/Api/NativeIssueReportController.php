@@ -107,7 +107,7 @@ class NativeIssueReportController extends WebIssueReportController
         $availableUnits = max((int) ($asset['quantity'] ?? 0), 0);
         $totalUnits = max((int) ($asset['total_quantity'] ?? 0), $availableUnits);
         if ($availableUnits < 1) {
-            return $this->unprocessable('This asset has no available units left to report. The technician is already handling the full stock.');
+            return $this->unprocessable('This asset has no available units left to report. The lab PIC is already handling the full stock.');
         }
         if ($quantityAffected > $availableUnits) {
             return $this->unprocessable('The affected quantity cannot exceed the currently available units for this asset.');

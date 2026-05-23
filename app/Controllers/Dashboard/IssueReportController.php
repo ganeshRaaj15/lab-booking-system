@@ -95,7 +95,7 @@ class IssueReportController extends BaseController
         $availableUnits = max((int) ($asset['quantity'] ?? 0), 0);
         $totalUnits = max((int) ($asset['total_quantity'] ?? 0), $availableUnits);
         if ($availableUnits < 1) {
-            return redirect()->back()->withInput()->with('error', 'This asset has no available units left to report. The technician is already handling the full stock.');
+            return redirect()->back()->withInput()->with('error', 'This asset has no available units left to report. The lab PIC is already handling the full stock.');
         }
         if ($quantityAffected > $availableUnits) {
             return redirect()->back()->withInput()->with('error', 'The affected quantity cannot exceed the currently available units for this asset.');

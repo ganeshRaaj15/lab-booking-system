@@ -123,7 +123,7 @@ class MaintenanceController extends BaseController
         return view('technician/maintenance/form', [
             'title' => 'Plan Maintenance | FKMP Smart Lab',
             'page' => 'Plan Maintenance',
-            'roleLabel' => 'Technician',
+            'roleLabel' => 'PIC',
             'user' => auth()->user(),
             'mode' => 'create',
             'record' => $record,
@@ -242,7 +242,7 @@ class MaintenanceController extends BaseController
         return view('technician/maintenance/form', [
             'title' => 'Update Maintenance | FKMP Smart Lab',
             'page' => 'Update Maintenance',
-            'roleLabel' => 'Technician',
+            'roleLabel' => 'PIC',
             'user' => auth()->user(),
             'mode' => 'edit',
             'record' => $record,
@@ -476,13 +476,13 @@ class MaintenanceController extends BaseController
     protected function transitionLogMessage(string $fromStatus, string $targetStatus): string
     {
         return match ($targetStatus) {
-            'scheduled' => 'Technician accepted the case, added diagnosis, and scheduled the maintenance work.',
+            'scheduled' => 'PIC accepted the case, added diagnosis, and scheduled the maintenance work.',
             'in_progress' => $fromStatus === 'testing'
-                ? 'Technician returned the case from testing to repair work.'
-                : 'Technician started the maintenance work.',
-            'testing' => 'Technician completed repair notes and moved the case to testing.',
-            'completed' => 'Technician completed testing, resolution notes, and final evidence.',
-            'cancelled' => 'Technician cancelled the maintenance case.',
+                ? 'PIC returned the case from testing to repair work.'
+                : 'PIC started the maintenance work.',
+            'testing' => 'PIC completed repair notes and moved the case to testing.',
+            'completed' => 'PIC completed testing, resolution notes, and final evidence.',
+            'cancelled' => 'PIC cancelled the maintenance case.',
             default => 'Maintenance case updated.',
         };
     }
