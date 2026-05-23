@@ -356,18 +356,18 @@ $pendingExternalPic = $pendingExternalPic ?? [];
                                 </td>
 
                                 <td class="text-end">
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <button class="btn btn-outline-secondary"
+                                    <div class="d-flex gap-2 justify-content-end">
+                                        <button class="btn btn-outline-secondary btn-sm"
                                                 onclick="viewBookingDetails(<?= $b['id'] ?>)"
                                                 data-bs-toggle="tooltip" title="View Details">
                                             <i class="bi bi-eye"></i>
                                         </button>
-                                        <button class="btn btn-success"
+                                        <button class="btn btn-success btn-sm"
                                                 onclick="approveBooking(<?= $b['id'] ?>)"
                                                 data-bs-toggle="tooltip" title="Approve">
                                             <i class="bi bi-check-lg"></i>
                                         </button>
-                                        <button class="btn btn-danger"
+                                        <button class="btn btn-danger btn-sm"
                                                 onclick="rejectBooking(<?= $b['id'] ?>)"
                                                 data-bs-toggle="tooltip" title="Reject">
                                             <i class="bi bi-x-lg"></i>
