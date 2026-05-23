@@ -282,8 +282,13 @@ class MaintenanceFeatureExtractor
         ));
 
         $avgGap = $this->averageGapDays($pastEvents, 6, 180.0);
-        $avgPlannedGap = $this->averageGapDays($completedPlannedEvents, 4, 240.0);
-        $daysSinceLastPlanned = $this->daysSince($anchor, $lastPlanned['event_at'] ?? null, 365.0);
+        $hasCompletedPlannedHistory = $completedPlannedEvents !== [];
+        $avgPlannedGap = $hasCompletedPlannedHistory
+            ? $this->averageGapDays($completedPlannedEvents, 4, 240.0)
+            : 0.0;
+        $daysSinceLastPlanned = $hasCompletedPlannedHistory
+            ? $this->daysSince($anchor, $lastPlanned['event_at'] ?? null, 365.0)
+            : 0.0;
 
         $recentFive = array_slice($pastEvents, -5);
         $meanQuantityRatio = 0.0;
@@ -334,7 +339,9 @@ class MaintenanceFeatureExtractor
             'high_priority_last_180d' => (float) $highPriorityLast180,
             'avg_gap_days' => $avgGap,
             'avg_planned_gap_days' => $avgPlannedGap,
-            'planned_gap_delta' => max($daysSinceLastPlanned - $avgPlannedGap, 0.0),
+            'planned_gap_delta' => $hasCompletedPlannedHistory
+                ? max($daysSinceLastPlanned - $avgPlannedGap, 0.0)
+                : 0.0,
             'mean_quantity_ratio_last_5' => $meanQuantityRatio,
             'corrective_ratio_365d' => $eventsLast365 === [] ? 0.0 : count($correctiveLast365) / count($eventsLast365),
             'booking_count_30d' => (float) $bookingCount30,
@@ -343,6 +350,7 @@ class MaintenanceFeatureExtractor
             'events_last_365d' => (float) count($eventsLast365),
             'planned_events_lifetime' => (float) $plannedEventsLifetime,
             'has_any_planned_history' => $plannedEventsLifetime > 0 ? 1.0 : 0.0,
+            'has_completed_planned_history' => $hasCompletedPlannedHistory ? 1.0 : 0.0,
             'bookings_days_active_90d' => (float) count($bookingActiveDays90),
             'history_depth_score' => round($depthFromTotal * 0.6 + $depthFromPlanned * 0.4, 3),
             'is_high_maintenance_category' => $this->categoryMaintenanceFactor((string) ($asset['category'] ?? '')),

@@ -222,6 +222,7 @@ class MaintenancePredictionService
     public function decision(float $probability, array $features, float $threshold): array
     {
         $plannedGapDelta  = (float) ($features['planned_gap_delta'] ?? 0.0);
+        $hasCompletedPlannedHistory = (float) ($features['has_completed_planned_history'] ?? 0.0) >= 1.0;
         $correctiveRecent = (float) ($features['corrective_last_120d'] ?? 0.0);
         $highPriority     = (float) ($features['high_priority_last_180d'] ?? 0.0);
         $bookingCount90   = (float) ($features['booking_count_90d'] ?? 0.0);
@@ -229,7 +230,9 @@ class MaintenancePredictionService
 
         // schedule_now: requires strong combined evidence, not just one flag
         $strongCorrectiveCombination    = $correctiveRecent >= 2.0 && $highPriority >= 1.0;
-        $badlyOverdueWithUsageEvidence  = $plannedGapDelta >= 45.0 && ($correctiveRecent >= 1.0 || $bookingCount90 >= 10.0);
+        $badlyOverdueWithUsageEvidence  = $hasCompletedPlannedHistory
+            && $plannedGapDelta >= 45.0
+            && ($correctiveRecent >= 1.0 || $bookingCount90 >= 10.0);
 
         if ($probability >= $scheduleThreshold || $strongCorrectiveCombination || $badlyOverdueWithUsageEvidence) {
             return [
@@ -241,8 +244,10 @@ class MaintenancePredictionService
 
         // inspect_soon: moderate evidence or approaching/exceeded average interval
         $moderateEvidence = $correctiveRecent >= 1.0 || $highPriority >= 1.0;
+        $overduePlannedInterval = $hasCompletedPlannedHistory && $plannedGapDelta >= 30.0;
+        $moderatelyOverdueWithEvidence = $hasCompletedPlannedHistory && $plannedGapDelta >= 14.0 && $moderateEvidence;
 
-        if ($probability >= $threshold || $plannedGapDelta >= 30.0 || ($plannedGapDelta >= 14.0 && $moderateEvidence)) {
+        if ($probability >= $threshold || $overduePlannedInterval || $moderatelyOverdueWithEvidence) {
             return [
                 'action' => 'inspect_soon',
                 'label' => 'Inspect within 14 days',
@@ -277,6 +282,7 @@ class MaintenancePredictionService
     protected function reasons(array $features): array
     {
         $reasons = [];
+        $hasCompletedPlannedHistory = (float) ($features['has_completed_planned_history'] ?? 0.0) >= 1.0;
         $hasCorrectivePressure = false;
 
         if ((float) ($features['corrective_last_120d'] ?? 0.0) >= 2.0) {
@@ -289,7 +295,7 @@ class MaintenancePredictionService
             $hasCorrectivePressure = true;
         }
 
-        if ((float) ($features['planned_gap_delta'] ?? 0.0) >= 30.0) {
+        if ($hasCompletedPlannedHistory && (float) ($features['planned_gap_delta'] ?? 0.0) >= 30.0) {
             $reasons[] = 'The planned maintenance interval has been exceeded.';
         }
 
