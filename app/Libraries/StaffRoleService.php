@@ -59,10 +59,19 @@ class StaffRoleService
             return false;
         }
 
+        // Operational roles (pic, manager, admin) are assigned manually by an admin
+        // and must not be overwritten or supplemented by domain-based auto-assignment.
+        // PICs and lab managers share the @uthm.edu.my domain with regular staff.
         $currentGroups = array_values(array_unique(array_map(
             static fn(string $group): string => strtolower($group),
             $user->getGroups() ?? []
         )));
+
+        foreach (['admin', 'manager', 'pic'] as $operationalRole) {
+            if (in_array($operationalRole, $currentGroups, true)) {
+                return false;
+            }
+        }
 
         $targetGroups = array_values(array_filter(
             $currentGroups,
