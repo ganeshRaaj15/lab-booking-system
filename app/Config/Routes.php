@@ -471,6 +471,7 @@ $routes->group('dashboard', ['filter' => 'session'], function ($routes) {
 
     // ADMIN DASHBOARD
     $routes->get('admin', [AdminDashboard::class, 'index'], ['filter' => 'group:admin']);
+    $routes->get('admin/booking-details/(:num)', [AdminDashboard::class, 'bookingDetails/$1'], ['filter' => 'group:admin']);
 
     // STUDENT/PIC ISSUE REPORTING
     $routes->get('report-issue', [IssueReportController::class, 'create'], ['filter' => 'group:student,staff,pic']);

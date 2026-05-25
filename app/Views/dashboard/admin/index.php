@@ -293,6 +293,38 @@ $rejected         = $rejected ?? [];
     </div>
 </div>
 
+<!-- BOOKING DETAILS MODAL -->
+<div class="modal fade" id="adminBookingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-journal-text me-2"></i>Booking Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="adminBookingBody">
+                <!-- populated by JS -->
+            </div>
+            <div class="modal-footer border-0" id="adminBookingFooter" style="display:none;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <form id="adminRejectForm" method="post" class="d-inline">
+                    <?= csrf_field() ?>
+                    <button type="submit" class="btn btn-outline-danger px-4">
+                        <i class="bi bi-x-lg me-1"></i>Reject
+                    </button>
+                </form>
+                <form id="adminApproveForm" method="post" class="d-inline">
+                    <?= csrf_field() ?>
+                    <button type="submit" class="btn btn-success px-4">
+                        <i class="bi bi-check-lg me-1"></i>Approve
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- CHART JS -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
@@ -530,6 +562,133 @@ new Chart(facultyCtx, {
         cutout: '65%'
     }
 });
+
+/* ---------------------------------------------------------
+   ADMIN BOOKING DETAILS MODAL
+--------------------------------------------------------- */
+function adminViewBooking(id) {
+    const modalEl = document.getElementById('adminBookingModal');
+    const body    = document.getElementById('adminBookingBody');
+    const footer  = document.getElementById('adminBookingFooter');
+
+    if (window.slamsPrepareModal) {
+        window.slamsPrepareModal(modalEl);
+    } else if (modalEl.parentElement !== document.body) {
+        document.body.appendChild(modalEl);
+    }
+
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    footer.style.display = 'none';
+    body.innerHTML = `
+        <div class="d-flex justify-content-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>`;
+    modal.show();
+
+    fetch(`/dashboard/admin/booking-details/${id}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status !== 'success') {
+            body.innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
+            return;
+        }
+
+        const b = data.booking;
+        const isPending = b.status === 'PENDING';
+
+        let assetsHtml = '<p class="text-muted mb-0">No assets selected.</p>';
+        if (b.assets && b.assets.length > 0) {
+            assetsHtml = '<div class="row g-2">';
+            b.assets.forEach(a => {
+                assetsHtml += `
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center gap-3 border rounded-3 p-2">
+                            ${a.image ? `<img src="${a.image}" width="36" height="36" class="rounded object-fit-cover" alt="${a.name}">` : '<i class="bi bi-tools fs-4 text-muted"></i>'}
+                            <div>
+                                <div class="fw-semibold small">${a.name}</div>
+                                <div class="text-muted" style="font-size:0.78rem;">Qty: ${a.quantity_used}</div>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+            assetsHtml += '</div>';
+        }
+
+        let pdfHtml = '';
+        if (b.pdf_url) {
+            pdfHtml = `<a href="${b.pdf_url}" target="_blank" class="btn btn-outline-primary btn-sm mt-2">
+                <i class="bi bi-file-pdf me-1"></i>View Uploaded PDF
+            </a>`;
+        }
+
+        body.innerHTML = `
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <div class="card border h-100">
+                        <div class="card-body">
+                            <h6 class="fw-bold text-primary mb-3">Laboratory</h6>
+                            <div class="fw-semibold">${b.lab_name}</div>
+                            <div class="text-muted small">Room ${b.lab_room || '—'}</div>
+                            ${b.pic_name ? `<div class="text-muted small mt-1">PIC: ${b.pic_name}</div>` : ''}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border h-100">
+                        <div class="card-body">
+                            <h6 class="fw-bold text-primary mb-3">Schedule</h6>
+                            <div class="small"><strong>Date:</strong> ${b.date}</div>
+                            <div class="small"><strong>Time:</strong> ${b.start_time?.substring(0,5)} – ${b.end_time?.substring(0,5)}</div>
+                            <div class="small"><strong>Faculty:</strong> ${b.faculty_name || '—'}</div>
+                            <div class="mt-2">
+                                <span class="badge bg-${b.status === 'APPROVED' ? 'success' : b.status === 'REJECTED' ? 'danger' : 'warning text-dark'}">${b.status}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border mb-3">
+                <div class="card-body">
+                    <h6 class="fw-bold text-primary mb-2">Activity</h6>
+                    <p class="mb-0">${b.activity || '—'}</p>
+                </div>
+            </div>
+
+            <div class="card border mb-3">
+                <div class="card-body">
+                    <h6 class="fw-bold text-primary mb-2">Supervisor</h6>
+                    <div class="row g-1 small">
+                        <div class="col-md-4"><strong>Name:</strong> ${b.supervisor_name || '—'}</div>
+                        <div class="col-md-4"><strong>Email:</strong> ${b.supervisor_email || '—'}</div>
+                        <div class="col-md-4"><strong>Phone:</strong> ${b.supervisor_phone || '—'}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border mb-3">
+                <div class="card-body">
+                    <h6 class="fw-bold text-primary mb-2">Equipment</h6>
+                    ${assetsHtml}
+                    ${pdfHtml}
+                </div>
+            </div>
+        `;
+
+        if (isPending) {
+            document.getElementById('adminApproveForm').action = `/booking/approve/${b.id}`;
+            document.getElementById('adminRejectForm').action  = `/booking/reject/${b.id}`;
+            footer.style.display = '';
+        }
+    })
+    .catch(() => {
+        body.innerHTML = `<div class="alert alert-danger">Could not load booking details.</div>`;
+    });
+}
 
 // Function to update colors if faculty data changes dynamically
 function updateFacultyColors(newCount) {

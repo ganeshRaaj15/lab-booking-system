@@ -3,6 +3,7 @@
 namespace App\Controllers\Dashboard;
 
 use App\Controllers\BaseController;
+use App\Models\BookingAssetModel;
 use App\Models\BookingModel;
 use App\Models\LaboratoryModel;
 use Config\Database;
@@ -152,6 +153,11 @@ class AdminDashboard extends BaseController
     ->findAll();
 
 
+        // ------------------------------------------------------------
+        // 6. BOOKING DETAILS AJAX ENDPOINT
+        // ------------------------------------------------------------
+        // Handled by bookingDetails() below.
+
         $maintenanceStats = [
             'open' => (int) $this->db->table('maintenance_records')
                 ->whereIn('status', ['reported', 'scheduled', 'in_progress', 'testing'])
@@ -186,6 +192,46 @@ class AdminDashboard extends BaseController
             'facultyBreakdown' => $facultyBreakdown,
             'maintenanceStats' => $maintenanceStats,
         ]);
+    }
+
+    // ----------------------------------------------------------------
+    // BOOKING DETAILS (AJAX — admin can view any booking)
+    // ----------------------------------------------------------------
+    public function bookingDetails($id)
+    {
+        if (!auth()->loggedIn() || !auth()->user()->inGroup('admin')) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized'])->setStatusCode(403);
+        }
+
+        $bookingAssetModel = new BookingAssetModel();
+
+        $booking = $this->bookings
+            ->select('bookings.*,
+                laboratories.name AS lab_name, laboratories.room AS lab_room,
+                laboratories.pic_name, laboratories.pic_email, laboratories.pic_phone,
+                faculties.name_en AS faculty_name')
+            ->join('laboratories', 'laboratories.id = bookings.lab_id', 'left')
+            ->join('faculties', 'faculties.id = bookings.faculty_id', 'left')
+            ->where('bookings.id', $id)
+            ->first();
+
+        if (!$booking) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Booking not found']);
+        }
+
+        $booking['assets'] = $bookingAssetModel
+            ->select('assets.name, assets.image, booking_assets.quantity_used')
+            ->join('assets', 'assets.id = booking_assets.asset_id')
+            ->where('booking_assets.booking_id', $id)
+            ->findAll();
+
+        if (!empty($booking['pdf_path'])) {
+            $booking['pdf_url'] = site_url('document/pdf/' . basename($booking['pdf_path']));
+        } else {
+            $booking['pdf_url'] = null;
+        }
+
+        return $this->response->setJSON(['status' => 'success', 'booking' => $booking]);
     }
 }
 
