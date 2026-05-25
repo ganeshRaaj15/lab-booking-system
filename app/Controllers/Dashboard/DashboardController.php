@@ -38,7 +38,7 @@ class DashboardController extends BaseController
         }
 
         if ($user->inGroup('staff')) {
-            return redirect()->to('/dashboard/student');
+            return redirect()->to('/dashboard/staff');
         }
 
         if ($user->inGroup('student')) {

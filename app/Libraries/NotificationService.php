@@ -41,7 +41,7 @@ class NotificationService
         }
 
         $emailContext = $this->bookingEmailContext($context);
-        $studentLink = '/dashboard/student?focus_booking=' . (int) $context['id'];
+        $studentLink = $this->bookingDashboardLink((int) ($context['user_id'] ?? 0), (int) $context['id']);
         $studentActionUrl = $this->studentBookingActionUrl((int) $context['id']);
         $approvalLink = '/dashboard/approvals?focus_booking=' . (int) $context['id'];
         $picPendingCount = $this->pendingPicCountForEmail((string) ($context['pic_email'] ?? ''));
@@ -84,7 +84,7 @@ class NotificationService
         }
 
         $emailContext = $this->bookingEmailContext($context);
-        $studentLink = '/dashboard/student?focus_booking=' . (int) $context['id'];
+        $studentLink = $this->bookingDashboardLink((int) ($context['user_id'] ?? 0), (int) $context['id']);
         $studentActionUrl = $this->studentBookingActionUrl((int) $context['id']);
         $approvalLink = '/dashboard/approvals?focus_booking=' . (int) $context['id'];
         $managerPendingCount = $this->pendingManagerCount();
@@ -128,7 +128,7 @@ class NotificationService
         }
 
         $emailContext = $this->bookingEmailContext($context);
-        $studentLink = '/dashboard/student?focus_booking=' . (int) $context['id'];
+        $studentLink = $this->bookingDashboardLink((int) ($context['user_id'] ?? 0), (int) $context['id']);
         $calendarUrl = $this->googleCalendarLink($context);
         $message = 'Your booking request for ' . $this->bookingDescriptor($context) . ' has been approved.';
 
@@ -155,7 +155,7 @@ class NotificationService
         }
 
         $emailContext = $this->bookingEmailContext($context);
-        $studentLink = '/dashboard/student?focus_booking=' . (int) $context['id'];
+        $studentLink = $this->bookingDashboardLink((int) ($context['user_id'] ?? 0), (int) $context['id']);
         $studentActionUrl = $this->studentBookingActionUrl((int) $context['id']);
         $label = $rejectedBy !== '' ? ' by ' . $rejectedBy : '';
         $message = 'Your booking request for ' . $this->bookingDescriptor($context) . ' has been rejected' . $label . '.';
@@ -182,7 +182,7 @@ class NotificationService
         }
 
         $emailContext = $this->bookingEmailContext($context);
-        $studentLink = '/dashboard/student?focus_booking=' . (int) $context['id'];
+        $studentLink = $this->bookingDashboardLink((int) ($context['user_id'] ?? 0), (int) $context['id']);
         $calendarUrl = $this->googleCalendarLink($context);
         $message = 'Reminder: your approved booking for ' . $this->bookingDescriptor($context) . ' is coming up soon.';
 
@@ -703,6 +703,17 @@ class NotificationService
     protected function studentBookingActionUrl(int $bookingId): string
     {
         return site_url('open/booking/' . max($bookingId, 0));
+    }
+
+    protected function bookingDashboardLink(int $userId, int $bookingId): string
+    {
+        $isStaff = $userId > 0 && $this->db->table('auth_groups_users')
+            ->where('user_id', $userId)
+            ->where('group', 'staff')
+            ->countAllResults() > 0;
+
+        $base = $isStaff ? '/dashboard/staff' : '/dashboard/student';
+        return $base . '?focus_booking=' . $bookingId;
     }
 
     protected function googleCalendarLink(array $context): string

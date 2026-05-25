@@ -448,6 +448,11 @@ $routes->group('dashboard', ['filter' => 'session'], function ($routes) {
     $routes->get('student/booking-details/(:num)', [StudentDashboard::class, 'bookingDetails/$1'], ['filter' => 'group:student,staff']);
     $routes->post('student/cancel-booking/(:num)', [StudentDashboard::class, 'cancelBooking/$1'], ['filter' => 'group:student,staff']);
 
+    // STAFF DASHBOARD (same controller/view as student, dedicated URL)
+    $routes->get('staff', [StudentDashboard::class, 'index'], ['filter' => 'group:staff']);
+    $routes->get('staff/booking-details/(:num)', [StudentDashboard::class, 'bookingDetails/$1'], ['filter' => 'group:staff']);
+    $routes->post('staff/cancel-booking/(:num)', [StudentDashboard::class, 'cancelBooking/$1'], ['filter' => 'group:staff']);
+
     // EXTERNAL DASHBOARD
     $routes->get('external', [ExternalDashboard::class, 'index'], ['filter' => 'group:external']);
     $routes->get('external/request', [ExternalDashboard::class, 'createRequest'], ['filter' => 'group:external']);
