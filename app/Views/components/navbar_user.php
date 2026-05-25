@@ -48,14 +48,14 @@ if (function_exists('auth') && auth()->loggedIn()) {
                     <li class="nav-item me-2 dropdown notification-nav-item">
                         <a class="nav-link position-relative notification-nav-link" href="#" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-bell me-1"></i> Notifications
-                            <?php if ($userNavUnreadCount > 0): ?><span class="notification-bubble"><?= esc($userNavUnreadCount > 99 ? '99+' : (string) $userNavUnreadCount) ?></span><?php endif; ?>
+                            <?php if ($userNavUnreadCount > 0): ?><span id="nav-notif-bubble" class="notification-bubble"><?= esc($userNavUnreadCount > 99 ? '99+' : (string) $userNavUnreadCount) ?></span><?php else: ?><span id="nav-notif-bubble" class="notification-bubble" style="display:none">0</span><?php endif; ?>
                             <span class="nav-indicator"></span>
                         </a>
                         <div class="dropdown-menu dropdown-menu-end notification-menu p-0">
                             <div class="dropdown-header d-flex justify-content-between align-items-center">
                                 <div>
                                     <div class="fw-semibold text-dark">Notifications</div>
-                                    <div class="small text-muted"><?= esc((int) $userNavUnreadCount) ?> unread</div>
+                                    <div class="small text-muted"><span id="nav-notif-count"><?= esc((int) $userNavUnreadCount) ?></span> unread</div>
                                 </div>
                                 <a href="/dashboard/notifications" class="small text-decoration-none">View all</a>
                             </div>
@@ -99,3 +99,29 @@ if (function_exists('auth') && auth()->loggedIn()) {
         </div>
     </div>
 </nav>
+
+<?php if (function_exists('auth') && auth()->loggedIn()): ?>
+<script>
+(function () {
+    const bubble = document.getElementById('nav-notif-bubble');
+    const countEl = document.getElementById('nav-notif-count');
+    if (!bubble || !countEl) return;
+
+    function updateBadge(n) {
+        const label = n > 99 ? '99+' : String(n);
+        bubble.textContent = label;
+        countEl.textContent = String(n);
+        bubble.style.display = n > 0 ? '' : 'none';
+    }
+
+    function poll() {
+        fetch('/dashboard/notifications/count', { credentials: 'same-origin' })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) { if (data && typeof data.unread === 'number') updateBadge(data.unread); })
+            .catch(function () {});
+    }
+
+    setInterval(poll, 30000);
+}());
+</script>
+<?php endif; ?>

@@ -434,6 +434,7 @@ $routes->group('dashboard', ['filter' => 'session'], function ($routes) {
     $routes->get('reports/pdf', [ReportController::class, 'download'], ['filter' => 'group:pic,manager,admin']);
     $routes->get('reports/csv', [ReportController::class, 'downloadCsv'], ['filter' => 'group:pic,manager,admin']);
     $routes->get('notifications', [NotificationController::class, 'index']);
+    $routes->get('notifications/count', [NotificationController::class, 'count']);
     $routes->post('notifications/read/(:num)', [NotificationController::class, 'markRead/$1']);
     $routes->post('notifications/mark-all-read', [NotificationController::class, 'markAllRead']);
     $routes->post('push/subscribe', [PushSubscriptionController::class, 'subscribe']);

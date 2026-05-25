@@ -43,6 +43,20 @@ class NotificationController extends BaseController
         ]);
     }
 
+    public function count()
+    {
+        if (! auth()->loggedIn()) {
+            return $this->response->setStatusCode(401)->setJSON(['unread' => 0]);
+        }
+
+        $unread = $this->notificationModel
+            ->where('user_id', auth()->id())
+            ->where('is_read', 0)
+            ->countAllResults();
+
+        return $this->response->setJSON(['unread' => (int) $unread]);
+    }
+
     public function markRead(int $id)
     {
         if (! auth()->loggedIn()) {
