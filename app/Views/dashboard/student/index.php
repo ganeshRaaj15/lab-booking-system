@@ -170,6 +170,7 @@ $filters           = $filters ?? ['q' => '', 'status' => '', 'date_from' => '', 
                 <div>
                     <h6 class="fw-semibold mb-1">Pending</h6>
                     <h2 class="fw-bold"><?= esc($stats['pending']) ?></h2>
+                    <p class="mb-0 mt-1" style="font-size:0.72rem;opacity:0.85;">Awaiting PIC &amp; manager review</p>
                 </div>
                 <i class="bi bi-hourglass-split kpi-icon"></i>
             </div>
@@ -180,6 +181,7 @@ $filters           = $filters ?? ['q' => '', 'status' => '', 'date_from' => '', 
                 <div>
                     <h6 class="fw-semibold mb-1">Approved</h6>
                     <h2 class="fw-bold"><?= esc($stats['approved']) ?></h2>
+                    <p class="mb-0 mt-1" style="font-size:0.72rem;opacity:0.85;">Confirmed — you may use the lab</p>
                 </div>
                 <i class="bi bi-check-circle kpi-icon"></i>
             </div>
@@ -190,6 +192,7 @@ $filters           = $filters ?? ['q' => '', 'status' => '', 'date_from' => '', 
                 <div>
                     <h6 class="fw-semibold mb-1">Rejected</h6>
                     <h2 class="fw-bold"><?= esc($stats['rejected']) ?></h2>
+                    <p class="mb-0 mt-1" style="font-size:0.72rem;opacity:0.85;">Not approved — check booking details</p>
                 </div>
                 <i class="bi bi-x-circle kpi-icon"></i>
             </div>
@@ -200,19 +203,12 @@ $filters           = $filters ?? ['q' => '', 'status' => '', 'date_from' => '', 
                 <div>
                     <h6 class="fw-semibold mb-1">Cancelled</h6>
                     <h2 class="fw-bold"><?= esc($stats['cancelled'] ?? 0) ?></h2>
+                    <p class="mb-0 mt-1" style="font-size:0.72rem;opacity:0.85;">Cancelled before approval</p>
                 </div>
                 <i class="bi bi-slash-circle kpi-icon"></i>
             </div>
         </div>
 
-    </div>
-
-    <!-- ======================= STATUS LEGEND ======================= -->
-    <div class="d-flex flex-wrap gap-3 mb-4 small">
-        <span><span class="badge bg-warning text-dark">Pending</span> &nbsp;Waiting for PIC and manager review</span>
-        <span><span class="badge bg-success">Approved</span> &nbsp;Confirmed — you may use the lab</span>
-        <span><span class="badge bg-danger">Rejected</span> &nbsp;Not approved — check the booking for details</span>
-        <span><span class="badge bg-secondary">Cancelled</span> &nbsp;Cancelled by you before approval</span>
     </div>
 
     <!-- ======================= QUICK ACTIONS ======================= -->
