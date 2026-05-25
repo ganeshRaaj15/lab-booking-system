@@ -110,6 +110,7 @@ class NativeBootstrapController extends BaseController
 
         return match ($role) {
             'external' => $this->externalSummary($user, $notificationCount),
+            'staff' => $this->staffSummary($user, $notificationCount),
             'pic' => $this->picSummary($user, $notificationCount),
             'manager' => $this->managerSummary($notificationCount),
             'admin' => $this->adminSummary($notificationCount),
@@ -162,6 +163,54 @@ class NativeBootstrapController extends BaseController
                 'meta' => trim((string) ($nextBooking['lab_room'] ?? '')),
             ] : null,
             'message' => 'View your bookings, report issues, and monitor approval updates from your dashboard.',
+        ];
+    }
+
+    protected function staffSummary(User $user, int $notificationCount): array
+    {
+        $countsRow = db_connect()
+            ->table('bookings')
+            ->select("
+                SUM(CASE WHEN status = 'PENDING' THEN 1 ELSE 0 END) AS pending,
+                SUM(CASE WHEN status = 'APPROVED' THEN 1 ELSE 0 END) AS approved
+            ")
+            ->where('user_id', $user->id)
+            ->get()
+            ->getRowArray() ?? [];
+
+        $pending        = (int) ($countsRow['pending'] ?? 0);
+        $approved       = (int) ($countsRow['approved'] ?? 0);
+        $activeBookings = $pending + $approved;
+
+        $bookingModel = new BookingModel();
+        $nextBooking  = $bookingModel
+            ->select('bookings.id, bookings.date, bookings.start_time, bookings.end_time, bookings.status, laboratories.name AS lab_name, laboratories.room AS lab_room')
+            ->join('laboratories', 'laboratories.id = bookings.lab_id', 'left')
+            ->where('bookings.user_id', $user->id)
+            ->whereIn('bookings.status', BookingModel::ACTIVE_STATUSES)
+            ->where('bookings.date >=', date('Y-m-d'))
+            ->orderBy('bookings.date', 'ASC')
+            ->orderBy('bookings.start_time', 'ASC')
+            ->first();
+
+        return [
+            'role' => 'staff',
+            'attention_count' => max($activeBookings, $notificationCount),
+            'attention_label' => $activeBookings > 0 ? $activeBookings . ' active booking(s)' : 'Ready to book',
+            'attention_meta' => 'Track your lab reservations, approvals, and activity from your staff dashboard.',
+            'stats' => [
+                ['id' => 'active_bookings', 'label' => 'Active', 'value' => $activeBookings, 'tone' => 'primary'],
+                ['id' => 'pending', 'label' => 'Pending', 'value' => $pending, 'tone' => 'warning'],
+                ['id' => 'approved', 'label' => 'Approved', 'value' => $approved, 'tone' => 'success'],
+                ['id' => 'notifications', 'label' => 'Alerts', 'value' => $notificationCount, 'tone' => 'neutral'],
+            ],
+            'next_item' => $nextBooking ? [
+                'type' => 'booking',
+                'title' => (string) ($nextBooking['lab_name'] ?? 'Upcoming Booking'),
+                'subtitle' => trim(((string) ($nextBooking['date'] ?? '')) . '  ' . substr((string) ($nextBooking['start_time'] ?? ''), 0, 5) . '-' . substr((string) ($nextBooking['end_time'] ?? ''), 0, 5)),
+                'meta' => trim((string) ($nextBooking['lab_room'] ?? '')),
+            ] : null,
+            'message' => 'View your bookings, report issues, and monitor approval updates from your staff dashboard.',
         ];
     }
 

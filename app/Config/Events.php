@@ -2,6 +2,7 @@
 
 namespace Config;
 
+use App\Libraries\StaffRoleService;
 use App\Libraries\StudentRoleService;
 use CodeIgniter\Events\Events;
 use CodeIgniter\HotReloader\HotReloader;
@@ -75,3 +76,18 @@ $syncStudentRole = static function ($user): void {
 
 Events::on('register', $syncStudentRole);
 Events::on('login', $syncStudentRole);
+
+$syncStaffRole = static function ($user): void {
+    if (! $user instanceof User) {
+        return;
+    }
+
+    try {
+        (new StaffRoleService())->syncStaffAccess($user);
+    } catch (\Throwable $e) {
+        log_message('error', 'Staff role sync failed for user ID ' . ($user->id ?? 'unknown') . ': ' . $e->getMessage());
+    }
+};
+
+Events::on('register', $syncStaffRole);
+Events::on('login', $syncStaffRole);

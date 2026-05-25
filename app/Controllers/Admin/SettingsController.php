@@ -5,6 +5,7 @@ namespace App\Controllers\Admin;
 use App\Controllers\BaseController;
 use App\Libraries\MaintenanceForecastService;
 use App\Libraries\NotificationService;
+use App\Libraries\StaffRoleService;
 use App\Libraries\StudentRoleService;
 use App\Libraries\WebPushConfiguration;
 use App\Models\SettingsModel;
@@ -17,6 +18,7 @@ class SettingsController extends BaseController
 
     protected $settings;
     protected StudentRoleService $studentRoleService;
+    protected StaffRoleService $staffRoleService;
 
     public function __construct()
     {
@@ -29,6 +31,7 @@ class SettingsController extends BaseController
 
         $this->settings = new SettingsModel();
         $this->studentRoleService = new StudentRoleService();
+        $this->staffRoleService = new StaffRoleService();
     }
 
     /**
@@ -104,6 +107,10 @@ class SettingsController extends BaseController
 
             if ($key === 'student_email_domain') {
                 $value = $this->studentRoleService->normalizeDomain($value);
+            }
+
+            if ($key === 'staff_email_domain') {
+                $value = $this->staffRoleService->normalizeDomain($value);
             }
 
             $this->upsertSystemSetting($key, $value, $meta['type']);
@@ -291,6 +298,12 @@ class SettingsController extends BaseController
                 'rules' => 'required|max_length[255]',
                 'default' => StudentRoleService::DEFAULT_STUDENT_EMAIL_DOMAIN,
                 'hint' => 'Emails ending with this domain are auto-assigned the Student role when users register or log in.',
+            ],
+            'staff_email_domain' => [
+                'type' => 'string',
+                'rules' => 'required|max_length[255]',
+                'default' => StaffRoleService::DEFAULT_STAFF_EMAIL_DOMAIN,
+                'hint' => 'Emails ending with this domain are auto-assigned the Staff role when users register or log in.',
             ],
         ];
     }

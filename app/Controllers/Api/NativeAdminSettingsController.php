@@ -7,6 +7,7 @@ use App\Libraries\AssetIntelligenceService;
 use App\Libraries\MaintenanceForecastService;
 use App\Libraries\MaintenancePredictionService;
 use App\Libraries\NotificationService;
+use App\Libraries\StaffRoleService;
 use App\Libraries\StudentRoleService;
 use App\Models\SettingsModel;
 use CodeIgniter\Shield\Entities\User;
@@ -15,12 +16,14 @@ class NativeAdminSettingsController extends BaseController
 {
     protected SettingsModel $settings;
     protected StudentRoleService $studentRoleService;
+    protected StaffRoleService $staffRoleService;
 
     public function __construct()
     {
         helper('auth');
         $this->settings = new SettingsModel();
         $this->studentRoleService = new StudentRoleService();
+        $this->staffRoleService = new StaffRoleService();
     }
 
     public function show()
@@ -94,6 +97,10 @@ class NativeAdminSettingsController extends BaseController
             $value = $this->normalizeSettingValue((string) ($payload[$key] ?? ''));
             if ($key === 'student_email_domain') {
                 $value = $this->studentRoleService->normalizeDomain($value);
+            }
+
+            if ($key === 'staff_email_domain') {
+                $value = $this->staffRoleService->normalizeDomain($value);
             }
 
             $this->upsertSystemSetting($key, $value, $meta['type']);
@@ -353,6 +360,13 @@ class NativeAdminSettingsController extends BaseController
                 'rules' => 'required|max_length[255]',
                 'default' => StudentRoleService::DEFAULT_STUDENT_EMAIL_DOMAIN,
                 'hint' => 'Emails ending with this domain are auto-assigned the Student role when users register or log in.',
+            ],
+            'staff_email_domain' => [
+                'label' => 'Staff Email Domain',
+                'type' => 'string',
+                'rules' => 'required|max_length[255]',
+                'default' => StaffRoleService::DEFAULT_STAFF_EMAIL_DOMAIN,
+                'hint' => 'Emails ending with this domain are auto-assigned the Staff role when users register or log in.',
             ],
         ];
     }
