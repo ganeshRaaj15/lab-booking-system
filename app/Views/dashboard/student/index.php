@@ -33,6 +33,49 @@ $filters           = $filters ?? ['q' => '', 'status' => '', 'date_from' => '', 
     </div>
 
 
+    <!-- ======================= FIRST-TIME GUIDE ======================= -->
+    <?php if (($stats['total'] ?? 0) === 0): ?>
+    <div class="card border-0 shadow-sm rounded-4 mb-4" style="background: linear-gradient(135deg, #eff6ff, #f0fdf4); border-left: 4px solid #2563eb !important;">
+        <div class="card-body">
+            <h6 class="fw-bold text-primary mb-1">
+                <i class="bi bi-rocket-takeoff me-2"></i>Welcome to SLAMS — here's how it works
+            </h6>
+            <p class="text-muted small mb-3">You haven't made any bookings yet. Follow these steps to reserve a laboratory.</p>
+            <div class="row g-2 text-center">
+                <div class="col-md-4">
+                    <div class="p-3 bg-white rounded-3 border h-100">
+                        <div class="fw-bold text-primary fs-4 mb-1">1</div>
+                        <i class="bi bi-building text-primary fs-5 mb-1 d-block"></i>
+                        <div class="fw-semibold small">Browse Laboratories</div>
+                        <div class="text-muted" style="font-size: 0.78rem;">Go to <strong>Browse Laboratories</strong> below, pick a lab, then choose a service and an available timeslot.</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 bg-white rounded-3 border h-100">
+                        <div class="fw-bold text-primary fs-4 mb-1">2</div>
+                        <i class="bi bi-send text-primary fs-5 mb-1 d-block"></i>
+                        <div class="fw-semibold small">Submit Your Booking</div>
+                        <div class="text-muted" style="font-size: 0.78rem;">Fill in your activity details and supervisor info, then submit. Your booking will appear here as <strong>Pending</strong>.</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 bg-white rounded-3 border h-100">
+                        <div class="fw-bold text-primary fs-4 mb-1">3</div>
+                        <i class="bi bi-bell text-primary fs-5 mb-1 d-block"></i>
+                        <div class="fw-semibold small">Wait for Approval</div>
+                        <div class="text-muted" style="font-size: 0.78rem;">The lab PIC and manager will review your request. You'll be notified when it's <strong>Approved</strong> or <strong>Rejected</strong>.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3 text-center">
+                <a href="/laboratories" class="btn btn-primary btn-sm px-4">
+                    <i class="bi bi-building me-1"></i> Browse Laboratories to Get Started
+                </a>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <!-- ======================= NEXT UPCOMING BOOKING ======================= -->
     <div class="row g-3 mb-4">
         <div class="col-lg-8">
@@ -162,6 +205,14 @@ $filters           = $filters ?? ['q' => '', 'status' => '', 'date_from' => '', 
             </div>
         </div>
 
+    </div>
+
+    <!-- ======================= STATUS LEGEND ======================= -->
+    <div class="d-flex flex-wrap gap-3 mb-4 small">
+        <span><span class="badge bg-warning text-dark">Pending</span> &nbsp;Waiting for PIC and manager review</span>
+        <span><span class="badge bg-success">Approved</span> &nbsp;Confirmed — you may use the lab</span>
+        <span><span class="badge bg-danger">Rejected</span> &nbsp;Not approved — check the booking for details</span>
+        <span><span class="badge bg-secondary">Cancelled</span> &nbsp;Cancelled by you before approval</span>
     </div>
 
     <!-- ======================= QUICK ACTIONS ======================= -->
@@ -361,7 +412,11 @@ $filters           = $filters ?? ['q' => '', 'status' => '', 'date_from' => '', 
 
                 <div class="text-center text-muted py-4">
                     <i class="bi bi-calendar-x fs-1"></i>
-                    <p class="mt-2 mb-0">You have not made any bookings yet.</p>
+                    <p class="mt-2 mb-1">You have not made any bookings yet.</p>
+                    <p class="small mb-3">Once you submit a booking from the laboratory page, it will appear here and you can track its status.</p>
+                    <a href="/laboratories" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-building me-1"></i> Find a Laboratory
+                    </a>
                 </div>
 
             <?php else: ?>

@@ -22,8 +22,8 @@ $requestModel = $requestModel ?? null;
 <div class="dashboard-header">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
         <div>
-            <h2 class="fw-bold text-primary mb-0">External Access Requests</h2>
-            <p class="text-muted small mb-0">Submit structured lab-use requests and track review updates without using the booking workflow directly.</p>
+            <h2 class="fw-bold text-primary mb-0">Lab Access Requests</h2>
+            <p class="text-muted small mb-0">Request access to a FKMP laboratory. Submit your details, and the lab team will review and get back to you.</p>
         </div>
         <a href="/dashboard/external/request" class="btn btn-primary">
             <i class="bi bi-plus-circle me-1"></i> New Request
@@ -38,28 +38,60 @@ $requestModel = $requestModel ?? null;
     <div class="alert alert-danger"><?= esc(session()->getFlashdata('error')) ?></div>
 <?php endif; ?>
 
-<div class="alert alert-info border-0 shadow-sm mb-4">
-    <strong>Status updates come by notification and email:</strong> after you submit, the PIC reviews first, then the Lab Manager. If either reviewer asks for extra information or adds notes, you will receive that update directly and can resubmit here.
+<div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #eff6ff, #f0fdf4); border-left: 4px solid #2563eb !important;">
+    <div class="card-body">
+        <h6 class="fw-bold text-primary mb-2"><i class="bi bi-info-circle me-2"></i>How your request is reviewed</h6>
+        <div class="row g-2 text-center">
+            <div class="col-md-3">
+                <div class="p-2 bg-white rounded-3 border h-100">
+                    <i class="bi bi-send text-primary fs-5 mb-1 d-block"></i>
+                    <div class="fw-semibold small">1. You Submit</div>
+                    <div class="text-muted" style="font-size:0.78rem;">Fill in your details and preferred schedule, then click <strong>New Request</strong>.</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="p-2 bg-white rounded-3 border h-100">
+                    <i class="bi bi-person-check text-primary fs-5 mb-1 d-block"></i>
+                    <div class="fw-semibold small">2. Lab Supervisor Reviews</div>
+                    <div class="text-muted" style="font-size:0.78rem;">The Person-in-Charge (PIC) of the lab checks your request first.</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="p-2 bg-white rounded-3 border h-100">
+                    <i class="bi bi-person-workspace text-primary fs-5 mb-1 d-block"></i>
+                    <div class="fw-semibold small">3. Lab Manager Reviews</div>
+                    <div class="text-muted" style="font-size:0.78rem;">If the PIC approves, the Lab Manager gives the final decision.</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="p-2 bg-white rounded-3 border h-100">
+                    <i class="bi bi-bell text-primary fs-5 mb-1 d-block"></i>
+                    <div class="fw-semibold small">4. You're Notified</div>
+                    <div class="text-muted" style="font-size:0.78rem;">You'll receive an email and notification at every step. If more info is needed, you can update your request here.</div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="row g-3 mb-4">
     <div class="col-md-2">
-        <div class="card shadow-sm border-0"><div class="card-body"><div class="small text-muted">Total</div><div class="fs-3 fw-bold"><?= esc((int) ($stats['total'] ?? 0)) ?></div></div></div>
+        <div class="card shadow-sm border-0"><div class="card-body"><div class="small text-muted">Total Requests</div><div class="fs-3 fw-bold"><?= esc((int) ($stats['total'] ?? 0)) ?></div></div></div>
     </div>
     <div class="col-md-2">
-        <div class="card shadow-sm border-0"><div class="card-body"><div class="small text-muted">PIC Queue</div><div class="fs-3 fw-bold"><?= esc((int) ($stats['pending_pic_approval'] ?? 0)) ?></div></div></div>
+        <div class="card shadow-sm border-0"><div class="card-body"><div class="small text-muted">With Supervisor</div><div class="fs-3 fw-bold"><?= esc((int) ($stats['pending_pic_approval'] ?? 0)) ?></div></div></div>
     </div>
     <div class="col-md-2">
-        <div class="card shadow-sm border-0"><div class="card-body"><div class="small text-muted">Manager Queue</div><div class="fs-3 fw-bold"><?= esc((int) ($stats['pending_manager_approval'] ?? 0)) ?></div></div></div>
+        <div class="card shadow-sm border-0"><div class="card-body"><div class="small text-muted">With Manager</div><div class="fs-3 fw-bold"><?= esc((int) ($stats['pending_manager_approval'] ?? 0)) ?></div></div></div>
     </div>
     <div class="col-md-2">
-        <div class="card shadow-sm border-0"><div class="card-body"><div class="small text-muted">Needs Info</div><div class="fs-3 fw-bold"><?= esc((int) ($stats['needs_information'] ?? 0)) ?></div></div></div>
+        <div class="card shadow-sm border-0"><div class="card-body"><div class="small text-muted">Action Required</div><div class="fs-3 fw-bold text-warning"><?= esc((int) ($stats['needs_information'] ?? 0)) ?></div></div></div>
     </div>
     <div class="col-md-2">
-        <div class="card shadow-sm border-0"><div class="card-body"><div class="small text-muted">Approved</div><div class="fs-3 fw-bold"><?= esc((int) ($stats['approved_for_scheduling'] ?? 0)) ?></div></div></div>
+        <div class="card shadow-sm border-0"><div class="card-body"><div class="small text-muted">Approved</div><div class="fs-3 fw-bold text-success"><?= esc((int) ($stats['approved_for_scheduling'] ?? 0)) ?></div></div></div>
     </div>
     <div class="col-md-2">
-        <div class="card shadow-sm border-0"><div class="card-body"><div class="small text-muted">Rejected</div><div class="fs-3 fw-bold"><?= esc((int) ($stats['rejected'] ?? 0)) ?></div></div></div>
+        <div class="card shadow-sm border-0"><div class="card-body"><div class="small text-muted">Rejected</div><div class="fs-3 fw-bold text-danger"><?= esc((int) ($stats['rejected'] ?? 0)) ?></div></div></div>
     </div>
 </div>
 
@@ -106,9 +138,12 @@ $requestModel = $requestModel ?? null;
         <?php if (empty($requests)): ?>
             <div class="text-center py-5 text-muted">
                 <i class="bi bi-inboxes fs-1 mb-3"></i>
-                <p class="mb-1">No external requests found.</p>
-                <p class="small mb-3">Start by submitting a request for the laboratory you want to use.</p>
-                <a href="/dashboard/external/request" class="btn btn-primary btn-sm">Create your first request</a>
+                <p class="mb-1 fw-semibold">You haven't submitted any requests yet.</p>
+                <p class="small mb-1">To use an FKMP laboratory, click <strong>New Request</strong> above and fill in your details.</p>
+                <p class="small mb-3">Once submitted, you can track the review progress right here.</p>
+                <a href="/dashboard/external/request" class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus-circle me-1"></i> Submit Your First Request
+                </a>
             </div>
         <?php else: ?>
             <div class="table-responsive">
