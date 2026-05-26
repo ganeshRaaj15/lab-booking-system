@@ -28,14 +28,16 @@
                 <label class="form-label small fw-semibold">Username</label>
                 <input type="text" name="username"
                        class="form-control form-control-lg"
-                       placeholder="Choose a username" required>
+                       placeholder="Choose a username"
+                       value="<?= old('username') ?>" required>
             </div>
 
             <div class="mb-3">
                 <label class="form-label small fw-semibold">Email Address</label>
                 <input type="email" name="email"
                        class="form-control form-control-lg"
-                       placeholder="you@example.com" required>
+                       placeholder="you@example.com"
+                       value="<?= old('email') ?>" required>
             </div>
 
             <div class="mb-3">
