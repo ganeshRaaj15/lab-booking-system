@@ -219,11 +219,18 @@ class ExternalDashboard extends BaseController
         }
 
         $db = \Config\Database::connect();
-        $services = $db->table('lab_services')
-            ->select('id, service_name, equipment_models')
-            ->where('laboratory_id', $labId)
-            ->where('is_active', 1)
-            ->orderBy('service_name', 'ASC')
+        $services = $db->table('lab_services ls')
+            ->select("ls.id, ls.service_name,
+                GROUP_CONCAT(
+                    DISTINCT NULLIF(TRIM(sem.equipment_model), '')
+                    ORDER BY sem.sort_order ASC
+                    SEPARATOR ' | '
+                ) AS equipment_models", false)
+            ->join('service_equipment_models sem', 'sem.lab_service_id = ls.id', 'left')
+            ->where('ls.laboratory_id', $labId)
+            ->where('ls.is_active', 1)
+            ->groupBy('ls.id')
+            ->orderBy('ls.service_name', 'ASC')
             ->get()
             ->getResultArray();
 
