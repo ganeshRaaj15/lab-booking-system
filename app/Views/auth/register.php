@@ -50,6 +50,15 @@
                         <i class="bi bi-eye-slash"></i>
                     </button>
                 </div>
+                <div id="passwordCriteria" class="mt-2 small d-none">
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="pw-rule" data-rule="length"><i class="bi bi-circle me-1"></i>8+ characters</span>
+                        <span class="pw-rule" data-rule="upper"><i class="bi bi-circle me-1"></i>Uppercase</span>
+                        <span class="pw-rule" data-rule="lower"><i class="bi bi-circle me-1"></i>Lowercase</span>
+                        <span class="pw-rule" data-rule="number"><i class="bi bi-circle me-1"></i>Number</span>
+                        <span class="pw-rule" data-rule="special"><i class="bi bi-circle me-1"></i>Special character</span>
+                    </div>
+                </div>
             </div>
 
             <div class="mb-3">
@@ -76,6 +85,21 @@
     </div>
 </div>
 
+<style>
+.pw-rule {
+    display: inline-flex;
+    align-items: center;
+    color: #6c757d;
+    transition: color 0.2s;
+}
+.pw-rule.met {
+    color: #198754;
+}
+.pw-rule.met .bi::before {
+    content: "\f26b"; /* bi-check-circle-fill */
+}
+</style>
+
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     function setupPasswordToggle(toggleId, inputId) {
@@ -98,6 +122,41 @@ document.addEventListener("DOMContentLoaded", function () {
 
     setupPasswordToggle("togglePassword", "password");
     setupPasswordToggle("togglePasswordConfirm", "pass_confirm");
+
+    const passwordInput = document.getElementById("password");
+    const criteriaBox   = document.getElementById("passwordCriteria");
+
+    const rules = {
+        length:  (v) => v.length >= 8,
+        upper:   (v) => /[A-Z]/.test(v),
+        lower:   (v) => /[a-z]/.test(v),
+        number:  (v) => /[0-9]/.test(v),
+        special: (v) => /[^A-Za-z0-9]/.test(v),
+    };
+
+    passwordInput.addEventListener("input", function () {
+        const val = this.value;
+
+        if (val.length === 0) {
+            criteriaBox.classList.add("d-none");
+            return;
+        }
+
+        criteriaBox.classList.remove("d-none");
+
+        criteriaBox.querySelectorAll(".pw-rule").forEach((el) => {
+            const rule = el.dataset.rule;
+            const met  = rules[rule] && rules[rule](val);
+            el.classList.toggle("met", met);
+
+            const icon = el.querySelector("i");
+            if (met) {
+                icon.className = "bi bi-check-circle-fill me-1";
+            } else {
+                icon.className = "bi bi-circle me-1";
+            }
+        });
+    });
 });
 </script>
 

@@ -112,8 +112,11 @@ $currentStatus = (string) ($requestRecord['status'] ?? 'pending_pic_approval');
 
             <div class="col-12">
                 <label class="form-label">Purpose of Use *</label>
-                <textarea name="purpose" class="form-control" rows="5" required><?= esc(old('purpose', $requestRecord['purpose'] ?? '')) ?></textarea>
-                <div class="form-text">Explain what you need to do in the laboratory, why the lab is required, and any timing constraints.</div>
+                <textarea name="purpose" id="purposeField" class="form-control" rows="5" minlength="10" required><?= esc(old('purpose', $requestRecord['purpose'] ?? '')) ?></textarea>
+                <div class="d-flex justify-content-between align-items-start mt-1">
+                    <div class="form-text">Explain what you need to do in the laboratory, why the lab is required, and any timing constraints.</div>
+                    <small id="purposeCounter" class="text-muted ms-2 flex-shrink-0"></small>
+                </div>
             </div>
 
             <div class="col-12">
@@ -420,6 +423,32 @@ document.addEventListener("DOMContentLoaded", () => {
     if (labField.value) {
         loadServices(labField.value, Boolean(currentServiceId));
     }
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const purposeField = document.getElementById("purposeField");
+    const purposeCounter = document.getElementById("purposeCounter");
+    const MIN_CHARS = 10;
+
+    if (!purposeField || !purposeCounter) return;
+
+    function updateCounter() {
+        const len = purposeField.value.length;
+        const remaining = MIN_CHARS - len;
+
+        if (remaining > 0) {
+            purposeCounter.textContent = `${remaining} more character${remaining === 1 ? "" : "s"} required`;
+            purposeCounter.className = "text-danger ms-2 flex-shrink-0";
+        } else {
+            purposeCounter.textContent = `${len} characters`;
+            purposeCounter.className = "text-muted ms-2 flex-shrink-0";
+        }
+    }
+
+    purposeField.addEventListener("input", updateCounter);
+    updateCounter();
 });
 </script>
 
