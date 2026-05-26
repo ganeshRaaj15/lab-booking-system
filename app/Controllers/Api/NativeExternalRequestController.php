@@ -192,10 +192,57 @@ class NativeExternalRequestController extends WebExternalDashboard
         ]);
     }
 
+    public function labServices(int $labId)
+    {
+        $user = $this->externalUser();
+        if ($user instanceof \CodeIgniter\HTTP\RedirectResponse || $user instanceof \CodeIgniter\HTTP\ResponseInterface) {
+            return $user;
+        }
+
+        $db = \Config\Database::connect();
+        $services = $db->table('lab_services')
+            ->select('id, service_name')
+            ->where('laboratory_id', $labId)
+            ->where('is_active', 1)
+            ->orderBy('service_name', 'ASC')
+            ->get()
+            ->getResultArray();
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'services' => $services,
+        ]);
+    }
+
+    public function serviceAssets(int $serviceId)
+    {
+        $user = $this->externalUser();
+        if ($user instanceof \CodeIgniter\HTTP\RedirectResponse || $user instanceof \CodeIgniter\HTTP\ResponseInterface) {
+            return $user;
+        }
+
+        $db = \Config\Database::connect();
+        $assets = $db->table('assets')
+            ->select('id, name, category, quantity')
+            ->where('lab_service_id', $serviceId)
+            ->where('status', 'available')
+            ->orderBy('name', 'ASC')
+            ->get()
+            ->getResultArray();
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'assets' => $assets,
+        ]);
+    }
+
     protected function nativeRequestPayload(): array
     {
         $json = $this->request->getJSON(true);
         $data = is_array($json) && $json !== [] ? $json : ($this->request->getPost() ?: []);
+
+        $serviceId = (int) ($data['service_id'] ?? 0);
+        $selectedAssets = trim((string) ($data['selected_assets'] ?? ''));
 
         return [
             'lab_id' => (int) ($data['lab_id'] ?? 0),
@@ -209,6 +256,8 @@ class NativeExternalRequestController extends WebExternalDashboard
             'preferred_end_time' => $this->normalizeTimeForStorage((string) ($data['preferred_end_time'] ?? '')),
             'purpose' => trim((string) ($data['purpose'] ?? '')),
             'equipment_notes' => trim((string) ($data['equipment_notes'] ?? '')),
+            'service_id' => $serviceId > 0 ? $serviceId : null,
+            'selected_assets' => $selectedAssets !== '' ? $selectedAssets : null,
         ];
     }
 
@@ -229,6 +278,8 @@ class NativeExternalRequestController extends WebExternalDashboard
             'preferred_end_time' => $this->normalizeTimeForDisplay((string) ($request['preferred_end_time'] ?? '')),
             'purpose' => (string) ($request['purpose'] ?? ''),
             'equipment_notes' => (string) ($request['equipment_notes'] ?? ''),
+            'service_id' => isset($request['service_id']) && $request['service_id'] !== null ? (int) $request['service_id'] : null,
+            'selected_assets' => (string) ($request['selected_assets'] ?? ''),
             'booking_id' => isset($request['booking_id']) ? (int) $request['booking_id'] : null,
             'status' => (string) ($request['status'] ?? ''),
             'status_label' => $this->requestModel->statusLabel((string) ($request['status'] ?? '')),

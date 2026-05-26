@@ -36,6 +36,8 @@ class ExternalRequestModel extends Model
         'preferred_end_time',
         'purpose',
         'equipment_notes',
+        'service_id',
+        'selected_assets',
         'status',
         'current_approval_stage',
         'information_requested_by',

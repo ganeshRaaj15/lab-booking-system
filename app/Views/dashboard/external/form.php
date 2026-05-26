@@ -52,10 +52,27 @@ $currentStatus = (string) ($requestRecord['status'] ?? 'pending_pic_approval');
             </div>
 
             <div class="col-md-6">
+                <label class="form-label">Service / Field of Work</label>
+                <input type="hidden" name="service_id" id="externalServiceId" value="<?= esc(old('service_id', $requestRecord['service_id'] ?? '')) ?>">
+                <div id="externalServiceChoices" class="d-flex flex-wrap gap-2 mt-1"></div>
+                <div id="externalServiceHint" class="small text-muted mt-1">Select a laboratory to see available services.</div>
+            </div>
+
+            <div class="col-12" id="externalEquipmentSection">
+                <label class="form-label">Equipment (Optional)</label>
+                <input type="hidden" name="selected_assets" id="externalSelectedAssets" value="<?= esc(old('selected_assets', $requestRecord['selected_assets'] ?? '')) ?>">
+                <div id="externalEquipmentChoices" class="d-flex flex-wrap gap-2 mt-1"></div>
+                <div id="externalEquipmentHint" class="small text-muted mt-1">Select a service to see available equipment.</div>
+                <div class="form-text">Optionally indicate which equipment or materials you may need.</div>
+            </div>
+
+            <?php if ($isEdit): ?>
+            <div class="col-md-6">
                 <label class="form-label">Current Status</label>
                 <input type="text" class="form-control" value="<?= esc($requestModel ? $requestModel->statusLabel($currentStatus) : ucfirst($currentStatus)) ?>" readonly>
                 <div class="form-text">You will receive a notification and email whenever the PIC or Lab Manager updates this request.</div>
             </div>
+            <?php endif; ?>
 
             <div class="col-md-6">
                 <label class="form-label">Organization / Institution *</label>
@@ -106,9 +123,9 @@ $currentStatus = (string) ($requestRecord['status'] ?? 'pending_pic_approval');
             </div>
 
             <div class="col-12">
-                <label class="form-label">Equipment / Setup Notes</label>
+                <label class="form-label">Setup Notes</label>
                 <textarea name="equipment_notes" class="form-control" rows="4"><?= esc(old('equipment_notes', $requestRecord['equipment_notes'] ?? '')) ?></textarea>
-                <div class="form-text">List the equipment, workstation setup, or environmental requirements the PIC should know.</div>
+                <div class="form-text">Describe any workstation setup, environmental requirements, or other notes for the PIC.</div>
             </div>
 
             <div class="col-12 d-flex justify-content-end gap-2">
@@ -287,6 +304,184 @@ document.addEventListener("DOMContentLoaded", () => {
     renderSummary("Choose a laboratory and date to load the configured booking slots.");
     if (labField.value && dateField.value) {
         loadSlots();
+    }
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const labField         = document.getElementById("externalLabId");
+    const serviceIdField   = document.getElementById("externalServiceId");
+    const serviceChoicesEl = document.getElementById("externalServiceChoices");
+    const serviceHintEl    = document.getElementById("externalServiceHint");
+    const equipmentSection = document.getElementById("externalEquipmentSection");
+    const equipmentChoicesEl = document.getElementById("externalEquipmentChoices");
+    const equipmentHintEl  = document.getElementById("externalEquipmentHint");
+    const selectedAssetsField = document.getElementById("externalSelectedAssets");
+
+    if (!labField || !serviceIdField || !serviceChoicesEl) {
+        return;
+    }
+
+    let currentServiceId = serviceIdField.value || "";
+    let currentSelectedAssets = selectedAssetsField ? (selectedAssetsField.value || "") : "";
+
+    function getSelectedAssetNames() {
+        if (!equipmentChoicesEl) return [];
+        return Array.from(equipmentChoicesEl.querySelectorAll("input[type='checkbox']:checked"))
+            .map((cb) => cb.dataset.name || "");
+    }
+
+    function updateSelectedAssetsField() {
+        if (!selectedAssetsField) return;
+        const names = getSelectedAssetNames();
+        selectedAssetsField.value = names.filter(Boolean).join(",");
+    }
+
+    function renderServiceChoices(services) {
+        if (!services.length) {
+            serviceChoicesEl.innerHTML = "";
+            serviceHintEl.textContent = "No services configured for this laboratory.";
+            return;
+        }
+        serviceHintEl.textContent = "";
+        serviceChoicesEl.innerHTML = services.map((s) => {
+            const selected = String(s.id) === currentServiceId;
+            return `
+                <button type="button"
+                        class="btn btn-sm ${selected ? "btn-primary" : "btn-outline-secondary"} service-choice-btn"
+                        data-id="${s.id}"
+                        data-name="${s.service_name}">
+                    ${s.service_name}
+                </button>`;
+        }).join("");
+    }
+
+    function renderEquipmentChoices(assets) {
+        if (!equipmentChoicesEl) return;
+
+        if (!assets.length) {
+            equipmentChoicesEl.innerHTML = "";
+            equipmentHintEl.textContent = "No equipment listed for this service.";
+            return;
+        }
+
+        equipmentHintEl.textContent = "";
+        const preselected = currentSelectedAssets.split(",").map((n) => n.trim()).filter(Boolean);
+
+        equipmentChoicesEl.innerHTML = assets.map((a) => {
+            const checked = preselected.includes(a.name) ? "checked" : "";
+            return `
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input asset-checkbox" type="checkbox" id="asset_${a.id}"
+                           data-name="${a.name}" ${checked}>
+                    <label class="form-check-label small" for="asset_${a.id}">${a.name}</label>
+                </div>`;
+        }).join("");
+
+        equipmentChoicesEl.querySelectorAll(".asset-checkbox").forEach((cb) => {
+            cb.addEventListener("change", updateSelectedAssetsField);
+        });
+
+        updateSelectedAssetsField();
+    }
+
+    async function loadServices(labId, preserveService = false) {
+        if (!labId) {
+            serviceChoicesEl.innerHTML = "";
+            serviceHintEl.textContent = "Select a laboratory to see available services.";
+            if (!preserveService) {
+                currentServiceId = "";
+                serviceIdField.value = "";
+            }
+            loadEquipment(null);
+            return;
+        }
+
+        serviceChoicesEl.innerHTML = '<span class="text-muted small">Loading services...</span>';
+        serviceHintEl.textContent = "";
+
+        try {
+            const res = await fetch(`/dashboard/external/request/lab-services/${encodeURIComponent(labId)}`, {
+                headers: { "X-Requested-With": "XMLHttpRequest" },
+            });
+            const data = await res.json();
+            const services = Array.isArray(data.services) ? data.services : [];
+
+            if (!preserveService) {
+                currentServiceId = "";
+                serviceIdField.value = "";
+            }
+
+            renderServiceChoices(services);
+
+            if (preserveService && currentServiceId) {
+                loadEquipment(currentServiceId, true);
+            } else {
+                loadEquipment(null);
+            }
+        } catch {
+            serviceChoicesEl.innerHTML = "";
+            serviceHintEl.textContent = "Could not load services right now.";
+        }
+    }
+
+    async function loadEquipment(serviceId, preserveAssets = false) {
+        if (!equipmentChoicesEl) return;
+
+        if (!serviceId) {
+            equipmentChoicesEl.innerHTML = "";
+            equipmentHintEl.textContent = "Select a service to see available equipment.";
+            if (!preserveAssets) {
+                currentSelectedAssets = "";
+                if (selectedAssetsField) selectedAssetsField.value = "";
+            }
+            return;
+        }
+
+        equipmentChoicesEl.innerHTML = '<span class="text-muted small">Loading equipment...</span>';
+        equipmentHintEl.textContent = "";
+
+        try {
+            const res = await fetch(`/dashboard/external/request/service-assets/${encodeURIComponent(serviceId)}`, {
+                headers: { "X-Requested-With": "XMLHttpRequest" },
+            });
+            const data = await res.json();
+            const assets = Array.isArray(data.assets) ? data.assets : [];
+            renderEquipmentChoices(assets);
+        } catch {
+            equipmentChoicesEl.innerHTML = "";
+            equipmentHintEl.textContent = "Could not load equipment right now.";
+        }
+    }
+
+    serviceChoicesEl.addEventListener("click", (e) => {
+        const btn = e.target.closest(".service-choice-btn");
+        if (!btn) return;
+
+        currentServiceId = btn.dataset.id || "";
+        serviceIdField.value = currentServiceId;
+        currentSelectedAssets = "";
+        if (selectedAssetsField) selectedAssetsField.value = "";
+
+        serviceChoicesEl.querySelectorAll(".service-choice-btn").forEach((b) => {
+            b.className = b === btn ? "btn btn-sm btn-primary service-choice-btn" : "btn btn-sm btn-outline-secondary service-choice-btn";
+        });
+
+        loadEquipment(currentServiceId);
+    });
+
+    labField.addEventListener("change", () => {
+        currentServiceId = "";
+        serviceIdField.value = "";
+        currentSelectedAssets = "";
+        if (selectedAssetsField) selectedAssetsField.value = "";
+        loadServices(labField.value);
+    });
+
+    // Initialize on page load
+    if (labField.value) {
+        loadServices(labField.value, Boolean(currentServiceId));
     }
 });
 </script>

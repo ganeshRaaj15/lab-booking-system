@@ -212,6 +212,48 @@ class ExternalDashboard extends BaseController
         ]);
     }
 
+    public function labServices(int $labId)
+    {
+        if ($redirect = $this->ensureExternal()) {
+            return $redirect;
+        }
+
+        $db = \Config\Database::connect();
+        $services = $db->table('lab_services')
+            ->select('id, service_name')
+            ->where('laboratory_id', $labId)
+            ->where('is_active', 1)
+            ->orderBy('service_name', 'ASC')
+            ->get()
+            ->getResultArray();
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'services' => $services,
+        ]);
+    }
+
+    public function serviceAssets(int $serviceId)
+    {
+        if ($redirect = $this->ensureExternal()) {
+            return $redirect;
+        }
+
+        $db = \Config\Database::connect();
+        $assets = $db->table('assets')
+            ->select('id, name, category, quantity')
+            ->where('lab_service_id', $serviceId)
+            ->where('status', 'available')
+            ->orderBy('name', 'ASC')
+            ->get()
+            ->getResultArray();
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'assets' => $assets,
+        ]);
+    }
+
     protected function ensureExternal()
     {
         if (! auth()->loggedIn()) {
@@ -285,6 +327,9 @@ class ExternalDashboard extends BaseController
 
     protected function requestPayload(): array
     {
+        $serviceId = (int) $this->request->getPost('service_id');
+        $selectedAssets = trim((string) $this->request->getPost('selected_assets'));
+
         return [
             'lab_id' => (int) $this->request->getPost('lab_id'),
             'organization_name' => trim((string) $this->request->getPost('organization_name')),
@@ -297,6 +342,8 @@ class ExternalDashboard extends BaseController
             'preferred_end_time' => $this->normalizeTimeForStorage((string) $this->request->getPost('preferred_end_time')),
             'purpose' => trim((string) $this->request->getPost('purpose')),
             'equipment_notes' => trim((string) $this->request->getPost('equipment_notes')),
+            'service_id' => $serviceId > 0 ? $serviceId : null,
+            'selected_assets' => $selectedAssets !== '' ? $selectedAssets : null,
         ];
     }
 

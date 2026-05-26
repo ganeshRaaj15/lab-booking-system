@@ -265,13 +265,14 @@ class BookingController extends BaseController
     {
         $serviceId = (int) $this->request->getGet('service_id');
         $selected = $this->resolveSelectedAssets($labId, $serviceId, (string) $this->request->getGet('assets'));
+        $excludeBookingId = (int) $this->request->getGet('exclude_booking_id') ?: null;
 
         return $this->response->setJSON([
-            'slots' => $this->dayAssetsInternal($labId, $date, $selected)
+            'slots' => $this->dayAssetsInternal($labId, $date, $selected, $excludeBookingId)
         ]);
     }
 
-    protected function dayAssetsInternal(int $labId, string $date, array $selected): array
+    protected function dayAssetsInternal(int $labId, string $date, array $selected, ?int $excludeBookingId = null): array
     {
         $slotDefs     = $this->getSlotDefinitions();
         $bookingModel = new BookingModel();
@@ -297,7 +298,7 @@ class BookingController extends BaseController
             $slotOK     = true;
             $reason     = null;
 
-            if ($bookingModel->hasLabConflict($labId, $date, $slot['start'], $slot['end'])) {
+            if ($bookingModel->hasLabConflict($labId, $date, $slot['start'], $slot['end'], $excludeBookingId)) {
                 $slotOK = false;
                 $reason = 'Laboratory already booked for this slot.';
             }

@@ -119,6 +119,7 @@ $routes->group('api/native', ['filter' => 'tokens'], static function ($routes) {
     $routes->get('bookings/(:num)', [NativeBookingController::class, 'show/$1']);
     $routes->post('bookings/submit', [NativeBookingController::class, 'submit']);
     $routes->post('bookings/(:num)/cancel', [NativeBookingController::class, 'cancel/$1']);
+    $routes->post('bookings/(:num)/update', [NativeBookingController::class, 'update/$1']);
 
     $routes->get('issues', [NativeIssueReportController::class, 'index']);
     $routes->post('issues', [NativeIssueReportController::class, 'store']);
@@ -136,6 +137,8 @@ $routes->group('api/native', ['filter' => 'tokens'], static function ($routes) {
     $routes->get('external-requests', [NativeExternalRequestController::class, 'index']);
     $routes->get('external-requests/(:num)', [NativeExternalRequestController::class, 'show/$1']);
     $routes->get('external-requests/labs/(:num)/slots/(:segment)', [NativeExternalRequestController::class, 'daySlots/$1/$2']);
+    $routes->get('external-requests/labs/(:num)/services', [NativeExternalRequestController::class, 'labServices/$1']);
+    $routes->get('external-requests/services/(:num)/assets', [NativeExternalRequestController::class, 'serviceAssets/$1']);
     $routes->post('external-requests', [NativeExternalRequestController::class, 'store']);
     $routes->post('external-requests/(:num)', [NativeExternalRequestController::class, 'update/$1']);
     $routes->get('external-requests/review', [NativeExternalRequestReviewController::class, 'index']);
@@ -447,16 +450,22 @@ $routes->group('dashboard', ['filter' => 'session'], function ($routes) {
     $routes->get('student', [StudentDashboard::class, 'index'], ['filter' => 'group:student,staff']);
     $routes->get('student/booking-details/(:num)', [StudentDashboard::class, 'bookingDetails/$1'], ['filter' => 'group:student,staff']);
     $routes->post('student/cancel-booking/(:num)', [StudentDashboard::class, 'cancelBooking/$1'], ['filter' => 'group:student,staff']);
+    $routes->get('student/booking-edit/(:num)',   [StudentDashboard::class, 'editBooking/$1'],   ['filter' => 'group:student,staff']);
+    $routes->post('student/booking-edit/(:num)',  [StudentDashboard::class, 'updateBooking/$1'], ['filter' => 'group:student,staff']);
 
     // STAFF DASHBOARD (same controller/view as student, dedicated URL)
     $routes->get('staff', [StudentDashboard::class, 'index'], ['filter' => 'group:staff']);
     $routes->get('staff/booking-details/(:num)', [StudentDashboard::class, 'bookingDetails/$1'], ['filter' => 'group:staff']);
     $routes->post('staff/cancel-booking/(:num)', [StudentDashboard::class, 'cancelBooking/$1'], ['filter' => 'group:staff']);
+    $routes->get('staff/booking-edit/(:num)',   [StudentDashboard::class, 'editBooking/$1'],   ['filter' => 'group:staff']);
+    $routes->post('staff/booking-edit/(:num)',  [StudentDashboard::class, 'updateBooking/$1'], ['filter' => 'group:staff']);
 
     // EXTERNAL DASHBOARD
     $routes->get('external', [ExternalDashboard::class, 'index'], ['filter' => 'group:external']);
     $routes->get('external/request', [ExternalDashboard::class, 'createRequest'], ['filter' => 'group:external']);
     $routes->get('external/request/slots/(:num)/(:segment)', [ExternalDashboard::class, 'daySlots/$1/$2'], ['filter' => 'group:external']);
+    $routes->get('external/request/lab-services/(:num)', [ExternalDashboard::class, 'labServices/$1'], ['filter' => 'group:external']);
+    $routes->get('external/request/service-assets/(:num)', [ExternalDashboard::class, 'serviceAssets/$1'], ['filter' => 'group:external']);
     $routes->post('external/request/store', [ExternalDashboard::class, 'storeRequest'], ['filter' => 'group:external']);
     $routes->get('external/request/edit/(:num)', [ExternalDashboard::class, 'editRequest/$1'], ['filter' => 'group:external']);
     $routes->post('external/request/update/(:num)', [ExternalDashboard::class, 'updateRequest/$1'], ['filter' => 'group:external']);

@@ -223,6 +223,119 @@ class NativeBookingController extends WebBookingController
         ]);
     }
 
+    public function update(int $id)
+    {
+        $user = auth()->user();
+        if (! $user instanceof User) {
+            return $this->response->setStatusCode(401)->setJSON(['status' => 'error', 'message' => 'Unauthenticated.']);
+        }
+
+        $bookingModel = new BookingModel();
+        $booking = $bookingModel->where('id', $id)->where('user_id', $user->id)->first();
+
+        if (! $booking) {
+            return $this->response->setStatusCode(404)->setJSON(['status' => 'error', 'message' => 'Booking not found.']);
+        }
+
+        if (($booking['status'] ?? '') !== 'PENDING' || (bool) ($booking['approved_by_pic'] ?? false)) {
+            return $this->response->setStatusCode(422)->setJSON(['status' => 'error', 'message' => 'This booking can no longer be edited.']);
+        }
+
+        $date       = trim((string) $this->request->getPost('date'));
+        $startTime  = $this->normalizeTime((string) $this->request->getPost('start_time'));
+        $endTime    = $this->normalizeTime((string) $this->request->getPost('end_time'));
+        $activity   = trim((string) $this->request->getPost('activity'));
+
+        if ($date === '' || $startTime === null || $endTime === null || $activity === '') {
+            return $this->response->setStatusCode(422)->setJSON(['status' => 'error', 'message' => 'Date, start time, end time, and activity are required.']);
+        }
+
+        if ($startTime >= $endTime) {
+            return $this->response->setStatusCode(422)->setJSON(['status' => 'error', 'message' => 'End time must be later than start time.']);
+        }
+
+        if ($this->findMatchingSlotDefinition($startTime, $endTime) === null) {
+            return $this->response->setStatusCode(422)->setJSON(['status' => 'error', 'message' => 'Please choose one of the configured booking sessions for this laboratory.']);
+        }
+
+        if ($bookingModel->hasLabConflict((int) $booking['lab_id'], $date, $startTime, $endTime, $id)) {
+            return $this->response->setStatusCode(422)->setJSON(['status' => 'error', 'message' => 'This laboratory is already booked for the selected date and time.']);
+        }
+
+        $names    = $this->request->getPost('applicant_name') ?? [];
+        $ids      = $this->request->getPost('applicant_id') ?? [];
+        $emails   = $this->request->getPost('applicant_email') ?? [];
+        $phones   = $this->request->getPost('applicant_phone') ?? [];
+        $faculties = $this->request->getPost('applicant_faculty') ?? [];
+
+        $rowCount   = max(count((array) $names), count((array) $ids), count((array) $emails), count((array) $phones), count((array) $faculties));
+        $applicants = [];
+        for ($i = 0; $i < $rowCount; $i++) {
+            $name        = trim((string) ($names[$i] ?? ''));
+            $matricId    = trim((string) ($ids[$i] ?? ''));
+            $email       = trim((string) ($emails[$i] ?? ''));
+            $phone       = trim((string) ($phones[$i] ?? ''));
+            $facultyVal  = trim((string) ($faculties[$i] ?? ''));
+            if ($name === '' && $matricId === '' && $email === '' && $phone === '' && $facultyVal === '') continue;
+            if ($name === '' || $matricId === '' || $email === '' || $phone === '' || $facultyVal === '') {
+                return $this->response->setStatusCode(422)->setJSON(['status' => 'error', 'message' => 'Each applicant must include name, ID, email, phone, and faculty.']);
+            }
+            if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                return $this->response->setStatusCode(422)->setJSON(['status' => 'error', 'message' => 'One or more applicant email addresses are invalid.']);
+            }
+            $applicants[] = ['name' => $name, 'matric_id' => $matricId, 'email' => $email, 'phone' => $phone, 'faculty' => $facultyVal];
+        }
+
+        if ($applicants === []) {
+            return $this->response->setStatusCode(422)->setJSON(['status' => 'error', 'message' => 'Please add at least one applicant.']);
+        }
+
+        $pdfFile = $this->request->getFile('pdf');
+        $pdfPath = (string) ($booking['pdf_path'] ?? '');
+
+        $bookingApplicantModel = new \App\Models\BookingApplicantModel();
+        $db = \Config\Database::connect();
+        $db->transBegin();
+
+        try {
+            if ($pdfFile && $pdfFile->isValid() && ! $pdfFile->hasMoved()) {
+                $uploadDir = WRITEPATH . 'uploads/pdfs';
+                if (! is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+                $storedName = $pdfFile->getRandomName();
+                if (! $pdfFile->move($uploadDir, $storedName)) {
+                    throw new \RuntimeException('Unable to store uploaded PDF.');
+                }
+                $pdfPath = '/uploads/pdfs/' . $storedName;
+            }
+
+            $bookingModel->update($id, [
+                'date'             => $date,
+                'start_time'       => $startTime,
+                'end_time'         => $endTime,
+                'activity'         => $activity,
+                'supervisor_name'  => trim((string) $this->request->getPost('supervisor_name')) ?: null,
+                'supervisor_email' => trim((string) $this->request->getPost('supervisor_email')) ?: null,
+                'supervisor_phone' => trim((string) $this->request->getPost('supervisor_phone')) ?: null,
+                'pdf_path'         => $pdfPath ?: null,
+                'approved_by_pic'     => 0,
+                'approved_by_manager' => 0,
+                'updated_at'       => date('Y-m-d H:i:s'),
+            ]);
+
+            $bookingApplicantModel->where('booking_id', $id)->delete();
+            $bookingApplicantModel->insertBatchApplicants($id, $applicants);
+
+            if ($db->transStatus() === false) throw new \RuntimeException('Unable to save booking.');
+            $db->transCommit();
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            log_message('error', 'Booking update failed: ' . $e->getMessage());
+            return $this->response->setStatusCode(500)->setJSON(['status' => 'error', 'message' => 'Failed to update booking. Please try again.']);
+        }
+
+        return $this->response->setJSON(['status' => 'success', 'message' => 'Booking updated successfully.']);
+    }
+
     protected function serializeBookingSummary(array $booking): array
     {
         return [
@@ -242,6 +355,7 @@ class NativeBookingController extends WebBookingController
             'created_at' => (string) ($booking['created_at'] ?? ''),
             'updated_at' => (string) ($booking['updated_at'] ?? ''),
             'can_cancel' => (string) ($booking['status'] ?? '') === 'PENDING',
+            'can_edit'   => (string) ($booking['status'] ?? '') === 'PENDING' && !(bool) ($booking['approved_by_pic'] ?? false),
         ];
     }
 

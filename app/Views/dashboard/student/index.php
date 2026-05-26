@@ -426,6 +426,7 @@ $filters           = $filters ?? ['q' => '', 'status' => '', 'date_from' => '', 
                                 <th>Lab</th>
                                 <th>Activity</th>
                                 <th>Status</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
 
@@ -442,16 +443,36 @@ $filters           = $filters ?? ['q' => '', 'status' => '', 'date_from' => '', 
                                     <td><?= esc($b['activity']) ?></td>
                                     <td>
                                         <?php
-                                            $badge = [
-                                                'PENDING' => 'warning',
-                                                'APPROVED' => 'success',
-                                                'REJECTED' => 'danger',
-                                                'CANCELLED' => 'secondary',
-                                            ][$b['status']] ?? 'secondary';
+                                            $isPendingPic = $b['status'] === 'PENDING' && empty($b['approved_by_pic']);
+                                            $isPendingMgr = $b['status'] === 'PENDING' && !empty($b['approved_by_pic']);
+                                            if ($isPendingPic) {
+                                                $badge = 'warning';
+                                                $label = 'Awaiting PIC';
+                                                $sub   = 'Waiting for the lab PIC to review';
+                                            } elseif ($isPendingMgr) {
+                                                $badge = 'info';
+                                                $label = 'Awaiting Manager';
+                                                $sub   = 'PIC approved — waiting for Lab Manager';
+                                            } else {
+                                                $badge = ['APPROVED' => 'success', 'REJECTED' => 'danger', 'CANCELLED' => 'secondary'][$b['status']] ?? 'secondary';
+                                                $label = $b['status'];
+                                                $sub   = '';
+                                            }
                                         ?>
                                         <span class="badge bg-<?= $badge ?> px-3 py-2">
-                                            <?= esc($b['status']) ?>
+                                            <?= esc($label) ?>
                                         </span>
+                                        <?php if ($sub): ?>
+                                            <div class="small text-muted mt-1"><?= esc($sub) ?></div>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td onclick="event.stopPropagation()">
+                                        <?php if ($isPendingPic): ?>
+                                            <a href="/dashboard/student/booking-edit/<?= (int) $b['id'] ?>"
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-pencil me-1"></i>Edit
+                                            </a>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
