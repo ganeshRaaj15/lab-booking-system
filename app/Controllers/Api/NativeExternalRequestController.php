@@ -201,7 +201,7 @@ class NativeExternalRequestController extends WebExternalDashboard
 
         $db = \Config\Database::connect();
         $services = $db->table('lab_services')
-            ->select('id, service_name')
+            ->select('id, service_name, equipment_models')
             ->where('laboratory_id', $labId)
             ->where('is_active', 1)
             ->orderBy('service_name', 'ASC')

@@ -52,18 +52,12 @@ $currentStatus = (string) ($requestRecord['status'] ?? 'pending_pic_approval');
             </div>
 
             <div class="col-md-6">
-                <label class="form-label">Service / Field of Work</label>
+                <label class="form-label">Service / Field of Work <span class="text-muted fw-normal">(Optional)</span></label>
                 <input type="hidden" name="service_id" id="externalServiceId" value="<?= esc(old('service_id', $requestRecord['service_id'] ?? '')) ?>">
+                <input type="hidden" name="selected_assets" id="externalSelectedAssets" value="<?= esc(old('selected_assets', $requestRecord['selected_assets'] ?? '')) ?>">
                 <div id="externalServiceChoices" class="d-flex flex-wrap gap-2 mt-1"></div>
                 <div id="externalServiceHint" class="small text-muted mt-1">Select a laboratory to see available services.</div>
-            </div>
-
-            <div class="col-12" id="externalEquipmentSection">
-                <label class="form-label">Equipment (Optional)</label>
-                <input type="hidden" name="selected_assets" id="externalSelectedAssets" value="<?= esc(old('selected_assets', $requestRecord['selected_assets'] ?? '')) ?>">
-                <div id="externalEquipmentChoices" class="d-flex flex-wrap gap-2 mt-1"></div>
-                <div id="externalEquipmentHint" class="small text-muted mt-1">Select a service to see available equipment.</div>
-                <div class="form-text">Optionally indicate which equipment or materials you may need.</div>
+                <div id="externalEquipmentInfo" class="mt-2"></div>
             </div>
 
             <?php if ($isEdit): ?>
@@ -310,38 +304,36 @@ document.addEventListener("DOMContentLoaded", () => {
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-    const labField         = document.getElementById("externalLabId");
-    const serviceIdField   = document.getElementById("externalServiceId");
-    const serviceChoicesEl = document.getElementById("externalServiceChoices");
-    const serviceHintEl    = document.getElementById("externalServiceHint");
-    const equipmentSection = document.getElementById("externalEquipmentSection");
-    const equipmentChoicesEl = document.getElementById("externalEquipmentChoices");
-    const equipmentHintEl  = document.getElementById("externalEquipmentHint");
+    const labField          = document.getElementById("externalLabId");
+    const serviceIdField    = document.getElementById("externalServiceId");
+    const serviceChoicesEl  = document.getElementById("externalServiceChoices");
+    const serviceHintEl     = document.getElementById("externalServiceHint");
     const selectedAssetsField = document.getElementById("externalSelectedAssets");
+    const equipmentInfoEl   = document.getElementById("externalEquipmentInfo");
 
     if (!labField || !serviceIdField || !serviceChoicesEl) {
         return;
     }
 
     let currentServiceId = serviceIdField.value || "";
-    let currentSelectedAssets = selectedAssetsField ? (selectedAssetsField.value || "") : "";
 
-    function getSelectedAssetNames() {
-        if (!equipmentChoicesEl) return [];
-        return Array.from(equipmentChoicesEl.querySelectorAll("input[type='checkbox']:checked"))
-            .map((cb) => cb.dataset.name || "");
-    }
-
-    function updateSelectedAssetsField() {
-        if (!selectedAssetsField) return;
-        const names = getSelectedAssetNames();
-        selectedAssetsField.value = names.filter(Boolean).join(",");
+    function showEquipmentInfo(equipmentModels) {
+        if (!equipmentInfoEl) return;
+        if (!equipmentModels) {
+            equipmentInfoEl.innerHTML = "";
+            return;
+        }
+        equipmentInfoEl.innerHTML = `
+            <div class="alert alert-secondary py-2 mb-0 small">
+                <span class="fw-semibold">Equipment:</span> ${equipmentModels}
+            </div>`;
     }
 
     function renderServiceChoices(services) {
         if (!services.length) {
             serviceChoicesEl.innerHTML = "";
             serviceHintEl.textContent = "No services configured for this laboratory.";
+            showEquipmentInfo("");
             return;
         }
         serviceHintEl.textContent = "";
@@ -351,39 +343,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 <button type="button"
                         class="btn btn-sm ${selected ? "btn-primary" : "btn-outline-secondary"} service-choice-btn"
                         data-id="${s.id}"
-                        data-name="${s.service_name}">
+                        data-equipment="${s.equipment_models || ""}">
                     ${s.service_name}
                 </button>`;
         }).join("");
-    }
 
-    function renderEquipmentChoices(assets) {
-        if (!equipmentChoicesEl) return;
-
-        if (!assets.length) {
-            equipmentChoicesEl.innerHTML = "";
-            equipmentHintEl.textContent = "No equipment listed for this service.";
-            return;
-        }
-
-        equipmentHintEl.textContent = "";
-        const preselected = currentSelectedAssets.split(",").map((n) => n.trim()).filter(Boolean);
-
-        equipmentChoicesEl.innerHTML = assets.map((a) => {
-            const checked = preselected.includes(a.name) ? "checked" : "";
-            return `
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input asset-checkbox" type="checkbox" id="asset_${a.id}"
-                           data-name="${a.name}" ${checked}>
-                    <label class="form-check-label small" for="asset_${a.id}">${a.name}</label>
-                </div>`;
-        }).join("");
-
-        equipmentChoicesEl.querySelectorAll(".asset-checkbox").forEach((cb) => {
-            cb.addEventListener("change", updateSelectedAssetsField);
-        });
-
-        updateSelectedAssetsField();
+        const selectedBtn = serviceChoicesEl.querySelector(`.service-choice-btn[data-id="${currentServiceId}"]`);
+        showEquipmentInfo(selectedBtn ? (selectedBtn.dataset.equipment || "") : "");
     }
 
     async function loadServices(labId, preserveService = false) {
@@ -393,8 +359,9 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!preserveService) {
                 currentServiceId = "";
                 serviceIdField.value = "";
+                if (selectedAssetsField) selectedAssetsField.value = "";
             }
-            loadEquipment(null);
+            showEquipmentInfo("");
             return;
         }
 
@@ -411,47 +378,13 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!preserveService) {
                 currentServiceId = "";
                 serviceIdField.value = "";
+                if (selectedAssetsField) selectedAssetsField.value = "";
             }
 
             renderServiceChoices(services);
-
-            if (preserveService && currentServiceId) {
-                loadEquipment(currentServiceId, true);
-            } else {
-                loadEquipment(null);
-            }
         } catch {
             serviceChoicesEl.innerHTML = "";
             serviceHintEl.textContent = "Could not load services right now.";
-        }
-    }
-
-    async function loadEquipment(serviceId, preserveAssets = false) {
-        if (!equipmentChoicesEl) return;
-
-        if (!serviceId) {
-            equipmentChoicesEl.innerHTML = "";
-            equipmentHintEl.textContent = "Select a service to see available equipment.";
-            if (!preserveAssets) {
-                currentSelectedAssets = "";
-                if (selectedAssetsField) selectedAssetsField.value = "";
-            }
-            return;
-        }
-
-        equipmentChoicesEl.innerHTML = '<span class="text-muted small">Loading equipment...</span>';
-        equipmentHintEl.textContent = "";
-
-        try {
-            const res = await fetch(`/dashboard/external/request/service-assets/${encodeURIComponent(serviceId)}`, {
-                headers: { "X-Requested-With": "XMLHttpRequest" },
-            });
-            const data = await res.json();
-            const assets = Array.isArray(data.assets) ? data.assets : [];
-            renderEquipmentChoices(assets);
-        } catch {
-            equipmentChoicesEl.innerHTML = "";
-            equipmentHintEl.textContent = "Could not load equipment right now.";
         }
     }
 
@@ -459,27 +392,31 @@ document.addEventListener("DOMContentLoaded", () => {
         const btn = e.target.closest(".service-choice-btn");
         if (!btn) return;
 
-        currentServiceId = btn.dataset.id || "";
+        const clickedId = btn.dataset.id || "";
+        const isSame = clickedId === currentServiceId;
+
+        currentServiceId = isSame ? "" : clickedId;
         serviceIdField.value = currentServiceId;
-        currentSelectedAssets = "";
-        if (selectedAssetsField) selectedAssetsField.value = "";
+        if (selectedAssetsField) {
+            selectedAssetsField.value = isSame ? "" : (btn.dataset.equipment || "");
+        }
 
         serviceChoicesEl.querySelectorAll(".service-choice-btn").forEach((b) => {
-            b.className = b === btn ? "btn btn-sm btn-primary service-choice-btn" : "btn btn-sm btn-outline-secondary service-choice-btn";
+            b.className = (b === btn && !isSame)
+                ? "btn btn-sm btn-primary service-choice-btn"
+                : "btn btn-sm btn-outline-secondary service-choice-btn";
         });
 
-        loadEquipment(currentServiceId);
+        showEquipmentInfo(isSame ? "" : (btn.dataset.equipment || ""));
     });
 
     labField.addEventListener("change", () => {
         currentServiceId = "";
         serviceIdField.value = "";
-        currentSelectedAssets = "";
         if (selectedAssetsField) selectedAssetsField.value = "";
         loadServices(labField.value);
     });
 
-    // Initialize on page load
     if (labField.value) {
         loadServices(labField.value, Boolean(currentServiceId));
     }
