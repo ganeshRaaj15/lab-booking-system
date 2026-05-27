@@ -459,7 +459,7 @@ document.addEventListener("DOMContentLoaded", function () {
         selectedServiceSummary.innerHTML = `
             <span class="fw-semibold">${selectedService.name}</span>
             <span class="mx-2">·</span>${linkedCount} item(s), ${availableCount} bookable
-            ${meta.length ? `<span class="text-muted ms-2">${meta.join(" · ")}</span>` : ""}
+            ${meta.length ? `<span class="ms-2">${meta.join(" · ")}</span>` : ""}
         `;
     }
 
