@@ -35,7 +35,9 @@ if ($picPhone === '') {
         <!-- Lab Header — compact info bar -->
         <div class="lab-header-compact-card">
             <?php if (!empty($lab['image'])): ?>
-                <div class="lab-thumb">
+                <div class="lab-thumb"
+                     data-bs-toggle="modal" data-bs-target="#labImgModal"
+                     title="Click to view full image">
                     <img src="<?= base_url($lab['image']) ?>"
                          alt="<?= esc($lab['name']) ?>"
                          onerror="this.onerror=null;this.src='<?= base_url('images/assets/placeholder_asset.png') ?>';">
@@ -89,7 +91,7 @@ if ($picPhone === '') {
         </div>
 
         <!-- Service selection status — updated by JS -->
-        <div id="selectedServiceSummary" class="alert alert-info small slams-service-status-bar">
+        <div id="selectedServiceSummary" class="slams-service-status-bar">
             <i class="bi bi-info-circle me-1"></i>
             Choose a service below to activate the correct equipment set for booking.
         </div>
@@ -327,6 +329,34 @@ if ($picPhone === '') {
     </div>
 </div>
 
+<!-- Lab image fullsize modal -->
+<div class="modal fade" id="labImgModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:min(720px,92vw);">
+        <div class="modal-content" style="background:transparent;border:none;box-shadow:none;">
+            <div class="modal-body p-0 position-relative">
+                <button type="button"
+                        class="btn-close position-absolute top-0 end-0 m-2"
+                        data-bs-dismiss="modal"
+                        style="background-color:rgba(255,255,255,0.9);border-radius:50%;padding:7px;z-index:10;">
+                </button>
+                <?php if (!empty($lab['image'])): ?>
+                    <img src="<?= base_url($lab['image']) ?>"
+                         alt="<?= esc($lab['name']) ?>"
+                         style="width:100%;max-height:80vh;object-fit:contain;border-radius:16px;display:block;"
+                         onerror="this.onerror=null;this.src='<?= base_url('images/assets/placeholder_asset.png') ?>';">
+                <?php else: ?>
+                    <div style="height:260px;background:var(--slams-primary-soft);border-radius:16px;display:flex;align-items:center;justify-content:center;">
+                        <i class="bi bi-building" style="font-size:5rem;color:var(--slams-primary);"></i>
+                    </div>
+                <?php endif; ?>
+                <div class="text-center mt-2" style="color:#fff;font-size:0.85rem;opacity:0.8;">
+                    <?= esc($lab['name']) ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Equipment detail modal -->
 <div class="modal fade" id="equipmentDetailModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -438,7 +468,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!selectedServiceSummary) return;
 
         if (!selectedService) {
-            selectedServiceSummary.className = "alert alert-info small slams-service-status-bar";
+            selectedServiceSummary.className = "slams-service-status-bar";
             selectedServiceSummary.innerHTML = `
                 <i class="bi bi-info-circle me-1"></i>
                 Choose a service below to activate the correct equipment set for booking.
@@ -455,11 +485,12 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         const isReady = availableCount > 0;
-        selectedServiceSummary.className = `alert ${isReady ? "alert-success" : "alert-warning"} small slams-service-status-bar`;
+        selectedServiceSummary.className = `slams-service-status-bar ${isReady ? "slams-ssb--ready" : "slams-ssb--warn"}`;
         selectedServiceSummary.innerHTML = `
+            <i class="bi bi-${isReady ? "check-circle" : "exclamation-circle"} me-1"></i>
             <span class="fw-semibold">${selectedService.name}</span>
-            <span class="mx-2">·</span>${linkedCount} item(s), ${availableCount} bookable
-            ${meta.length ? `<span class="ms-2">${meta.join(" · ")}</span>` : ""}
+            <span class="mx-2 opacity-50">·</span>${linkedCount} item(s), ${availableCount} bookable
+            ${meta.length ? `<span class="opacity-75 ms-1">${meta.join(" · ")}</span>` : ""}
         `;
     }
 

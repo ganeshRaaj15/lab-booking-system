@@ -4364,15 +4364,21 @@ body.slams-app {
 }
 
 .lab-thumb {
-    width: 72px;
-    height: 72px;
-    border-radius: 12px;
+    width: 96px;
+    height: 96px;
+    border-radius: 14px;
     overflow: hidden;
     flex-shrink: 0;
     background: var(--slams-primary-soft);
     display: flex;
     align-items: center;
     justify-content: center;
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+
+.lab-thumb:hover {
+    opacity: 0.85;
 }
 
 .lab-thumb img {
@@ -4382,7 +4388,7 @@ body.slams-app {
 }
 
 .lab-thumb--placeholder {
-    font-size: 2rem;
+    font-size: 2.5rem;
     color: var(--slams-primary);
 }
 
@@ -4431,16 +4437,18 @@ body.slams-app {
 }
 
 .lab-pic-tiny-avatar {
-    width: 22px;
-    height: 22px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
     object-fit: cover;
     flex-shrink: 0;
+    border: 2px solid var(--slams-border);
 }
 
 .lab-pic-tiny-icon {
-    font-size: 1rem;
+    font-size: 1.6rem;
     color: var(--slams-primary);
+    flex-shrink: 0;
 }
 
 .lab-pic-name-inline {
@@ -4480,8 +4488,24 @@ body.slams-app {
 
 /* Service status bar (between header and service list) */
 .slams-service-status-bar {
-    margin-bottom: 0.85rem !important;
-    border-radius: 10px !important;
+    padding: 0.6rem 1rem;
+    border-radius: 10px;
+    border: 1px solid color-mix(in srgb, var(--slams-info) 30%, transparent);
+    background: color-mix(in srgb, var(--slams-info) 10%, var(--slams-surface));
+    color: var(--slams-heading);
+    font-size: 0.875rem;
+    margin-bottom: 0.85rem;
+    line-height: 1.5;
+}
+
+.slams-ssb--ready {
+    border-color: color-mix(in srgb, var(--slams-success) 35%, transparent);
+    background: color-mix(in srgb, var(--slams-success) 10%, var(--slams-surface));
+}
+
+.slams-ssb--warn {
+    border-color: color-mix(in srgb, var(--slams-warning) 35%, transparent);
+    background: color-mix(in srgb, var(--slams-warning) 10%, var(--slams-surface));
 }
 
 /* Equipment detail modal */
