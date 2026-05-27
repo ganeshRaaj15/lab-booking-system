@@ -32,114 +32,66 @@ if ($picPhone === '') {
             </a>
         </div>
 
-        <!-- Lab Header -->
-        <div class="lab-header-card">
-            <div class="lab-header-content">
-                <div class="lab-header-info">
-                    <h1 class="lab-title"><?= esc($lab['name']) ?></h1>
-                    
-                    <?php if (!empty($lab['room'])): ?>
-                        <div class="lab-room">
-                            <i class="bi bi-door-open"></i>
-                            Room <?= esc($lab['room']) ?>
-                        </div>
-                    <?php endif; ?>
-                    
-                    <p class="lab-description">
-                        Choose a laboratory service, review the linked equipment, then check real-time
-                        availability before submitting your booking request.
-                    </p>
+        <!-- Lab Header — compact info bar -->
+        <div class="lab-header-compact-card">
+            <?php if (!empty($lab['image'])): ?>
+                <div class="lab-thumb">
+                    <img src="<?= base_url($lab['image']) ?>"
+                         alt="<?= esc($lab['name']) ?>"
+                         onerror="this.onerror=null;this.src='<?= base_url('images/assets/placeholder_asset.png') ?>';">
                 </div>
-                
-                <!-- Lab Image -->
-                <?php 
-                $labImagePath = $lab['image'] ?? '';
-                $labImageExists = false;
-                if (!empty($labImagePath)) {
-                    $fullImagePath = WRITEPATH . str_replace('uploads/', 'uploads/', $labImagePath);
-                    $labImageExists = file_exists($fullImagePath);
-                }
-                ?>
-                
-                <?php if (!empty($lab['image'])): ?>
-                    <div class="lab-header-image">
-                        <img src="<?= base_url($lab['image']) ?>" 
-                             alt="<?= esc($lab['name']) ?>"
-                             onerror="this.onerror=null; this.src='<?= base_url('images/assets/placeholder_asset.png') ?>';">
-                    </div>
+            <?php else: ?>
+                <div class="lab-thumb lab-thumb--placeholder">
+                    <i class="bi bi-building"></i>
+                </div>
+            <?php endif; ?>
+
+            <div class="lab-header-body">
+                <div class="lab-header-title-row">
+                    <h1 class="lab-title-compact"><?= esc($lab['name']) ?></h1>
+                    <?php if (!empty($lab['room'])): ?>
+                        <span class="lab-room-tag">
+                            <i class="bi bi-door-open"></i> Room <?= esc($lab['room']) ?>
+                        </span>
+                    <?php endif; ?>
+                </div>
+                <div class="lab-header-pic-row">
+                    <?php if (!empty($lab['pic_image'])): ?>
+                        <img src="<?= base_url($lab['pic_image']) ?>"
+                             alt="<?= esc($picName) ?>"
+                             class="lab-pic-tiny-avatar"
+                             onerror="this.style.display='none'">
+                    <?php else: ?>
+                        <i class="bi bi-person-circle lab-pic-tiny-icon"></i>
+                    <?php endif; ?>
+                    <span class="lab-pic-name-inline"><?= esc($picName) ?></span>
+                    <?php if ($picEmail !== 'null'): ?>
+                        <span class="lab-meta-sep">·</span>
+                        <a href="mailto:<?= esc($picEmail) ?>" class="lab-meta-link"><?= esc($picEmail) ?></a>
+                    <?php endif; ?>
+                    <?php if ($picPhone !== 'null'): ?>
+                        <span class="lab-meta-sep">·</span>
+                        <span class="lab-meta-phone"><i class="bi bi-telephone me-1"></i><?= esc($picPhone) ?></span>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <div class="lab-header-access-note">
+                <i class="bi bi-info-circle mb-1" style="font-size:1.1rem;display:block;text-align:center;"></i>
+                <?php if ($bookingMode === 'uthm'): ?>
+                    Select a service below, then use the booking wizard to reserve a slot.
+                <?php elseif ($bookingMode === 'external'): ?>
+                    Login and submit an access request. The PIC will review it.
                 <?php else: ?>
-                    <!-- Placeholder when no image exists -->
-                    <div class="lab-header-image">
-                        <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #e0f2fe, #eff6ff); border-radius: 16px; display: flex; align-items: center; justify-content: center; color: #3b82f6; font-size: 3rem;">
-                            <i class="bi bi-building"></i>
-                        </div>
-                    </div>
+                    Login with an external account or contact the PIC directly.
                 <?php endif; ?>
             </div>
         </div>
 
-        <div class="row g-4">
-            <!-- Person in Charge Card -->
-            <div class="col-lg-4">
-                <div class="pic-card">
-                    <div class="pic-content">
-                        <!-- PIC Image -->
-                        <?php 
-                        $picImagePath = $lab['pic_image'] ?? '';
-                        $picImageExists = false;
-                        if (!empty($picImagePath)) {
-                            $fullPicPath = WRITEPATH . str_replace('uploads/', 'uploads/', $picImagePath);
-                            $picImageExists = file_exists($fullPicPath);
-                        }
-                        ?>
-                        
-                        <div class="pic-avatar">
-                            <?php if (!empty($lab['pic_image'])): ?>
-                                <img src="<?= base_url($lab['pic_image']) ?>" 
-                                     alt="<?= esc($picName) ?>"
-                                     onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                <i class="bi bi-person-gear" style="display: none; font-size: 2.5rem; color: #3b82f6;"></i>
-                            <?php else: ?>
-                                <i class="bi bi-person-gear"></i>
-                            <?php endif; ?>
-                        </div>
-                        
-                        <div class="pic-info">
-                            <div class="pic-label">Person in Charge</div>
-                            <div class="pic-name"><?= esc($picName) ?></div>
-                            
-                            <div class="pic-contact">
-                                <div class="contact-item">
-                                    <i class="bi bi-envelope"></i>
-                                    <?php if ($picEmail !== 'null'): ?>
-                                        <a href="mailto:<?= esc($picEmail) ?>"><?= esc($picEmail) ?></a>
-                                    <?php else: ?>
-                                        <?= esc($picEmail) ?>
-                                    <?php endif; ?>
-                                </div>
-                                
-                                <div class="contact-item">
-                                    <i class="bi bi-telephone"></i>
-                                    <?= esc($picPhone) ?>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="pic-note">
-                        <i class="bi bi-info-circle"></i>
-                        External users can submit an access request after login. Guests should contact the PIC or register for an external account first.
-                    </div>
-                </div>
-            </div>
-
-            <!-- Service selection summary (shown once a service is chosen) -->
-            <div class="col-lg-8 d-flex flex-column">
-                <div id="selectedServiceSummary" class="alert alert-info small mb-0 flex-grow-1">
-                    <i class="bi bi-info-circle me-1"></i>
-                    Choose a service below to activate the correct equipment set for booking.
-                </div>
-            </div>
+        <!-- Service selection status — updated by JS -->
+        <div id="selectedServiceSummary" class="alert alert-info small slams-service-status-bar">
+            <i class="bi bi-info-circle me-1"></i>
+            Choose a service below to activate the correct equipment set for booking.
         </div>
 
         <div class="slams-service-section mt-4">
@@ -215,7 +167,13 @@ if ($picPhone === '') {
                                              data-asset-id="<?= esc((string)($a['id'] ?? '')) ?>"
                                              data-service-id="<?= esc((string)$serviceId) ?>"
                                              data-status="<?= esc($assetStatus) ?>"
-                                             data-quantity="<?= $assetQty ?>">
+                                             data-quantity="<?= $assetQty ?>"
+                                             data-asset-name="<?= esc($a['name'] ?? '') ?>"
+                                             data-asset-category="<?= esc($a['category'] ?? '') ?>"
+                                             data-asset-img="<?= !empty($a['image']) ? esc(base_url($a['image'])) : '' ?>"
+                                             data-service-name="<?= esc($service['service_name'] ?? '') ?>"
+                                             title="Click to view details"
+                                             role="button">
 
                                             <div class="service-asset-img-wrap">
                                                 <?php if (!empty($a['image'])): ?>
@@ -369,6 +327,27 @@ if ($picPhone === '') {
     </div>
 </div>
 
+<!-- Equipment detail modal -->
+<div class="modal fade" id="equipmentDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content" style="border-radius:16px;overflow:hidden;">
+            <div class="modal-header border-0 pb-0 pt-3 px-3">
+                <h6 class="modal-title fw-bold" id="edModalName"></h6>
+                <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-2 px-3 pb-3">
+                <div id="edModalImg" class="ed-modal-img-wrap mb-3"></div>
+                <div class="text-muted small mb-2" id="edModalService"></div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span id="edModalStatus" class="asset-status-badge"></span>
+                    <span class="small text-muted" id="edModalQty"></span>
+                </div>
+                <div class="text-muted small" id="edModalCategory"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Include booking modal (adapts to bookingMode inside) -->
 <?= $this->include('public/booking/booking_modal', [
     'lab'          => $lab,
@@ -459,7 +438,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!selectedServiceSummary) return;
 
         if (!selectedService) {
-            selectedServiceSummary.className = "alert alert-info small mb-3";
+            selectedServiceSummary.className = "alert alert-info small slams-service-status-bar";
             selectedServiceSummary.innerHTML = `
                 <i class="bi bi-info-circle me-1"></i>
                 Choose a service below to activate the correct equipment set for booking.
@@ -471,19 +450,16 @@ document.addEventListener("DOMContentLoaded", function () {
         if (selectedService.calibrationStatus) {
             meta.push(`Calibration: ${selectedService.calibrationStatus}`);
         }
-        if (selectedService.equipmentModels) {
-            meta.push(`Equipment: ${selectedService.equipmentModels}`);
-        }
         if (selectedService.acceptanceCriteria) {
             meta.push(`Criteria: ${selectedService.acceptanceCriteria}`);
         }
 
         const isReady = availableCount > 0;
-        selectedServiceSummary.className = `alert ${isReady ? "alert-success" : "alert-warning"} small mb-3`;
+        selectedServiceSummary.className = `alert ${isReady ? "alert-success" : "alert-warning"} small slams-service-status-bar`;
         selectedServiceSummary.innerHTML = `
-            <div class="fw-semibold mb-1">${selectedService.name}</div>
-            <div>${linkedCount} linked equipment item(s), ${availableCount} currently bookable.</div>
-            ${meta.length ? `<div class="mt-1 text-muted">${meta.join(" | ")}</div>` : ""}
+            <span class="fw-semibold">${selectedService.name}</span>
+            <span class="mx-2">·</span>${linkedCount} item(s), ${availableCount} bookable
+            ${meta.length ? `<span class="text-muted ms-2">${meta.join(" · ")}</span>` : ""}
         `;
     }
 
@@ -1241,6 +1217,51 @@ document.addEventListener("DOMContentLoaded", function () {
         showBookingModal();
 
         return true;
+    }
+
+    // -------------------------------------------------------
+    // Equipment detail modal
+    // -------------------------------------------------------
+    const equipDetailModal = document.getElementById('equipmentDetailModal');
+    if (equipDetailModal && typeof bootstrap !== 'undefined') {
+        const bsEquipModal = bootstrap.Modal.getOrCreateInstance(equipDetailModal);
+        const placeholderImg = '<?= base_url('images/assets/placeholder_asset.png') ?>';
+
+        document.querySelector('.slams-service-section')?.addEventListener('click', (e) => {
+            const card = e.target.closest('.service-asset-card');
+            if (!card) return;
+            if (e.target.closest('.service-asset-booking')) return;
+
+            const name      = card.dataset.assetName     || 'Equipment';
+            const category  = card.dataset.assetCategory || '';
+            const status    = card.dataset.status        || 'unknown';
+            const qty       = parseInt(card.dataset.quantity || '0', 10);
+            const img       = card.dataset.assetImg      || '';
+            const svcName   = card.dataset.serviceName   || '';
+
+            document.getElementById('edModalName').textContent     = name;
+            document.getElementById('edModalCategory').textContent = category;
+            document.getElementById('edModalQty').textContent      = `Qty: ${qty}`;
+            document.getElementById('edModalService').innerHTML    = svcName
+                ? `<i class="bi bi-list-check me-1"></i>${svcName}` : '';
+
+            const statusEl = document.getElementById('edModalStatus');
+            statusEl.className = 'asset-status-badge ' + (
+                status === 'available'   ? 'asset-status-badge--available'   :
+                status === 'maintenance' ? 'asset-status-badge--maintenance' :
+                status === 'faulty'      ? 'asset-status-badge--faulty'      : ''
+            );
+            statusEl.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+
+            const imgWrap = document.getElementById('edModalImg');
+            if (img) {
+                imgWrap.innerHTML = `<img src="${img}" alt="${name}" onerror="this.onerror=null;this.src='${placeholderImg}'">`;
+            } else {
+                imgWrap.innerHTML = `<div class="ed-modal-img-placeholder"><i class="bi bi-cpu"></i></div>`;
+            }
+
+            bsEquipModal.show();
+        });
     }
 
     const qrApplied = applyQrSelectionFromQuery();
