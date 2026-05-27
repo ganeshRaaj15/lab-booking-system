@@ -133,141 +133,11 @@ if ($picPhone === '') {
                 </div>
             </div>
 
-            <!-- Equipment Section -->
-            <div class="col-lg-8">
-                <div class="equipment-card">
-                    <div class="equipment-header">
-                        <h2 class="equipment-title">
-                            <i class="bi bi-tools"></i>
-                            Available Equipment
-                        </h2>
-                        <span class="equipment-badge">
-                            <?= count($assets) ?> Equipment Available
-                        </span>
-                    </div>
-
-                    <div id="selectedServiceSummary" class="alert alert-info small mb-3">
-                        <i class="bi bi-info-circle me-1"></i>
-                        Choose a service below to activate the correct equipment set for booking.
-                    </div>
-                    
-                    <?php if (empty($assets)): ?>
-                        <div class="text-center py-5">
-                            <i class="bi bi-tools text-primary fs-1 mb-3"></i>
-                            <h4 class="fw-semibold text-primary mb-2">No Equipment Configured</h4>
-                            <p class="text-muted">This laboratory does not have any equipment listed yet.</p>
-                        </div>
-                    <?php else: ?>
-                        <div class="table-responsive">
-                            <table class="equipment-table">
-                                <thead>
-                                    <tr>
-                                        <th class="equipment-checkbox"></th>
-                                        <th>Equipment Details</th>
-                                        <th class="text-center">Status</th>
-                                        <th class="text-center">Quantity</th>
-                                        <th class="text-center">Request Quantity</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php 
-                                    $unavailableStatuses = ['maintenance', 'faulty'];
-                                    $availableCount = 0;
-                                    ?>
-                                    <?php foreach ($assets as $a): ?>
-                                        <?php 
-                                        $availableUnits = max((int) ($a['quantity'] ?? 0), 0);
-                                        $totalUnits = max((int) ($a['total_quantity'] ?? 0), $availableUnits);
-                                        $maintenanceUnits = max($totalUnits - $availableUnits, 0);
-                                        $isAvailable = ($availableUnits > 0);
-                                        if ($isAvailable) $availableCount++;
-                                        
-                                        $statusClass = '';
-                                        $statusText = $maintenanceUnits > 0 && $availableUnits > 0 ? 'Partially Available' : ucfirst($a['status']);
-                                        switch($a['status']) {
-                                            case 'available':
-                                                $statusClass = 'status-available';
-                                                break;
-                                            case 'maintenance':
-                                                $statusClass = 'status-maintenance';
-                                                break;
-                                            case 'faulty':
-                                                $statusClass = 'status-faulty';
-                                                break;
-                                            default:
-                                                $statusClass = 'status-unavailable';
-                                        }
-                                        ?>
-                                        <tr data-asset-id="<?= esc($a['id']) ?>"
-                                            data-service-id="<?= esc((string) ($a['lab_service_id'] ?? '')) ?>"
-                                            data-status="<?= esc(strtolower($maintenanceUnits > 0 && $availableUnits > 0 ? 'partially available' : $a['status'])) ?>"
-                                            data-quantity="<?= esc($availableUnits) ?>"
-                                            class="<?= !$isAvailable ? 'text-muted' : '' ?>">
-                                            <td class="equipment-checkbox" data-label="Select">
-                                                <input type="checkbox"
-                                                       class="form-check-input asset-checkbox"
-                                                       data-asset-id="<?= esc($a['id']) ?>"
-                                                       <?= !$isAvailable ? 'disabled' : '' ?>
-                                                       <?= !$isAvailable ? 'title=\"Equipment is not available for booking\"' : '' ?>>
-                                            </td>
-                                            <td data-label="Equipment">
-                                                <div class="equipment-name"><?= esc($a['name']) ?></div>
-                                                <?php if (!empty($a['model'])): ?>
-                                                    <div class="equipment-desc">Model: <?= esc($a['model']) ?></div>
-                                                <?php endif; ?>
-                                                <?php if (!empty($a['specifications'])): ?>
-                                                    <div class="equipment-desc"><?= esc($a['specifications']) ?></div>
-                                                <?php elseif (!empty($a['description'])): ?>
-                                                    <div class="equipment-desc"><?= esc($a['description']) ?></div>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td class="text-center" data-label="Status">
-                                                <span class="equipment-status <?= $statusClass ?>">
-                                                    <?= $statusText ?>
-                                                </span>
-                                            </td>
-                                            <td class="text-center" data-label="Quantity">
-                                                <span class="quantity-badge <?= !$isAvailable ? 'unavailable' : '' ?>">
-                                                    <?= esc($availableUnits) ?> available / <?= esc($totalUnits) ?> total
-                                                </span>
-                                            </td>
-                                            <td class="text-center" data-label="Request Qty">
-                                                <input type="number"
-                                                       class="form-control quantity-input asset-qty"
-                                                       data-asset-id="<?= esc($a['id']) ?>"
-                                                       value="<?= $isAvailable ? '1' : '0' ?>"
-                                                       min="0"
-                                                       max="<?= $isAvailable ? esc($availableUnits) : '0' ?>"
-                                                       <?= !$isAvailable ? 'disabled' : '' ?>
-                                                       <?= !$isAvailable ? 'title=\"Cannot request unavailable equipment\"' : '' ?>>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                            
-                            <!-- Equipment availability summary -->
-                            <div class="equipment-legend" aria-label="Equipment availability legend">
-                                <div class="equipment-legend-item">
-                                    <span class="equipment-legend-dot status-available" aria-hidden="true"></span>
-                                    <span>Available for booking</span>
-                                    <span class="badge bg-primary equipment-legend-count"><?= $availableCount ?></span>
-                                </div>
-                                <div class="equipment-legend-item">
-                                    <span class="equipment-legend-dot status-maintenance" aria-hidden="true"></span>
-                                    <span>Under maintenance</span>
-                                </div>
-                                <div class="equipment-legend-item">
-                                    <span class="equipment-legend-dot status-faulty" aria-hidden="true"></span>
-                                    <span>Faulty/Not working</span>
-                                </div>
-                                <div class="equipment-legend-item">
-                                    <span class="equipment-legend-dot status-unavailable" aria-hidden="true"></span>
-                                    <span>Other status</span>
-                                </div>
-                            </div>
-                        </div>
-                    <?php endif; ?>
+            <!-- Service selection summary (shown once a service is chosen) -->
+            <div class="col-lg-8 d-flex flex-column">
+                <div id="selectedServiceSummary" class="alert alert-info small mb-0 flex-grow-1">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Choose a service below to activate the correct equipment set for booking.
                 </div>
             </div>
         </div>
@@ -277,80 +147,156 @@ if ($picPhone === '') {
                 <div>
                     <h2 class="slams-service-section-title">
                         <i class="bi bi-list-check"></i>
-                        Available Services
+                        Available Services &amp; Equipment
                     </h2>
-                    <p class="slams-service-section-sub">Choose the service you need. The system will align the linked equipment automatically.</p>
+                    <p class="slams-service-section-sub">Choose a service to activate booking. Equipment inventory linked to each service is shown below.</p>
                 </div>
                 <span class="calib-badge calib-badge--count">
                     <?= count($services) ?> <?= count($services) === 1 ? 'Service' : 'Services' ?>
                 </span>
             </div>
 
-                <?php if ($services === []): ?>
-                    <div class="text-center py-4" style="color: var(--slams-muted)">
-                        No services have been imported for this laboratory yet.
-                    </div>
-                <?php else: ?>
-                    <div class="slams-service-list">
-                        <?php foreach ($services as $service): ?>
-                            <?php
-                            $serviceCalibration = strtolower(trim((string) ($service['calibration_status'] ?? 'unknown')));
-                            $calibrationClass = $serviceCalibration === 'valid'
-                                ? 'calib-badge calib-badge--valid'
-                                : ($serviceCalibration === 'expired' ? 'calib-badge calib-badge--expired' : 'calib-badge calib-badge--unknown');
-                            $equipmentModels = trim((string) ($service['equipment_models'] ?? ''));
-                            $criteriaText = trim((string) ($service['acceptance_criteria'] ?? ''));
-                            ?>
-                            <div class="slams-service-item">
-                                <div class="slams-service-item-head">
-                                    <div class="slams-service-item-meta">
-                                        <div class="slams-service-name"><?= esc($service['service_name'] ?? '') ?></div>
-                                        <?php if (!empty($service['field_name'])): ?>
-                                            <div class="slams-service-field">
-                                                <i class="bi bi-diagram-3"></i>
-                                                <?= esc($service['field_name']) ?>
-                                            </div>
-                                        <?php endif; ?>
-                                    </div>
-                                    <span class="<?= esc($calibrationClass) ?>">
-                                        Calibration: <?= esc(ucfirst($serviceCalibration)) ?>
-                                    </span>
+            <?php if ($services === []): ?>
+                <div class="text-center py-4" style="color: var(--slams-muted)">
+                    No services have been imported for this laboratory yet.
+                </div>
+            <?php else: ?>
+                <div class="slams-service-list">
+                    <?php foreach ($services as $service): ?>
+                        <?php
+                        $serviceId = (int)($service['id'] ?? 0);
+                        $serviceCalibration = strtolower(trim((string) ($service['calibration_status'] ?? 'unknown')));
+                        $calibrationClass = $serviceCalibration === 'valid'
+                            ? 'calib-badge calib-badge--valid'
+                            : ($serviceCalibration === 'expired' ? 'calib-badge calib-badge--expired' : 'calib-badge calib-badge--unknown');
+                        $equipmentModels = trim((string) ($service['equipment_models'] ?? ''));
+                        $criteriaText = trim((string) ($service['acceptance_criteria'] ?? ''));
+                        $serviceAssets = $assetsByService[$serviceId] ?? [];
+                        ?>
+                        <div class="slams-service-item">
+                            <div class="slams-service-item-head">
+                                <div class="slams-service-item-meta">
+                                    <div class="slams-service-name"><?= esc($service['service_name'] ?? '') ?></div>
+                                    <?php if (!empty($service['field_name'])): ?>
+                                        <div class="slams-service-field">
+                                            <i class="bi bi-diagram-3"></i>
+                                            <?= esc($service['field_name']) ?>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php if ($equipmentModels !== ''): ?>
+                                        <div class="slams-service-detail mt-1">
+                                            <span class="slams-service-detail-label">Models:</span>
+                                            <?= esc(str_replace(' | ', ', ', $equipmentModels)) ?>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
+                                <span class="<?= esc($calibrationClass) ?>">
+                                    Calibration: <?= esc(ucfirst($serviceCalibration)) ?>
+                                </span>
+                            </div>
 
-                                <?php if ($equipmentModels !== ''): ?>
-                                    <div class="slams-service-detail">
-                                        <span class="slams-service-detail-label">Equipment models:</span>
-                                        <?= esc(str_replace(' | ', ', ', $equipmentModels)) ?>
+                            <?php if ($criteriaText !== ''): ?>
+                                <div class="slams-service-detail">
+                                    <span class="slams-service-detail-label">Acceptance criteria:</span>
+                                    <?= esc($criteriaText) ?>
+                                </div>
+                            <?php endif; ?>
+
+                            <!-- Equipment inventory cards -->
+                            <div class="service-assets-grid mt-3">
+                                <?php if (!empty($serviceAssets)): ?>
+                                    <?php foreach ($serviceAssets as $a): ?>
+                                        <?php
+                                        $assetStatus = strtolower(trim((string)($a['status'] ?? 'unknown')));
+                                        $isAvailable = $assetStatus === 'available' && (int)($a['quantity'] ?? 0) > 0;
+                                        $assetQty = (int)($a['quantity'] ?? 0);
+                                        ?>
+                                        <div class="service-asset-card<?= !$isAvailable ? ' service-asset-card--unavailable' : '' ?>"
+                                             data-asset-id="<?= esc((string)($a['id'] ?? '')) ?>"
+                                             data-service-id="<?= esc((string)$serviceId) ?>"
+                                             data-status="<?= esc($assetStatus) ?>"
+                                             data-quantity="<?= $assetQty ?>">
+
+                                            <div class="service-asset-img-wrap">
+                                                <?php if (!empty($a['image'])): ?>
+                                                    <img src="<?= base_url($a['image']) ?>"
+                                                         alt="<?= esc($a['name'] ?? '') ?>"
+                                                         class="service-asset-img"
+                                                         onerror="this.onerror=null;this.src='<?= base_url('images/assets/placeholder_asset.png') ?>';">
+                                                <?php else: ?>
+                                                    <div class="asset-img-placeholder">
+                                                        <i class="bi bi-cpu"></i>
+                                                    </div>
+                                                <?php endif; ?>
+                                            </div>
+
+                                            <div class="service-asset-info">
+                                                <div class="service-asset-name"><?= esc($a['name'] ?? '') ?></div>
+                                                <?php if (!empty($a['category'])): ?>
+                                                    <div class="service-asset-meta"><?= esc($a['category']) ?></div>
+                                                <?php endif; ?>
+                                                <div class="service-asset-status-row">
+                                                    <?php if ($assetStatus === 'available'): ?>
+                                                        <span class="asset-status-badge asset-status-badge--available">Available</span>
+                                                    <?php elseif ($assetStatus === 'maintenance'): ?>
+                                                        <span class="asset-status-badge asset-status-badge--maintenance">Maintenance</span>
+                                                    <?php elseif ($assetStatus === 'faulty'): ?>
+                                                        <span class="asset-status-badge asset-status-badge--faulty">Faulty</span>
+                                                    <?php else: ?>
+                                                        <span class="asset-status-badge"><?= esc(ucfirst($assetStatus)) ?></span>
+                                                    <?php endif; ?>
+                                                    <span class="service-asset-qty-text">&times;<?= $assetQty ?></span>
+                                                </div>
+                                            </div>
+
+                                            <?php if ($bookingMode === 'uthm'): ?>
+                                                <div class="service-asset-booking">
+                                                    <label class="service-asset-check-label<?= !$isAvailable ? ' opacity-50' : '' ?>">
+                                                        <input type="checkbox"
+                                                               class="asset-checkbox"
+                                                               data-asset-id="<?= esc((string)($a['id'] ?? '')) ?>"
+                                                               <?= !$isAvailable ? 'disabled' : '' ?>>
+                                                        <span class="small">Select</span>
+                                                    </label>
+                                                    <input type="number"
+                                                           class="asset-qty form-control form-control-sm"
+                                                           data-asset-id="<?= esc((string)($a['id'] ?? '')) ?>"
+                                                           min="1"
+                                                           max="<?= $assetQty ?: 1 ?>"
+                                                           value="<?= $isAvailable ? 1 : 0 ?>"
+                                                           style="width:64px;"
+                                                           <?= !$isAvailable ? 'disabled' : '' ?>>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <div class="service-assets-empty">
+                                        <i class="bi bi-inbox me-1"></i>
+                                        No inventory items linked to this service.
                                     </div>
                                 <?php endif; ?>
+                            </div>
 
-                                <?php if ($criteriaText !== ''): ?>
-                                    <div class="slams-service-detail">
-                                        <span class="slams-service-detail-label">Acceptance criteria:</span>
-                                        <?= esc($criteriaText) ?>
-                                    </div>
-                                <?php endif; ?>
-
-                                <div class="mt-3 d-flex justify-content-between align-items-center gap-2 flex-wrap">
-                                    <button type="button"
-                                            class="btn btn-outline-primary btn-sm select-service-btn"
-                                            data-service-id="<?= esc((string) ($service['id'] ?? '')) ?>"
-                                            data-service-name="<?= esc($service['service_name'] ?? '') ?>"
-                                            data-service-calibration="<?= esc(ucfirst($serviceCalibration)) ?>"
-                                            data-service-equipment="<?= esc(str_replace(' | ', ', ', $equipmentModels)) ?>"
-                                            data-service-criteria="<?= esc($criteriaText) ?>">
-                                        <i class="bi bi-check2-square me-1"></i>
-                                        Choose Service
-                                    </button>
-                                    <div class="small text-muted service-state-label">
-                                        This service will drive equipment and slot selection.
-                                    </div>
+                            <div class="mt-3 d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                                <button type="button"
+                                        class="btn btn-outline-primary btn-sm select-service-btn"
+                                        data-service-id="<?= esc((string)$serviceId) ?>"
+                                        data-service-name="<?= esc($service['service_name'] ?? '') ?>"
+                                        data-service-calibration="<?= esc(ucfirst($serviceCalibration)) ?>"
+                                        data-service-equipment="<?= esc(str_replace(' | ', ', ', $equipmentModels)) ?>"
+                                        data-service-criteria="<?= esc($criteriaText) ?>">
+                                    <i class="bi bi-check2-square me-1"></i>
+                                    Choose Service
+                                </button>
+                                <div class="small text-muted service-state-label">
+                                    This service will drive equipment and slot selection.
                                 </div>
                             </div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
-            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
         </div>
 
         <!-- Booking CTA Card -->
@@ -453,7 +399,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Check if equipment is available based on status
     // -------------------------------
     function isEquipmentAvailable(assetId) {
-        const row = document.querySelector(`tr[data-asset-id="${assetId}"]`);
+        const row = document.querySelector(`.service-asset-card[data-asset-id="${assetId}"]`);
         if (!row) return false;
 
         const status = row.dataset.status || '';
@@ -576,13 +522,11 @@ document.addEventListener("DOMContentLoaded", function () {
         let linkedCount = 0;
         let availableCount = 0;
 
-        document.querySelectorAll("tr[data-asset-id]").forEach(row => {
+        document.querySelectorAll(".service-asset-card[data-asset-id]").forEach(row => {
             const rowServiceId = row.dataset.serviceId || "";
             const matches = serviceId !== "" && rowServiceId === serviceId;
             const assetId = row.dataset.assetId || "";
             const available = isEquipmentAvailable(assetId);
-
-            row.classList.toggle("d-none", serviceId !== "" && !matches);
 
             if (!matches) {
                 applyRowSelectionState(row, false, false);
@@ -596,12 +540,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
             applyRowSelectionState(row, available, available);
         });
-
-        if (serviceId === "") {
-            document.querySelectorAll("tr[data-asset-id]").forEach(row => {
-                row.classList.remove("d-none");
-            });
-        }
 
         return { linkedCount, availableCount };
     }
@@ -703,8 +641,8 @@ document.addEventListener("DOMContentLoaded", function () {
         cb.addEventListener("change", () => {
             const id = cb.dataset.assetId;
             const qtyInput = document.querySelector(`.asset-qty[data-asset-id="${id}"]`);
-            const row = cb.closest('tr');
-            
+            const row = cb.closest('.service-asset-card');
+
             if (!qtyInput || !row) return;
 
             if (cb.checked && isEquipmentAvailable(id)) {
@@ -737,8 +675,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll(".asset-qty").forEach(input => {
         input.addEventListener("change", () => {
             const assetId = input.dataset.assetId;
-            const row = document.querySelector(`tr[data-asset-id="${assetId}"]`);
-            
+
             if (!isEquipmentAvailable(assetId)) {
                 input.value = 0;
                 return;
@@ -1241,7 +1178,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const assetId = assetParam.replace(/[^0-9]/g, "");
         if (!assetId) return false;
 
-        const row = document.querySelector(`tr[data-asset-id="${assetId}"]`);
+        const row = document.querySelector(`.service-asset-card[data-asset-id="${assetId}"]`);
         const checkbox = document.querySelector(`.asset-checkbox[data-asset-id="${assetId}"]`);
         const qtyInput = document.querySelector(`.asset-qty[data-asset-id="${assetId}"]`);
 

@@ -121,6 +121,19 @@ class LaboratoryController extends BaseController
         $assets    = $this->assets->where('lab_id', $id)->findAll();
         $services  = $this->servicesForLab($id);
         $faculties = $this->faculties->getAllForDropdown();
+
+        $assetsByService = [];
+        $unlinkedAssets  = [];
+        foreach ($assets as $asset) {
+            $sid = isset($asset['lab_service_id']) && $asset['lab_service_id'] !== null
+                ? (int) $asset['lab_service_id']
+                : null;
+            if ($sid !== null) {
+                $assetsByService[$sid][] = $asset;
+            } else {
+                $unlinkedAssets[] = $asset;
+            }
+        }
         $userProfile = null;
 
         // Determine booking mode:
@@ -175,12 +188,14 @@ class LaboratoryController extends BaseController
         }
 
         return view('public/laboratories/show', [
-            'lab'         => $lab,
-            'assets'      => $assets,
-            'services'    => $services,
-            'faculties'   => $faculties,
-            'bookingMode' => $bookingMode,
-            'userProfile' => $userProfile,
+            'lab'             => $lab,
+            'assets'          => $assets,
+            'assetsByService' => $assetsByService,
+            'unlinkedAssets'  => $unlinkedAssets,
+            'services'        => $services,
+            'faculties'       => $faculties,
+            'bookingMode'     => $bookingMode,
+            'userProfile'     => $userProfile,
         ]);
     }
 
