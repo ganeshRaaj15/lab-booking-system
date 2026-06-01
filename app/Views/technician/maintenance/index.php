@@ -66,7 +66,14 @@ $priorityBadgeClass = [
                 <h6 class="fw-bold text-dark mb-0">
                     <i class="bi bi-graph-up-arrow me-2 text-warning"></i>Predictive Maintenance Decisions
                 </h6>
-                <small class="text-muted">Risk scores and recommended actions based on the local maintenance model and completed planned-maintenance history.</small>
+                <?php $isLearned = ($modelSummary['mode'] ?? '') === 'model_plus_rules'; ?>
+                <small class="text-muted d-block">Risk scores and recommended actions for each asset, based on maintenance history and booking records.</small>
+                <small class="<?= $isLearned ? 'text-success' : 'text-warning' ?>">
+                    <i class="bi <?= $isLearned ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill' ?> me-1"></i>
+                    <?= $isLearned
+                        ? 'Scores are learned from your lab\'s actual maintenance history.'
+                        : 'Scores are based on general guidelines — will improve as more maintenance records are added.' ?>
+                </small>
             </div>
             <span class="stat-badge stat-badge-neutral">Next 90 days</span>
         </div>

@@ -3,6 +3,7 @@
 namespace App\Controllers\Dashboard;
 
 use App\Controllers\BaseController;
+use App\Libraries\MaintenanceForecastService;
 use App\Models\BookingModel;
 use App\Models\ExternalRequestModel;
 use App\Models\LaboratoryModel;
@@ -166,6 +167,7 @@ class PicDashboard extends BaseController
         $usageData = $this->getUsageTrends($labIds);
         $maintenanceStats = $this->getMaintenanceStatsForLabs($labIds);
         $maintenanceTasks = $this->getMaintenanceTasks($labIds);
+        $equipmentRisk = $this->getEquipmentRiskForLabs($labIds);
 
         // -----------------------------------------------------
         // 5. Render view
@@ -184,6 +186,7 @@ class PicDashboard extends BaseController
             'usageData'          => $usageData,
             'maintenanceStats'   => $maintenanceStats,
             'maintenanceTasks'   => $maintenanceTasks,
+            'equipmentRisk'      => $equipmentRisk,
         ]);
     }
 
@@ -291,6 +294,54 @@ private function getUsageTrends(array $labIds): array
     ];
 }
     
+    private function getEquipmentRiskForLabs(array $labIds): array
+    {
+        if (empty($labIds)) {
+            return ['high' => 0, 'medium' => 0, 'low' => 0, 'topAtRisk' => []];
+        }
+
+        try {
+            $forecastService = new MaintenanceForecastService();
+            $forecasts = $forecastService->getUpcomingForecasts(90);
+        } catch (\Throwable $e) {
+            log_message('error', 'PicDashboard::getEquipmentRiskForLabs failed: ' . $e->getMessage());
+            return ['high' => 0, 'medium' => 0, 'low' => 0, 'topAtRisk' => []];
+        }
+
+        $forecasts = array_values(array_filter($forecasts, static function (array $f) use ($labIds): bool {
+            return in_array((int) ($f['lab_id'] ?? 0), $labIds, true);
+        }));
+
+        $high = 0;
+        $medium = 0;
+        $low = 0;
+        foreach ($forecasts as $f) {
+            $band = $f['risk_band'] ?? 'low';
+            if ($band === 'high') {
+                $high++;
+            } elseif ($band === 'medium') {
+                $medium++;
+            } else {
+                $low++;
+            }
+        }
+
+        $topAtRisk = array_map(static function (array $f): array {
+            return [
+                'asset_id'       => $f['asset_id'] ?? 0,
+                'name'           => $f['name'] ?? '-',
+                'lab_name'       => $f['lab_name'] ?? '-',
+                'risk_percent'   => (int) ($f['risk_percent'] ?? 0),
+                'risk_band'      => $f['risk_band'] ?? 'low',
+                'decision_label' => $f['decision_label'] ?? 'Normal monitoring',
+                'next_due_at'    => $f['next_due_at'] ?? null,
+                'reasons'        => array_slice($f['reasons'] ?? [], 0, 1),
+            ];
+        }, array_slice($forecasts, 0, 5));
+
+        return ['high' => $high, 'medium' => $medium, 'low' => $low, 'topAtRisk' => $topAtRisk];
+    }
+
     private function getMaintenanceStatsForLabs(array $labIds): array
     {
         if (empty($labIds)) {

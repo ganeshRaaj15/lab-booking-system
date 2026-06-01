@@ -371,7 +371,7 @@ $stageChecklist = match ($stageMode) {
         </div>
 
         <div class="col-lg-4">
-            <?php if (! empty($modelSummary['available']) && ! empty($assetPrediction)): ?>
+            <?php if (! empty($assetPrediction)): ?>
                 <?php
                     $predRiskBand = $assetPrediction['risk_band'] ?? 'low';
                     $predRiskPercent = (int) ($assetPrediction['risk_percent'] ?? 0);
@@ -412,6 +412,12 @@ $stageChecklist = match ($stageMode) {
                         <div class="small fw-semibold" style="color:<?= $predRiskTextColor ?>"><?= esc($predHeadline) ?></div>
                     </div>
                     <div class="card-body small">
+                        <?php if (! ($assetPrediction['model_available'] ?? false)): ?>
+                            <div class="d-flex align-items-start gap-2 mb-3 p-2 rounded-2" style="background:var(--slams-neutral-soft,#f8f9fa);">
+                                <i class="bi bi-info-circle text-muted mt-1 flex-shrink-0"></i>
+                                <span class="text-muted">Based on general maintenance guidelines — score will improve once more maintenance records are available.</span>
+                            </div>
+                        <?php endif; ?>
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <span class="text-muted fw-semibold">Risk Score</span>
                             <span class="badge <?= esc($predRiskBadgeClass) ?>"><?= esc($predRiskPercent) ?>%</span>

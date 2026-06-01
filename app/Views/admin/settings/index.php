@@ -227,7 +227,7 @@ $settingMeta = [
             <div class="info-box">
                 <p class="d-flex align-items-center mb-0">
                     <i class="bi bi-info-circle-fill me-2" style="color: #3b82f6;"></i>
-                    Retrains the local logistic regression model using all current maintenance records and booking history. Run this after adding significant amounts of new data to keep risk scores accurate.
+                    Retrains the prediction model using all current maintenance records and booking history. Run this after adding a significant number of new maintenance records to keep risk scores up to date.
                 </p>
             </div>
 
@@ -363,45 +363,83 @@ document.addEventListener("DOMContentLoaded", () => {
             if (data.status === "success") {
                 const s = data.model_summary ?? {};
                 const st = data.asset_stats ?? {};
-                const trainedAt = s.trained_at
-                    ? new Date(s.trained_at).toLocaleString("en-MY")
-                    : "just now";
-                const threshold = s.threshold != null
-                    ? (s.threshold * 100).toFixed(0) + "%"
-                    : "-";
-                const f1 = s.metrics?.f1 != null
-                    ? (s.metrics.f1 * 100).toFixed(1) + "%"
-                    : "-";
 
-                statsRow.innerHTML = `
-                    <div class="col-6 col-md-3">
-                        <div class="form-group-glass text-center">
-                            <div class="fs-5 fw-bold" style="color:var(--slams-primary)">${st.high_risk ?? 0}</div>
-                            <div class="form-hint">High Risk Assets</div>
+                if (s.available === false) {
+                    statsRow.innerHTML = `
+                        <div class="col-12">
+                            <div class="alert alert-warning border-0 mb-0">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                <strong>Not enough maintenance history to learn from yet.</strong>
+                                Risk scores are still shown across the system, but they are based on general
+                                guidelines rather than your lab's specific history. Add more maintenance records
+                                and retrain to enable learned predictions.
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="form-group-glass text-center">
-                            <div class="fs-5 fw-bold" style="color:var(--slams-primary)">${st.due_soon ?? 0}</div>
-                            <div class="form-hint">Due Soon</div>
+                    `;
+                } else {
+                    const trainedAt = s.trained_at
+                        ? new Date(s.trained_at).toLocaleString("en-MY")
+                        : "just now";
+                    const samples  = s.dataset?.samples_total ?? "-";
+                    const precision = s.metrics?.precision != null
+                        ? (s.metrics.precision * 100).toFixed(1) + "%"
+                        : "-";
+                    const recall = s.metrics?.recall != null
+                        ? (s.metrics.recall * 100).toFixed(1) + "%"
+                        : "-";
+                    const f1 = s.metrics?.f1 != null
+                        ? (s.metrics.f1 * 100).toFixed(1) + "%"
+                        : "-";
+
+                    statsRow.innerHTML = `
+                        <div class="col-6 col-md-3">
+                            <div class="form-group-glass text-center">
+                                <div class="fs-5 fw-bold" style="color:var(--slams-primary)">${st.high_risk ?? 0}</div>
+                                <div class="form-hint">High Risk Assets</div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="form-group-glass text-center">
-                            <div class="fs-5 fw-bold" style="color:var(--slams-primary)">${threshold}</div>
-                            <div class="form-hint">Decision Threshold</div>
+                        <div class="col-6 col-md-3">
+                            <div class="form-group-glass text-center">
+                                <div class="fs-5 fw-bold" style="color:var(--slams-primary)">${st.due_soon ?? 0}</div>
+                                <div class="form-hint">Due Soon</div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="form-group-glass text-center">
-                            <div class="fs-5 fw-bold" style="color:var(--slams-primary)">${f1}</div>
-                            <div class="form-hint">Test F1 Score</div>
+                        <div class="col-6 col-md-3">
+                            <div class="form-group-glass text-center">
+                                <div class="fs-5 fw-bold" style="color:var(--slams-primary)">${samples}</div>
+                                <div class="form-hint">Records Used</div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-12">
-                        <div class="small text-muted">Trained ${trainedAt}</div>
-                    </div>
-                `;
+                        <div class="col-6 col-md-3">
+                            <div class="form-group-glass text-center">
+                                <div class="fs-5 fw-bold" style="color:var(--slams-primary)">${f1}</div>
+                                <div class="form-hint">Reliability Score</div>
+                                <div class="form-hint" style="font-size:0.72rem;">Overall balance between accuracy and coverage</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-6">
+                            <div class="form-group-glass text-center">
+                                <div class="fs-5 fw-bold" style="color:var(--slams-primary)">${precision}</div>
+                                <div class="form-hint">Alert Accuracy</div>
+                                <div class="form-hint" style="font-size:0.72rem;">When it flags an asset, it is correct this often</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-6">
+                            <div class="form-group-glass text-center">
+                                <div class="fs-5 fw-bold" style="color:var(--slams-primary)">${recall}</div>
+                                <div class="form-hint">Detection Rate</div>
+                                <div class="form-hint" style="font-size:0.72rem;">Out of all assets that truly needed attention, the system caught this many</div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="small text-success fw-semibold">
+                                <i class="bi bi-check-circle-fill me-1"></i>
+                                Scores are now based on your lab's actual maintenance history. Last trained: ${trainedAt}
+                            </div>
+                        </div>
+                    `;
+                }
+
                 resultBox.style.display = "block";
                 btn.innerHTML = '<i class="bi bi-check-circle me-2"></i> Retrain Again';
             } else {
