@@ -215,10 +215,7 @@ class AssetController extends BaseController
 
         $openUnits = min($this->assetModel->openMaintenanceUnits((int) $id), $payload['total_quantity']);
         $payload['quantity'] = max($payload['total_quantity'] - $openUnits, 0);
-        // Respect admin's manual faulty override; otherwise derive from maintenance records
-        if ($payload['status'] !== 'faulty') {
-            $payload['status'] = $openUnits > 0 ? 'maintenance' : 'available';
-        }
+        $payload['status'] = $openUnits > 0 ? 'maintenance' : 'available';
         $payload['image'] = $this->handleImageUpload($asset['image'] ?? null);
         $this->assetModel->update($id, $payload);
         $this->assetModel->syncManagedAvailability((int) $id);
@@ -270,7 +267,6 @@ class AssetController extends BaseController
             'purchase_date' => 'permit_empty|valid_date[Y-m-d]',
             'specifications' => 'permit_empty|string',
             'image' => 'permit_empty|max_size[image,2048]|ext_in[image,jpg,jpeg,png,gif]',
-            'status' => 'permit_empty|in_list[available,maintenance,faulty]',
         ];
     }
 
@@ -288,7 +284,6 @@ class AssetController extends BaseController
             'location_note' => trim((string) $this->request->getPost('location_note')),
             'purchase_date' => trim((string) $this->request->getPost('purchase_date')) ?: null,
             'specifications' => trim((string) $this->request->getPost('specifications')),
-            'status' => $this->request->getPost('status'),
         ];
     }
 
