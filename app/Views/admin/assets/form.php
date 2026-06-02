@@ -94,7 +94,14 @@ $intelligence = $intelligence ?? [
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">System Status</label>
-                            <input type="text" class="form-control text-capitalize" value="<?= esc($asset['status'] ?? 'available') ?>" readonly>
+                            <select name="status" class="form-select">
+                                <?php foreach (['available', 'maintenance', 'faulty'] as $statusOption): ?>
+                                    <option value="<?= $statusOption ?>" <?= old('status', $asset['status'] ?? 'available') === $statusOption ? 'selected' : '' ?>><?= ucfirst($statusOption) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <?php if (($asset['status'] ?? '') !== 'faulty'): ?>
+                                <div class="form-text">Available/Maintenance are managed automatically by maintenance records. Set <em>Faulty</em> to manually mark this asset as broken.</div>
+                            <?php endif; ?>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Purchase Date</label>
