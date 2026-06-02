@@ -7,6 +7,7 @@ $labCount = (int) ($homeStats['lab_count'] ?? 0);
 $bookingCount = (int) ($homeStats['total_bookings'] ?? 0);
 $approvedCount = (int) ($homeStats['approved'] ?? 0);
 $heroVideoUrl = base_url('images/uthm-aerial-compressed.mp4');
+$heroDayVideoUrl = base_url('images/day-time-aerial-compressed.mp4');
 $heroFallbackUrl = base_url('images/fkmp/FKMP.jpeg');
 ?>
 
@@ -17,8 +18,11 @@ $heroFallbackUrl = base_url('images/fkmp/FKMP.jpeg');
 <div class="slams-scroll-progress" aria-hidden="true"></div>
 <section class="hero-section" style="--slams-hero-fallback-image: url('<?= esc($heroFallbackUrl, 'attr') ?>');">
     <div class="video-background" aria-hidden="true">
-        <video class="hero-video" autoplay muted loop playsinline webkit-playsinline preload="auto" poster="<?= esc($heroFallbackUrl, 'attr') ?>" src="<?= esc($heroVideoUrl, 'attr') ?>">
+        <video class="hero-video hero-video-dark" autoplay muted loop playsinline webkit-playsinline preload="auto" poster="<?= esc($heroFallbackUrl, 'attr') ?>">
             <source src="<?= esc($heroVideoUrl, 'attr') ?>" type="video/mp4">
+        </video>
+        <video class="hero-video hero-video-light" autoplay muted loop playsinline webkit-playsinline preload="auto" poster="<?= esc($heroFallbackUrl, 'attr') ?>">
+            <source src="<?= esc($heroDayVideoUrl, 'attr') ?>" type="video/mp4">
         </video>
     </div>
     

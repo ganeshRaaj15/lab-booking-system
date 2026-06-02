@@ -253,14 +253,13 @@
     }
 
     function initHeroVideo() {
-        const heroVideo = document.querySelector(".hero-video");
-        if (!(heroVideo instanceof HTMLVideoElement)) {
+        const darkVideo = document.querySelector(".hero-video-dark");
+        const lightVideo = document.querySelector(".hero-video-light");
+        const videoBackground = document.querySelector(".video-background");
+
+        if (!darkVideo && !lightVideo) {
             return;
         }
-
-        const videoBackground = heroVideo.closest(".video-background");
-
-        let playAttempted = false;
 
         const setVideoReady = function (ready) {
             if (videoBackground) {
@@ -268,60 +267,111 @@
             }
         };
 
-        const attemptPlay = function () {
-            if (document.visibilityState === "hidden") {
+        const getActiveVideo = function () {
+            const theme = root.getAttribute("data-theme") || "dark";
+            return theme === "light" ? lightVideo : darkVideo;
+        };
+
+        const attemptPlay = function (video) {
+            if (!video || document.visibilityState === "hidden") {
                 return;
             }
 
-            heroVideo.muted = true;
-            heroVideo.defaultMuted = true;
-            heroVideo.playsInline = true;
-            heroVideo.setAttribute("muted", "");
-            heroVideo.setAttribute("playsinline", "");
-            heroVideo.setAttribute("webkit-playsinline", "");
+            video.muted = true;
+            video.defaultMuted = true;
+            video.playsInline = true;
+            video.setAttribute("muted", "");
+            video.setAttribute("playsinline", "");
+            video.setAttribute("webkit-playsinline", "");
 
-            const playPromise = heroVideo.play();
-            playAttempted = true;
-
+            const playPromise = video.play();
             if (playPromise && typeof playPromise.catch === "function") {
                 playPromise.catch(function () {
-                    // Leave the CSS fallback image visible when autoplay is denied.
-                    setVideoReady(false);
+                    if (video === getActiveVideo()) {
+                        setVideoReady(false);
+                    }
                 });
             }
         };
 
-        heroVideo.addEventListener("playing", function () {
-            setVideoReady(true);
-        });
+        const syncVideos = function () {
+            const active = getActiveVideo();
+            const inactive = active === darkVideo ? lightVideo : darkVideo;
 
-        heroVideo.addEventListener("error", function () {
             setVideoReady(false);
-        });
 
-        heroVideo.addEventListener("emptied", function () {
-            setVideoReady(false);
-        });
+            if (inactive && !inactive.paused) {
+                inactive.pause();
+            }
 
-        heroVideo.addEventListener("canplay", attemptPlay, { once: true });
-        heroVideo.addEventListener("loadeddata", attemptPlay, { once: true });
+            if (active) {
+                attemptPlay(active);
+            }
+        };
 
-        document.addEventListener("visibilitychange", function () {
-            if (document.visibilityState === "visible" && heroVideo.paused) {
-                attemptPlay();
+        [darkVideo, lightVideo].forEach(function (video) {
+            if (!video) {
+                return;
+            }
+
+            video.addEventListener("playing", function () {
+                if (video === getActiveVideo()) {
+                    setVideoReady(true);
+                }
+            });
+
+            video.addEventListener("error", function () {
+                if (video === getActiveVideo()) {
+                    setVideoReady(false);
+                }
+            });
+
+            video.addEventListener("emptied", function () {
+                if (video === getActiveVideo()) {
+                    setVideoReady(false);
+                }
+            });
+
+            video.addEventListener("canplay", function () {
+                if (video === getActiveVideo()) {
+                    attemptPlay(video);
+                }
+            }, { once: true });
+
+            video.addEventListener("loadeddata", function () {
+                if (video === getActiveVideo()) {
+                    attemptPlay(video);
+                }
+            }, { once: true });
+
+            if (video.readyState >= 2 && video === getActiveVideo()) {
+                attemptPlay(video);
+            } else {
+                video.load();
             }
         });
 
-        if (heroVideo.readyState >= 2) {
-            attemptPlay();
-            return;
+        // Watch for theme attribute changes to swap the active video
+        if ("MutationObserver" in window) {
+            new MutationObserver(syncVideos).observe(root, {
+                attributes: true,
+                attributeFilter: ["data-theme"]
+            });
         }
 
-        heroVideo.load();
+        document.addEventListener("visibilitychange", function () {
+            if (document.visibilityState === "visible") {
+                const active = getActiveVideo();
+                if (active && active.paused) {
+                    attemptPlay(active);
+                }
+            }
+        });
 
         window.setTimeout(function () {
-            if (!playAttempted && heroVideo.paused) {
-                attemptPlay();
+            const active = getActiveVideo();
+            if (active && active.paused) {
+                attemptPlay(active);
             }
         }, 250);
     }

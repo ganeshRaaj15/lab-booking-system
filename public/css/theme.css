@@ -2117,6 +2117,11 @@ input::placeholder {
     object-fit: cover;
 }
 
+:root[data-theme="dark"] .hero-video-light,
+:root[data-theme="light"] .hero-video-dark {
+    display: none;
+}
+
 .hero-overlay {
     z-index: 1;
     background: var(--slams-hero-overlay);
