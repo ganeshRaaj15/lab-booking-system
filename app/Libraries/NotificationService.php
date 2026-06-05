@@ -277,6 +277,71 @@ class NotificationService
         );
     }
 
+    public function notifyPlannedMaintenanceRequested(int $maintenanceId): void
+    {
+        $context = $this->maintenanceContext($maintenanceId);
+        if (! $context) {
+            return;
+        }
+
+        $picEmail = $context['pic_email'] ?? '';
+        $picUserId = $this->findUserIdByEmail($picEmail);
+        $managerName = trim((string) ($context['reported_by_name'] ?? $context['reported_by_username'] ?? 'The lab manager'));
+        $technicianLink = '/technician/maintenance/edit/' . $maintenanceId;
+        $managerLink = '/dashboard/manager';
+
+        $message = $managerName . ' requested planned maintenance for ' . $context['asset_name'] . ' in ' . $context['lab_name'] . '.';
+        if (! empty($context['scheduled_for'])) {
+            $message .= ' Recommended maintenance date: ' . date('d M Y H:i', strtotime($context['scheduled_for'])) . '.';
+        }
+
+        $this->createUserNotifications(
+            $this->compactIds([$picUserId]),
+            'maintenance',
+            'Planned Maintenance Requested',
+            $message,
+            $technicianLink,
+            'maintenance',
+            $maintenanceId
+        );
+        $this->createUserNotifications(
+            $this->compactIds([(int) ($context['reported_by'] ?? 0)]),
+            'maintenance',
+            'Planned Maintenance Sent To PIC',
+            'Your planned maintenance request for ' . $context['asset_name'] . ' in ' . $context['lab_name'] . ' has been sent to the PIC.',
+            $managerLink,
+            'maintenance',
+            $maintenanceId
+        );
+
+        $this->sendEmail(
+            [$picEmail ?: null],
+            'FKMP Smart Lab: Planned Maintenance Requested',
+            $this->emailTemplate('Planned Maintenance Requested', [
+                'A lab manager has requested planned maintenance for one of your lab assets.',
+                'Case: ' . ($context['title'] ?? 'Planned Maintenance'),
+                'Laboratory: ' . ($context['lab_name'] ?? '-'),
+                'Equipment: ' . ($context['asset_name'] ?? '-'),
+                ! empty($context['scheduled_for']) ? 'Recommended maintenance date: ' . date('d M Y H:i', strtotime($context['scheduled_for'])) : null,
+            ], site_url($technicianLink), 'Open Maintenance Case'),
+            null,
+            ['entity_type' => 'maintenance', 'entity_id' => $maintenanceId, 'notification_type' => 'maintenance']
+        );
+
+        $this->sendEmail(
+            [$context['reporter_email'] ?? null],
+            'FKMP Smart Lab: Planned Maintenance Sent To PIC',
+            $this->emailTemplate('Planned Maintenance Submitted', [
+                'Your planned maintenance request has been recorded and sent to the responsible PIC.',
+                'Case: ' . ($context['title'] ?? 'Planned Maintenance'),
+                'Laboratory: ' . ($context['lab_name'] ?? '-'),
+                'Equipment: ' . ($context['asset_name'] ?? '-'),
+            ], site_url($managerLink), 'Open Manager Dashboard'),
+            null,
+            ['entity_type' => 'maintenance', 'entity_id' => $maintenanceId, 'notification_type' => 'maintenance']
+        );
+    }
+
     public function notifyMaintenanceClaimed(int $maintenanceId, int $claimingUserId): void
     {
         $context = $this->maintenanceContext($maintenanceId);
@@ -510,9 +575,10 @@ class NotificationService
     protected function maintenanceContext(int $maintenanceId): ?array
     {
         $row = $this->db->table('maintenance_records mr')
-            ->select('mr.*, a.name AS asset_name, l.name AS lab_name, l.pic_email')
+            ->select('mr.*, a.name AS asset_name, l.name AS lab_name, l.pic_email, reporter.username AS reported_by_username, reporter.full_name AS reported_by_name')
             ->join('assets a', 'a.id = mr.asset_id', 'left')
             ->join('laboratories l', 'l.id = a.lab_id', 'left')
+            ->join('users reporter', 'reporter.id = mr.reported_by', 'left')
             ->where('mr.id', $maintenanceId)
             ->get()
             ->getRowArray();

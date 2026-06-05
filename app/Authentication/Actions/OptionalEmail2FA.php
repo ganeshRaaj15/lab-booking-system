@@ -2,6 +2,7 @@
 
 namespace App\Authentication\Actions;
 
+use App\Authentication\OtpPolicy;
 use CodeIgniter\Shield\Authentication\Actions\Email2FA;
 use CodeIgniter\Shield\Entities\User;
 use CodeIgniter\Shield\Models\UserIdentityModel;
@@ -9,13 +10,12 @@ use CodeIgniter\Shield\Models\UserIdentityModel;
 class OptionalEmail2FA extends Email2FA
 {
     /**
-     * Only create the 2FA identity (which triggers the OTP flow) when the
-     * user has opted in. If they haven't, delete any stale identity so that
-     * Shield's setAuthAction() finds nothing and logs them in directly.
+     * Require OTP for all non-admin password logins. Admin users can still
+     * opt in explicitly with the account-level twofa_enabled preference.
      */
     public function createIdentity(User $user): string
     {
-        if (! (bool) ($user->twofa_enabled ?? false)) {
+        if (! (new OtpPolicy())->requiresOtp($user)) {
             model(UserIdentityModel::class)->deleteIdentitiesByType($user, $this->getType());
 
             return '';

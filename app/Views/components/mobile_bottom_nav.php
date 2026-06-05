@@ -13,7 +13,7 @@ $homeItem = $mobileNavLoggedIn
         'href'   => $dashboardHref,
         'icon'   => 'bi-house-door',
         'label'  => 'Home',
-        'active' => url_is('/') || url_is('dashboard*') || url_is('admin*') || url_is('technician*'),
+        'active' => url_is('/') || url_is('dashboard*') || url_is('admin*'),
     ]
     : [
         'href'   => '/',

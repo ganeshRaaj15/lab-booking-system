@@ -477,6 +477,7 @@ $routes->group('dashboard', ['filter' => 'session'], function ($routes) {
     // MANAGER DASHBOARD
     $routes->get('manager', [ManagerDashboard::class, 'index'], ['filter' => 'group:manager']);
     $routes->get('manager/booking/(:num)', [ManagerDashboard::class, 'getBookingDetails/$1'], ['filter' => 'group:manager']);
+    $routes->post('manager/plan-maintenance', [ManagerDashboard::class, 'planMaintenance'], ['filter' => 'group:manager']);
 
     // ADMIN DASHBOARD
     $routes->get('admin', [AdminDashboard::class, 'index'], ['filter' => 'group:admin']);

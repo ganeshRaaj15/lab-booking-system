@@ -254,7 +254,11 @@ $topAtRisk = $equipmentHealth['topAtRisk'] ?? [];
                                 <td><span class="small"><?= esc($ar['decision_label']) ?></span></td>
                                 <td><span class="small text-muted"><?= esc($arDueLabel) ?></span></td>
                                 <td class="pe-3 text-end">
-                                    <a href="/technician/maintenance" class="btn btn-sm btn-outline-primary">Plan</a>
+                                    <form method="post" action="/dashboard/manager/plan-maintenance" class="d-inline">
+                                        <?= csrf_field() ?>
+                                        <input type="hidden" name="asset_id" value="<?= esc($ar['asset_id']) ?>">
+                                        <button type="submit" class="btn btn-sm btn-outline-primary" onclick="return confirm('Create a planned maintenance case and notify the responsible PIC?');">Plan</button>
+                                    </form>
                                 </td>
                             </tr>
                             <?php endforeach; ?>

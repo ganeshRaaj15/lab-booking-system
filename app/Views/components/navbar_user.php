@@ -43,7 +43,7 @@ if (function_exists('auth') && auth()->loggedIn()) {
                         <li class="nav-item me-2"><a class="nav-link position-relative" href="/dashboard/external-requests"><i class="bi bi-clipboard-data me-1"></i> External Requests<span class="nav-indicator"></span></a></li>
                     <?php endif; ?>
                     <?php if ($user->inGroup('pic')): ?>
-                        <li class="nav-item me-2"><a class="nav-link position-relative" href="/technician/maintenance"><i class="bi bi-wrench me-1"></i> Maintenance<span class="nav-indicator"></span></a></li>
+                        <li class="nav-item me-2 d-none d-lg-block"><a class="nav-link position-relative" href="/technician/maintenance"><i class="bi bi-wrench me-1"></i> Maintenance<span class="nav-indicator"></span></a></li>
                     <?php endif; ?>
                     <li class="nav-item me-2 dropdown notification-nav-item">
                         <a class="nav-link position-relative notification-nav-link" href="#" data-bs-toggle="dropdown" aria-expanded="false">

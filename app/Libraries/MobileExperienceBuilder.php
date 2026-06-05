@@ -135,9 +135,9 @@ class MobileExperienceBuilder
                 }
                 $state['attentionCount'] = $pendingApprovals + $externalReviewCount + $openMaintenanceCount;
                 $state['attentionLabel'] = $state['attentionCount'] > 0 ? $state['attentionCount'] . ' items waiting' : 'Queue is clear';
-                $state['attentionMeta'] = 'Approve bookings for your labs, handle maintenance cases, and review external intake from one place.';
+                $state['attentionMeta'] = 'Approve bookings for your labs, manage maintenance, and review external intake from one place.';
                 $state['sheetTitle'] = 'PIC Mobile Actions';
-                $state['sheetDescription'] = 'Jump straight into booking approvals, maintenance work, and external review from your phone.';
+                $state['sheetDescription'] = 'Jump straight into booking approvals, PIC maintenance tasks, and external review from your phone.';
                 $state['quickActions'] = [
                     [
                         'href' => '/dashboard/pic',
@@ -149,8 +149,8 @@ class MobileExperienceBuilder
                     [
                         'href' => '/technician/maintenance',
                         'icon' => 'bi-tools',
-                        'label' => 'Maintenance',
-                        'meta' => 'View and manage open maintenance cases for your labs.',
+                        'label' => 'PIC Maintenance',
+                        'meta' => 'View and manage maintenance cases assigned to your labs.',
                         'badge' => $openMaintenanceCount,
                     ],
                     [
@@ -164,7 +164,7 @@ class MobileExperienceBuilder
                         'href' => '/dashboard/notifications',
                         'icon' => 'bi-bell',
                         'label' => 'Alerts',
-                        'meta' => 'Catch booking and maintenance updates quickly.',
+                        'meta' => 'Catch booking, maintenance, and review updates quickly.',
                         'badge' => $notificationCount,
                     ],
                 ];

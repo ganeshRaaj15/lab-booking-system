@@ -2,6 +2,7 @@
 
 namespace App\Controllers\Api;
 
+use App\Authentication\OtpPolicy;
 use App\Controllers\BaseController;
 use App\Libraries\NativeUserSerializer;
 use CodeIgniter\Events\Events;
@@ -71,7 +72,7 @@ class NativeAuthController extends BaseController
                 ]);
         }
 
-        if ((bool) ($user->twofa_enabled ?? false)) {
+        if ((new OtpPolicy())->requiresOtp($user)) {
             return $this->issueOtpChallenge($user, trim((string) $payload['device_name']));
         }
 

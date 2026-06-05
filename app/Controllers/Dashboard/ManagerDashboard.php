@@ -4,17 +4,31 @@ namespace App\Controllers\Dashboard;
 
 use App\Controllers\BaseController;
 use App\Libraries\MaintenanceForecastService;
+use App\Libraries\NotificationService;
+use App\Models\AssetModel;
 use App\Models\BookingModel;
 use App\Models\ExternalRequestModel;
 use App\Models\LaboratoryModel;
 use App\Models\BookingAssetModel;
+use App\Models\MaintenanceLogModel;
+use App\Models\MaintenanceRecordModel;
 
 class ManagerDashboard extends BaseController
 {
-    public function index()
+    protected AssetModel $assetModel;
+    protected MaintenanceRecordModel $maintenanceModel;
+    protected MaintenanceLogModel $maintenanceLogModel;
+
+    public function __construct()
     {
         helper('auth');
+        $this->assetModel = new AssetModel();
+        $this->maintenanceModel = new MaintenanceRecordModel();
+        $this->maintenanceLogModel = new MaintenanceLogModel();
+    }
 
+    public function index()
+    {
         // Access control
         if (! auth()->loggedIn() || ! auth()->user()->inGroup('manager')) {
             return redirect()->to('/dashboard')->with('error', 'Access denied.');
@@ -90,6 +104,94 @@ class ManagerDashboard extends BaseController
             'activeTab'          => $this->request->getGet('tab') ?? 'approvals',
             'insightPeriod'      => $this->parseInsightWeeks($this->request->getGet('insight_period')),
         ]);
+    }
+
+    public function planMaintenance()
+    {
+        if (! auth()->loggedIn() || ! auth()->user()->inGroup('manager')) {
+            return redirect()->to('/dashboard')->with('error', 'Access denied.');
+        }
+
+        $user = auth()->user();
+        $assetId = (int) $this->request->getPost('asset_id');
+        if ($assetId <= 0) {
+            return redirect()->to('/dashboard/manager')->with('error', 'Selected equipment was not provided.');
+        }
+
+        $asset = $this->assetModel
+            ->select('assets.*, laboratories.name AS lab_name')
+            ->join('laboratories', 'laboratories.id = assets.lab_id', 'left')
+            ->where('assets.id', $assetId)
+            ->first();
+        if (! $asset) {
+            return redirect()->to('/dashboard/manager')->with('error', 'Selected equipment was not found.');
+        }
+
+        $existingOpenCase = $this->maintenanceModel
+            ->where('asset_id', $assetId)
+            ->whereIn('status', $this->maintenanceModel->openStatuses())
+            ->first();
+        if ($existingOpenCase) {
+            return redirect()->to('/dashboard/manager')->with('error', 'An open maintenance case already exists for this equipment.');
+        }
+
+        $forecast = $this->forecastForAsset($assetId);
+        $title = 'Planned Maintenance - ' . ($asset['name'] ?? 'Equipment');
+        $description = $this->plannedMaintenanceDescription($asset, $forecast);
+        $priority = $this->plannedMaintenancePriority($forecast);
+        $scheduledFor = $this->plannedMaintenanceSchedule($forecast);
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        $maintenanceId = $this->maintenanceModel->insert([
+            'asset_id' => $assetId,
+            'quantity_affected' => 1,
+            'unit_reference' => null,
+            'reported_by' => $user->id,
+            'assigned_technician_id' => null,
+            'title' => $title,
+            'issue_type' => 'preventive',
+            'priority' => $priority,
+            'description' => $description,
+            'report_photo_path' => null,
+            'status' => 'reported',
+            'asset_status_before' => $asset['status'] ?? 'available',
+            'asset_status_after' => null,
+            'scheduled_for' => $scheduledFor,
+            'accepted_at' => null,
+            'diagnosis_notes' => null,
+            'started_at' => null,
+            'work_notes' => null,
+            'tested_at' => null,
+            'test_notes' => null,
+            'completed_at' => null,
+            'resolution_notes' => null,
+            'completion_photo_path' => null,
+        ], true);
+
+        $this->maintenanceLogModel->insert([
+            'maintenance_id' => $maintenanceId,
+            'changed_by' => $user->id,
+            'from_status' => null,
+            'to_status' => 'reported',
+            'notes' => 'Lab manager requested planned maintenance for this asset based on predictive maintenance risk.',
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        $this->assetModel->syncManagedAvailability($assetId);
+        $db->transComplete();
+
+        if (! $db->transStatus()) {
+            return redirect()->to('/dashboard/manager')->with('error', 'Unable to create the planned maintenance case right now.');
+        }
+
+        NotificationService::dispatchSafely(
+            fn(NotificationService $notifications) => $notifications->notifyPlannedMaintenanceRequested((int) $maintenanceId),
+            'planned maintenance requested'
+        );
+
+        return redirect()->to('/dashboard/manager')->with('success', 'Planned maintenance case created and sent to the responsible PIC.');
     }
 
     /**
@@ -654,6 +756,75 @@ private function getFacultyDistribution(array $labIds): array
             'low'       => $low,
             'topAtRisk' => $topAtRisk,
         ];
+    }
+
+    private function forecastForAsset(int $assetId): ?array
+    {
+        if ($assetId <= 0) {
+            return null;
+        }
+
+        try {
+            $forecasts = (new MaintenanceForecastService())->getUpcomingForecasts(90);
+        } catch (\Throwable $e) {
+            log_message('error', 'ManagerDashboard::forecastForAsset failed: ' . $e->getMessage());
+            return null;
+        }
+
+        foreach ($forecasts as $forecast) {
+            if ((int) ($forecast['asset_id'] ?? 0) === $assetId) {
+                return $forecast;
+            }
+        }
+
+        return null;
+    }
+
+    private function plannedMaintenancePriority(?array $forecast): string
+    {
+        $priority = strtolower(trim((string) ($forecast['decision_priority'] ?? 'medium')));
+        return in_array($priority, ['low', 'medium', 'high', 'critical'], true) ? $priority : 'medium';
+    }
+
+    private function plannedMaintenanceSchedule(?array $forecast): ?string
+    {
+        $nextDueAt = trim((string) ($forecast['next_due_at'] ?? ''));
+        if ($nextDueAt !== '') {
+            return date('Y-m-d 09:00:00', strtotime($nextDueAt));
+        }
+
+        return date('Y-m-d 09:00:00', strtotime('+7 days'));
+    }
+
+    private function plannedMaintenanceDescription(array $asset, ?array $forecast): string
+    {
+        $lines = [
+            'Planned maintenance requested by the lab manager based on predictive maintenance risk for this equipment.',
+            'Equipment: ' . ($asset['name'] ?? 'Equipment'),
+            'Laboratory: ' . ($asset['lab_name'] ?? '-'),
+        ];
+
+        if ($forecast) {
+            $riskPercent = (int) ($forecast['risk_percent'] ?? 0);
+            $decisionLabel = trim((string) ($forecast['decision_label'] ?? ''));
+            $nextDueAt = trim((string) ($forecast['next_due_at'] ?? ''));
+            if ($riskPercent > 0) {
+                $lines[] = 'Predicted risk score: ' . $riskPercent . '%.';
+            }
+            if ($decisionLabel !== '') {
+                $lines[] = 'Recommended action: ' . $decisionLabel . '.';
+            }
+            if ($nextDueAt !== '') {
+                $lines[] = 'Suggested due date: ' . date('d M Y', strtotime($nextDueAt)) . '.';
+            }
+
+            $reasons = array_values(array_filter(array_map(static fn($reason): string => trim((string) $reason), (array) ($forecast['reasons'] ?? []))));
+            if ($reasons !== []) {
+                $lines[] = 'Reasons: ' . implode(' ', $reasons);
+            }
+        }
+
+        return implode("\n", $lines);
     }
 
     /**

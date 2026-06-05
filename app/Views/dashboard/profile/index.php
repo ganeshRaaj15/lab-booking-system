@@ -122,7 +122,11 @@
             <div class="card p-4">
                 <h6 class="fw-bold mb-1">Two-Factor Authentication</h6>
                 <p class="text-muted small mb-3">
-                    When enabled, a one-time code will be sent to your email address each time you log in.
+                    <?php if ($user->inGroup('admin')): ?>
+                        When enabled, a one-time code will be sent to your email address each time you log in.
+                    <?php else: ?>
+                        Non-admin accounts must enter an email verification code whenever they sign in after the session has expired.
+                    <?php endif; ?>
                     <?php if (!empty($user->twofa_enabled)): ?>
                         <span class="badge text-bg-success ms-1">Enabled</span>
                     <?php else: ?>
