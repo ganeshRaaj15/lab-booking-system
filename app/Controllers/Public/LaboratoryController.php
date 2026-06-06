@@ -118,7 +118,7 @@ class LaboratoryController extends BaseController
             throw PageNotFoundException::forPageNotFound('Laboratory not found.');
         }
 
-        $assets    = $this->assets->where('lab_id', $id)->findAll();
+        $assets    = $this->assets->where('lab_id', $id)->where('status !=', 'decommissioned')->findAll();
         $services  = $this->servicesForLab($id);
         $faculties = $this->faculties->getAllForDropdown();
 

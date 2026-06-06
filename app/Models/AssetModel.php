@@ -55,11 +55,23 @@ class AssetModel extends Model
         return max((int) ($row['quantity_affected'] ?? 0), 0);
     }
 
+    /** Status values that block booking and must not be auto-overwritten by sync. */
+    public function permanentStatuses(): array
+    {
+        return ['decommissioned'];
+    }
+
     public function syncManagedAvailability(int $assetId, ?int $ignoreRecordId = null): array
     {
         $asset = $this->find($assetId);
         if (! $asset) {
             return [];
+        }
+
+        // Decommissioned assets are permanently out of service — never auto-restore.
+        if (in_array($asset['status'] ?? '', $this->permanentStatuses(), true)) {
+            $this->update($assetId, ['quantity' => 0]);
+            return [...$asset, 'quantity' => 0, 'maintenance_quantity' => 0];
         }
 
         $total = $this->totalQuantity($asset);
@@ -80,8 +92,6 @@ class AssetModel extends Model
 
         $this->update($assetId, $updates);
 
-        return array_merge($asset, $updates, [
-            'maintenance_quantity' => $openUnits,
-        ]);
+        return [...$asset, ...$updates, 'maintenance_quantity' => $openUnits];
     }
 }

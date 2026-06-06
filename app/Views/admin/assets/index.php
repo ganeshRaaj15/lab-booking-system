@@ -107,7 +107,7 @@ $unitsInMaintenance = array_sum(array_map(static fn($asset) => (int) ($asset['ma
                     <tbody>
                         <?php foreach ($assets as $asset): ?>
                             <?php $imagePath = !empty($asset['image']) ? base_url($asset['image']) : base_url('images/assets/placeholder_asset.png'); ?>
-                            <?php $badge = ($asset['quantity'] ?? 0) > 0 ? (($asset['maintenance_quantity'] ?? 0) > 0 ? 'warning text-dark' : 'success') : 'secondary'; ?>
+                            <?php $badge = ($asset['status'] ?? '') === 'decommissioned' ? 'dark' : (($asset['quantity'] ?? 0) > 0 ? (($asset['maintenance_quantity'] ?? 0) > 0 ? 'warning text-dark' : 'success') : 'secondary'); ?>
                             <tr>
                                 <td>
                                     <div class="d-flex gap-3 align-items-center">
@@ -169,6 +169,20 @@ $unitsInMaintenance = array_sum(array_map(static fn($asset) => (int) ($asset['ma
                                             <i class="bi bi-qr-code"></i>
                                         </button>
                                         <a href="/admin/assets/edit/<?= esc($asset['id']) ?>" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                                        <?php if (($asset['status'] ?? '') === 'decommissioned'): ?>
+                                            <form method="post" action="/admin/assets/decommission/<?= (int) $asset['id'] ?>" class="d-inline">
+                                                <?= csrf_field() ?>
+                                                <input type="hidden" name="action" value="restore">
+                                                <button type="submit" class="btn btn-sm btn-outline-success" title="Restore asset"><i class="bi bi-arrow-counterclockwise"></i></button>
+                                            </form>
+                                        <?php else: ?>
+                                            <form method="post" action="/admin/assets/decommission/<?= (int) $asset['id'] ?>" class="d-inline">
+                                                <?= csrf_field() ?>
+                                                <input type="hidden" name="action" value="decommission">
+                                                <button type="submit" class="btn btn-sm btn-outline-secondary" title="Decommission asset"
+                                                        onclick="return confirm('Decommission this asset? It will be removed from public views.')"><i class="bi bi-x-octagon"></i></button>
+                                            </form>
+                                        <?php endif; ?>
                                         <button type="button" onclick="deleteAsset(<?= esc($asset['id']) ?>)" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                                     </div>
                                 </td>
@@ -177,6 +191,9 @@ $unitsInMaintenance = array_sum(array_map(static fn($asset) => (int) ($asset['ma
                     </tbody>
                 </table>
             </div>
+            <?php if (isset($pager)): ?>
+                <div class="mt-3 px-2"><?= $pager->links() ?></div>
+            <?php endif; ?>
         <?php endif; ?>
     </div>
 </div>

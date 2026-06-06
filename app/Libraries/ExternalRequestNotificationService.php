@@ -102,7 +102,7 @@ class ExternalRequestNotificationService
         $requesterIds = $this->compactIds([(int) ($context['user_id'] ?? 0)]);
         $requesterEmail = [$context['contact_email'] ?? null];
         $roleLabel = $actorRole === 'manager' ? 'Lab Manager' : 'PIC';
-        $note = trim((string) ($actorRole === 'manager' ? ($context['manager_notes'] ?? '') : ($context['pic_notes'] ?? '')));
+        $note = esc(trim((string) ($actorRole === 'manager' ? ($context['manager_notes'] ?? '') : ($context['pic_notes'] ?? ''))));
 
         if ($status === 'pending_manager_approval' && $actorRole === 'pic') {
             $requesterMessage = 'Your external request for ' . $descriptor . ' was approved by the PIC and is now waiting for Lab Manager approval.';
@@ -397,29 +397,37 @@ class ExternalRequestNotificationService
             return;
         }
 
+        $sent = false;
         try {
             $email = service('email');
             $email->clear(true);
             $email->setTo($recipients);
             $email->setSubject($subject);
             $email->setMessage($message);
-            $email->send();
+            if (! $email->send()) {
+                log_message('error', 'External request email send failed to ' . implode(', ', $recipients) . ' for subject "' . $subject . '".');
+            } else {
+                $sent = true;
+            }
         } catch (\Throwable $e) {
             log_message('error', 'External request email error: ' . $e->getMessage());
         }
 
+        $now  = date('Y-m-d H:i:s');
         $rows = [];
         foreach ($recipients as $recipient) {
             $rows[] = [
-                'user_id' => $this->findUserIdByEmail($recipient) ?: null,
-                'to_email' => $recipient,
-                'subject' => $subject,
-                'body' => $message,
+                'user_id'           => $this->findUserIdByEmail($recipient) ?: null,
+                'to_email'          => $recipient,
+                'subject'           => $subject,
+                'body'              => $sent ? $message : ('[SEND FAILED] ' . $subject),
                 'notification_type' => $context['notification_type'] ?? 'external_request',
-                'entity_type' => $context['entity_type'] ?? 'external_request',
-                'entity_id' => $context['entity_id'] ?? null,
-                'has_attachment' => 0,
-                'attachment_name' => null,
+                'entity_type'       => $context['entity_type'] ?? 'external_request',
+                'entity_id'         => isset($context['entity_id']) ? (int) $context['entity_id'] : null,
+                'has_attachment'    => 0,
+                'attachment_name'   => null,
+                'created_at'        => $now,
+                'updated_at'        => $now,
             ];
         }
 

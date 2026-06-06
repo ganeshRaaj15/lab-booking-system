@@ -17,6 +17,8 @@ use App\Controllers\Public\DocumentController;
 use App\Controllers\Public\ChatbotController;
 use App\Controllers\Public\QrController;
 use App\Controllers\Public\AppLinkController;
+use App\Controllers\Public\ExternalAccessController;
+use App\Controllers\Admin\ExternalAccessAdminController;
 use App\Controllers\Api\NativeAuthController;
 use App\Controllers\Api\NativeBootstrapController;
 use App\Controllers\Api\NativeLaboratoryController;
@@ -56,6 +58,9 @@ use App\Controllers\Dashboard\NotificationController;
 use App\Controllers\Dashboard\EmailInboxController;
 use App\Controllers\Dashboard\ExternalRequestsController;
 use App\Controllers\Dashboard\PushSubscriptionController;
+use App\Controllers\Dashboard\PicLabManagementController;
+use App\Controllers\Dashboard\PicAssetManagementController;
+use App\Controllers\Dashboard\ManagerMaintenanceController;
 
 // ---------------------------------------------------------
 // BOOKING APPROVAL CONTROLLER
@@ -151,6 +156,11 @@ $routes->group('api/native', ['filter' => 'tokens'], static function ($routes) {
     $routes->post('maintenance/(:num)', [NativeMaintenanceController::class, 'update/$1']);
 
     $routes->get('documents/pdf/(:segment)', [DocumentController::class, 'viewPdf/$1']);
+});
+
+// Native admin API routes — require token auth AND admin group (defence-in-depth over the
+// controller-level authorizedAdmin() checks already present in each controller)
+$routes->group('api/native', ['filter' => ['tokens', 'group:admin']], static function ($routes) {
     $routes->get('admin/settings', [NativeAdminSettingsController::class, 'show']);
     $routes->post('admin/settings', [NativeAdminSettingsController::class, 'update']);
     $routes->post('admin/settings/slots', [NativeAdminSettingsController::class, 'saveSlots']);
@@ -182,15 +192,20 @@ $routes->get('/laboratories/(:num)', [LaboratoryController::class, 'show/$1']);
 $routes->get('/api/calendar-with-assets/(:num)', [BookingController::class, 'calendarWithAssets/$1']);
 $routes->get('/api/bookings/day-with-assets/(:num)/(:segment)', [BookingController::class, 'dayWithAssets/$1/$2']);
 
-// Booking operations
-$routes->post('/api/bookings/check-slot', [BookingController::class, 'checkSlot']);
-$routes->post('/api/bookings/submit', [BookingController::class, 'submit']);
+// Booking operations (session required — only authenticated users may check or submit bookings)
+$routes->post('/api/bookings/check-slot', [BookingController::class, 'checkSlot'], ['filter' => 'session']);
+$routes->post('/api/bookings/submit', [BookingController::class, 'submit'], ['filter' => 'session']);
 // Chatbot insights (role-aware, local)
 $routes->post('/api/chat', [ChatbotController::class, 'respond']);
 
 // Assets browsing
 $routes->get('assets', [AssetBrowseController::class, 'index']);
 $routes->get('qr/asset/(:segment)', [QrController::class, 'asset/$1']);
+
+// External user self-service access request (no authentication required)
+$routes->get('external-access/request', [ExternalAccessController::class, 'form']);
+$routes->post('external-access/submit', [ExternalAccessController::class, 'submit']);
+$routes->get('external-access/submitted', [ExternalAccessController::class, 'submitted']);
 
 // PDF Document viewing (with authentication)
 $routes->get('document/pdf/(:segment)', [DocumentController::class, 'viewPdf/$1'], ['filter' => 'session']);
@@ -474,18 +489,36 @@ $routes->group('dashboard', ['filter' => 'session'], function ($routes) {
     $routes->get('pic', [PicDashboard::class, 'index'], ['filter' => 'group:pic']);
     $routes->get('pic/booking/(:num)', [PicDashboard::class, 'getBookingDetails/$1'], ['filter' => 'group:pic']);
 
+    // PIC LAB MANAGEMENT (edit own assigned lab details)
+    $routes->get('pic/lab/edit/(:num)',    [PicLabManagementController::class, 'edit/$1'],   ['filter' => 'group:pic']);
+    $routes->post('pic/lab/update/(:num)', [PicLabManagementController::class, 'update/$1'], ['filter' => 'group:pic']);
+
+    // PIC ASSET MANAGEMENT (CRUD for assets in own assigned labs)
+    $routes->get('pic/assets',                          [PicAssetManagementController::class, 'index'],            ['filter' => 'group:pic']);
+    $routes->get('pic/assets/create',                   [PicAssetManagementController::class, 'create'],           ['filter' => 'group:pic']);
+    $routes->post('pic/assets/store',                   [PicAssetManagementController::class, 'store'],            ['filter' => 'group:pic']);
+    $routes->get('pic/assets/edit/(:num)',               [PicAssetManagementController::class, 'edit/$1'],          ['filter' => 'group:pic']);
+    $routes->post('pic/assets/update/(:num)',            [PicAssetManagementController::class, 'update/$1'],        ['filter' => 'group:pic']);
+    $routes->post('pic/assets/delete/(:num)',            [PicAssetManagementController::class, 'delete/$1'],        ['filter' => 'group:pic']);
+    $routes->post('pic/assets/decommission/(:num)',      [PicAssetManagementController::class, 'decommission/$1'],  ['filter' => 'group:pic']);
+
     // MANAGER DASHBOARD
     $routes->get('manager', [ManagerDashboard::class, 'index'], ['filter' => 'group:manager']);
     $routes->get('manager/booking/(:num)', [ManagerDashboard::class, 'getBookingDetails/$1'], ['filter' => 'group:manager']);
     $routes->post('manager/plan-maintenance', [ManagerDashboard::class, 'planMaintenance'], ['filter' => 'group:manager']);
 
+    // MANAGER MAINTENANCE (read-only view — manager cannot modify records)
+    $routes->get('manager/maintenance',         [ManagerMaintenanceController::class, 'index'],    ['filter' => 'group:manager']);
+    $routes->get('manager/maintenance/(:num)',   [ManagerMaintenanceController::class, 'show/$1'], ['filter' => 'group:manager']);
+
     // ADMIN DASHBOARD
     $routes->get('admin', [AdminDashboard::class, 'index'], ['filter' => 'group:admin']);
     $routes->get('admin/booking-details/(:num)', [AdminDashboard::class, 'bookingDetails/$1'], ['filter' => 'group:admin']);
 
-    // STUDENT/PIC ISSUE REPORTING
-    $routes->get('report-issue', [IssueReportController::class, 'create'], ['filter' => 'group:student,staff,pic']);
-    $routes->post('report-issue/store', [IssueReportController::class, 'store'], ['filter' => 'group:student,staff,pic']);
+    // ISSUE REPORTING (student, staff, pic, external)
+    $routes->get('report-issue', [IssueReportController::class, 'create'], ['filter' => 'group:student,staff,pic,external']);
+    $routes->post('report-issue/store', [IssueReportController::class, 'store'], ['filter' => 'group:student,staff,pic,external']);
+    $routes->get('report-issue/assets-by-lab/(:num)', [IssueReportController::class, 'assetsForLab/$1'], ['filter' => 'group:student,staff,pic,external']);
 
     // APPROVAL UI PAGE (accessible to PIC/MANAGER/ADMIN)
     $routes->get('approvals', [ApprovalsController::class, 'index'], ['filter' => 'group:pic,manager,admin']);
@@ -544,8 +577,15 @@ $routes->group('admin', ['filter' => 'group:admin'], function ($routes) {
     $routes->get('assets/edit/(:num)', [AssetController::class, 'edit/$1']);
     $routes->post('assets/update/(:num)', [AssetController::class, 'update/$1']);
     $routes->post('assets/delete/(:num)', [AssetController::class, 'delete/$1']);
+    $routes->post('assets/decommission/(:num)', [AssetController::class, 'decommission/$1']);
     $routes->get('assets/qr-labels', [AssetController::class, 'qrLabels']);
     $routes->get('assets', [AssetController::class, 'index']); // This should be LAST
+
+    // External access request management
+    $routes->get('external-access', [ExternalAccessAdminController::class, 'index']);
+    $routes->get('external-access/(:num)', [ExternalAccessAdminController::class, 'show/$1']);
+    $routes->post('external-access/(:num)/approve', [ExternalAccessAdminController::class, 'approve/$1']);
+    $routes->post('external-access/(:num)/reject', [ExternalAccessAdminController::class, 'reject/$1']);
 
     // User Management
     $routes->get('users', [UserManagementController::class, 'index']);

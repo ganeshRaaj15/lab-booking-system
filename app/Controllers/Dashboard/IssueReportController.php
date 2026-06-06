@@ -5,12 +5,14 @@ namespace App\Controllers\Dashboard;
 use App\Controllers\BaseController;
 use App\Libraries\NotificationService;
 use App\Models\AssetModel;
+use App\Models\LaboratoryModel;
 use App\Models\MaintenanceLogModel;
 use App\Models\MaintenanceRecordModel;
 
 class IssueReportController extends BaseController
 {
     protected AssetModel $assetModel;
+    protected LaboratoryModel $labModel;
     protected MaintenanceRecordModel $maintenanceModel;
     protected MaintenanceLogModel $logModel;
 
@@ -18,6 +20,7 @@ class IssueReportController extends BaseController
     {
         helper(['auth', 'filesystem']);
         $this->assetModel = new AssetModel();
+        $this->labModel   = new LaboratoryModel();
         $this->maintenanceModel = new MaintenanceRecordModel();
         $this->logModel = new MaintenanceLogModel();
 
@@ -34,19 +37,23 @@ class IssueReportController extends BaseController
         }
 
         $user = auth()->user();
-        $assets = $this->availableAssetsForReporter($user);
         $recentReports = $this->maintenanceModel->withRelations()
             ->where('maintenance_records.reported_by', $user->id)
             ->orderBy('maintenance_records.created_at', 'DESC')
             ->findAll(8);
 
+        // PIC sees only their labs; others see all labs (assets filtered client-side after lab selection).
+        $labs = $user->inGroup('pic')
+            ? $this->labModel->where('LOWER(TRIM(pic_email)) =', strtolower(trim((string) $user->email)))->orderBy('name', 'ASC')->findAll()
+            : $this->labModel->orderBy('name', 'ASC')->findAll();
+
         return view('dashboard/issues/form', [
-            'title' => 'Report Asset Issue | FKMP Smart Lab',
-            'page' => 'Report Asset Issue',
-            'user' => $user,
-            'assets' => $assets,
+            'title'         => 'Report Asset Issue | FKMP Smart Lab',
+            'page'          => 'Report Asset Issue',
+            'user'          => $user,
+            'labs'          => $labs,
             'recentReports' => $recentReports,
-            'priorities' => ['low', 'medium', 'high', 'critical'],
+            'priorities'    => ['low', 'medium', 'high', 'critical'],
         ]);
     }
 
@@ -58,6 +65,7 @@ class IssueReportController extends BaseController
 
         $user = auth()->user();
         $rules = [
+            'lab_id'   => 'required|integer',
             'asset_id' => 'required|integer',
             'quantity_affected' => 'required|integer|greater_than[0]',
             'title' => 'required|min_length[3]|max_length[255]',
@@ -71,12 +79,19 @@ class IssueReportController extends BaseController
             return redirect()->back()->withInput()->with('error', implode(' ', $this->validator->getErrors()));
         }
 
-        $assetId = (int) $this->request->getPost('asset_id');
+        $labId            = (int) $this->request->getPost('lab_id');
+        $assetId          = (int) $this->request->getPost('asset_id');
         $quantityAffected = (int) $this->request->getPost('quantity_affected');
-        $unitReference = trim((string) $this->request->getPost('unit_reference'));
+        $unitReference    = trim((string) $this->request->getPost('unit_reference'));
+
         $asset = $this->assetModel->find($assetId);
         if (! $asset) {
             return redirect()->back()->withInput()->with('error', 'Selected asset was not found.');
+        }
+
+        // Backend validation: asset must belong to the submitted lab_id.
+        if ((int) $asset['lab_id'] !== $labId) {
+            return redirect()->back()->withInput()->with('error', 'The selected asset does not belong to the selected laboratory.');
         }
 
         $assetOptions = $this->availableAssetsForReporter($user);
@@ -164,6 +179,51 @@ class IssueReportController extends BaseController
         return redirect()->to('/dashboard/report-issue')->with('success', 'Issue report submitted successfully. The lab PIC has been notified.');
     }
 
+    /**
+     * GET /dashboard/report-issue/assets-by-lab/:labId
+     * AJAX: return available (non-decommissioned) assets for a given lab.
+     * Used by the issue report form to populate the asset dropdown after lab selection.
+     */
+    public function assetsForLab(int $labId)
+    {
+        if ($redirect = $this->ensureReporter()) {
+            return $redirect;
+        }
+
+        $user = auth()->user();
+
+        // PIC may only query their own lab(s).
+        if ($user->inGroup('pic')) {
+            $picEmail  = strtolower(trim((string) $user->email));
+            $lab       = $this->labModel->find($labId);
+            $labPicEmail = strtolower(trim((string) ($lab['pic_email'] ?? '')));
+            if (! $lab || $labPicEmail !== $picEmail) {
+                return $this->response->setStatusCode(403)->setJSON(['status' => 'error', 'message' => 'Access denied.']);
+            }
+        }
+
+        $assets = $this->assetModel
+            ->select('assets.id, assets.name, assets.asset_code, assets.status, assets.quantity, assets.total_quantity')
+            ->where('assets.lab_id', $labId)
+            ->where('assets.status !=', 'decommissioned')
+            ->orderBy('assets.name', 'ASC')
+            ->findAll();
+
+        // Only return assets that have at least 1 available unit.
+        $available = array_values(array_filter($assets, static fn(array $a): bool => (int) ($a['quantity'] ?? 0) > 0));
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'assets' => array_map(static fn(array $a): array => [
+                'id'             => (int) $a['id'],
+                'name'           => (string) $a['name'],
+                'asset_code'     => (string) ($a['asset_code'] ?? ''),
+                'quantity'       => (int) $a['quantity'],
+                'total_quantity' => (int) ($a['total_quantity'] ?? $a['quantity']),
+            ], $available),
+        ]);
+    }
+
     protected function ensureReporter()
     {
         helper('auth');
@@ -173,7 +233,7 @@ class IssueReportController extends BaseController
         }
 
         $user = auth()->user();
-        if (! $user->inGroup('student') && ! $user->inGroup('staff') && ! $user->inGroup('pic')) {
+        if (! $user->inGroup('student') && ! $user->inGroup('staff') && ! $user->inGroup('pic') && ! $user->inGroup('external')) {
             return redirect()->to('/dashboard')->with('error', 'Access denied.');
         }
 

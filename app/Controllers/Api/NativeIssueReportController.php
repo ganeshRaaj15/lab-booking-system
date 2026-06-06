@@ -15,45 +15,78 @@ class NativeIssueReportController extends WebIssueReportController
             return $this->unauthenticated();
         }
         if (! $this->isAllowedReporter($user)) {
-            return $this->forbidden('Issue reporting is only available to students, staff, and lab PICs.');
+            return $this->forbidden('Issue reporting is only available to students, staff, lab PICs, and external users.');
         }
 
-        $assets = $this->availableAssetsForReporter($user);
+        $labId = (int) $this->request->getGet('lab_id');
+
+        // Build labs list scoped to PIC's assigned labs; all labs for everyone else.
+        $labs = $user->inGroup('pic')
+            ? $this->labModel->where('LOWER(TRIM(pic_email)) =', strtolower(trim((string) $user->email)))->orderBy('name', 'ASC')->findAll()
+            : $this->labModel->orderBy('name', 'ASC')->findAll();
+
+        // If lab_id is provided, return only assets for that lab.
+        if ($labId > 0) {
+            // PIC IDOR: the requested lab must be one of their assigned labs.
+            if ($user->inGroup('pic')) {
+                $picLabIds = array_column($labs, 'id');
+                if (! in_array($labId, $picLabIds, true)) {
+                    return $this->forbidden('You can only view assets from your assigned laboratories.');
+                }
+            }
+
+            $allAssets = $this->assetModel
+                ->select('assets.id, assets.name, assets.asset_code, assets.status, assets.quantity, assets.total_quantity, laboratories.name AS lab_name, laboratories.room AS lab_room')
+                ->join('laboratories', 'laboratories.id = assets.lab_id', 'left')
+                ->where('assets.lab_id', $labId)
+                ->where('assets.status !=', 'decommissioned')
+                ->orderBy('assets.name', 'ASC')
+                ->findAll();
+            $assets = array_values(array_filter($allAssets, static fn(array $a): bool => (int) ($a['quantity'] ?? 0) > 0));
+        } else {
+            $assets = $this->availableAssetsForReporter($user);
+        }
+
         $recentReports = $this->maintenanceModel->withRelations()
             ->where('maintenance_records.reported_by', $user->id)
             ->orderBy('maintenance_records.created_at', 'DESC')
             ->findAll(8);
 
         return $this->response->setJSON([
-            'status' => 'success',
+            'status'     => 'success',
             'priorities' => ['low', 'medium', 'high', 'critical'],
+            'labs'       => array_map(static fn(array $lab): array => [
+                'id'   => (int) $lab['id'],
+                'name' => (string) $lab['name'],
+                'room' => (string) ($lab['room'] ?? ''),
+            ], $labs),
             'assets' => array_map(fn(array $asset): array => [
-                'id' => (int) $asset['id'],
-                'name' => (string) ($asset['name'] ?? ''),
-                'asset_code' => (string) ($asset['asset_code'] ?? ''),
-                'status' => (string) ($asset['status'] ?? ''),
-                'quantity' => (int) ($asset['quantity'] ?? 0),
-                'total_quantity' => (int) ($asset['total_quantity'] ?? 0),
-                'lab_name' => (string) ($asset['lab_name'] ?? ''),
-                'lab_room' => (string) ($asset['lab_room'] ?? ''),
+                'id'                     => (int) $asset['id'],
+                'name'                   => (string) ($asset['name'] ?? ''),
+                'asset_code'             => (string) ($asset['asset_code'] ?? ''),
+                'status'                 => (string) ($asset['status'] ?? ''),
+                'quantity'               => (int) ($asset['quantity'] ?? 0),
+                'total_quantity'         => (int) ($asset['total_quantity'] ?? 0),
+                'lab_name'               => (string) ($asset['lab_name'] ?? ''),
+                'lab_room'               => (string) ($asset['lab_room'] ?? ''),
                 'requires_unit_reference' => (int) ($asset['total_quantity'] ?? 0) > 1,
             ], $assets),
             'recent_reports' => array_map(function (array $report): array {
                 return [
-                    'id' => (int) $report['id'],
-                    'asset_id' => (int) ($report['asset_id'] ?? 0),
-                    'asset_name' => (string) ($report['asset_name'] ?? ''),
-                    'asset_code' => (string) ($report['asset_code'] ?? ''),
-                    'lab_name' => (string) ($report['laboratory_name'] ?? ''),
-                    'lab_room' => (string) ($report['laboratory_room'] ?? ''),
-                    'title' => (string) ($report['title'] ?? ''),
-                    'priority' => (string) ($report['priority'] ?? ''),
-                    'status' => (string) ($report['status'] ?? ''),
-                    'status_label' => $this->maintenanceModel->statusLabel((string) ($report['status'] ?? '')),
+                    'id'               => (int) $report['id'],
+                    'asset_id'         => (int) ($report['asset_id'] ?? 0),
+                    'asset_name'       => (string) ($report['asset_name'] ?? ''),
+                    'asset_code'       => (string) ($report['asset_code'] ?? ''),
+                    'lab_name'         => (string) ($report['laboratory_name'] ?? ''),
+                    'lab_room'         => (string) ($report['laboratory_room'] ?? ''),
+                    'title'            => (string) ($report['title'] ?? ''),
+                    'priority'         => (string) ($report['priority'] ?? ''),
+                    'status'           => (string) ($report['status'] ?? ''),
+                    'status_label'     => $this->maintenanceModel->statusLabel((string) ($report['status'] ?? '')),
                     'quantity_affected' => (int) ($report['quantity_affected'] ?? 0),
-                    'unit_reference' => (string) ($report['unit_reference'] ?? ''),
-                    'created_at' => (string) ($report['created_at'] ?? ''),
-                    'updated_at' => (string) ($report['updated_at'] ?? ''),
+                    'unit_reference'   => (string) ($report['unit_reference'] ?? ''),
+                    'created_at'       => (string) ($report['created_at'] ?? ''),
+                    'updated_at'       => (string) ($report['updated_at'] ?? ''),
                     'report_photo_url' => $this->mediaUrl((string) ($report['report_photo_path'] ?? '')),
                 ];
             }, $recentReports),
@@ -67,7 +100,7 @@ class NativeIssueReportController extends WebIssueReportController
             return $this->unauthenticated();
         }
         if (! $this->isAllowedReporter($user)) {
-            return $this->forbidden('Issue reporting is only available to students, staff, and lab PICs.');
+            return $this->forbidden('Issue reporting is only available to students, staff, lab PICs, and external users.');
         }
 
         $rules = [
@@ -190,7 +223,7 @@ class NativeIssueReportController extends WebIssueReportController
 
     private function isAllowedReporter(User $user): bool
     {
-        return $user->inGroup('student') || $user->inGroup('staff') || $user->inGroup('pic');
+        return $user->inGroup('student') || $user->inGroup('staff') || $user->inGroup('pic') || $user->inGroup('external');
     }
 
     private function mediaUrl(string $path): string

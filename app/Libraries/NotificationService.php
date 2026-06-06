@@ -394,6 +394,125 @@ class NotificationService
         $this->sendEmail([$context['reporter_email'] ?? null], 'FKMP Smart Lab: Maintenance Scheduled', $this->emailTemplate('Maintenance Scheduled', [$message], site_url($reporterLink), 'View Your Reports'), null, ['entity_type' => 'maintenance', 'entity_id' => (int) $maintenanceId, 'notification_type' => 'maintenance']);
     }
 
+    public function notifyMaintenanceInProgress(int $maintenanceId): void
+    {
+        $context = $this->maintenanceContext($maintenanceId);
+        if (! $context) {
+            return;
+        }
+
+        $assetId       = (int) ($context['asset_id'] ?? 0);
+        $assetName     = $context['asset_name'] ?? 'Equipment';
+        $labName       = $context['lab_name'] ?? 'the laboratory';
+        $caseTitle     = $context['title'] ?? 'Maintenance Issue';
+        $reporterId    = (int) ($context['reported_by'] ?? 0);
+        $reporterEmail = strtolower(trim((string) ($context['reporter_email'] ?? '')));
+
+        $picEmail  = strtolower(trim((string) ($context['pic_email'] ?? '')));
+        $picUserId = $this->findUserIdByEmail($picEmail);
+
+        $technicianLink = '/technician/maintenance/edit/' . $maintenanceId;
+        $reporterLink   = '/dashboard/report-issue';
+        $emailContext   = ['entity_type' => 'maintenance', 'entity_id' => $maintenanceId, 'notification_type' => 'maintenance'];
+
+        // Both sets prevent duplicate in-app notifications and duplicate emails respectively.
+        $notifiedUserIds = [];
+        $sentEmails      = [];
+
+        // A. Reporter — in-app + email
+        $reporterMessage = 'Maintenance work has started for ' . $assetName . ' in ' . $labName . '. The equipment is currently under active maintenance.';
+        if ($reporterId > 0) {
+            $this->createUserNotifications([$reporterId], 'maintenance', 'Maintenance Now In Progress', $reporterMessage, $reporterLink, 'maintenance', $maintenanceId);
+            $notifiedUserIds[$reporterId] = true;
+        }
+        if ($reporterEmail !== '') {
+            $this->sendEmail(
+                [$reporterEmail],
+                'FKMP Smart Lab: Maintenance In Progress',
+                $this->emailTemplate('Maintenance In Progress', [
+                    $reporterMessage,
+                    'Case: ' . $caseTitle,
+                    'Laboratory: ' . $labName,
+                    'Equipment: ' . $assetName,
+                ], site_url($reporterLink), 'View Your Reports'),
+                null,
+                $emailContext
+            );
+            $sentEmails[$reporterEmail] = true;
+        }
+
+        // B. PIC — in-app + email
+        // In-app: skip if PIC user ID already notified (PIC == reporter).
+        // Email: skip if PIC email already sent (PIC email == reporter email).
+        $picMessage = 'Maintenance work for ' . $assetName . ' in ' . $labName . ' is now in progress.';
+        if ($picUserId > 0 && ! isset($notifiedUserIds[$picUserId])) {
+            $this->createUserNotifications([$picUserId], 'maintenance', 'Maintenance Now In Progress', $picMessage, $technicianLink, 'maintenance', $maintenanceId);
+            $notifiedUserIds[$picUserId] = true;
+        }
+        if ($picEmail !== '' && ! isset($sentEmails[$picEmail])) {
+            $this->sendEmail(
+                [$picEmail],
+                'FKMP Smart Lab: Maintenance In Progress',
+                $this->emailTemplate('Maintenance In Progress', [
+                    $picMessage,
+                    'Case: ' . $caseTitle,
+                    'Laboratory: ' . $labName,
+                    'Equipment: ' . $assetName,
+                ], site_url($technicianLink), 'Open Maintenance Case'),
+                null,
+                $emailContext
+            );
+            $sentEmails[$picEmail] = true;
+        }
+
+        // C. Users with PENDING or APPROVED bookings for the same asset on the maintenance date.
+        // In-app: skip if user ID already notified. Email: skip if email address already sent.
+        if ($assetId > 0) {
+            $maintenanceDate = ! empty($context['started_at'])
+                ? substr((string) $context['started_at'], 0, 10)
+                : date('Y-m-d');
+
+            $affected = $this->db->table('bookings b')
+                ->select('b.id, b.user_id')
+                ->join('booking_assets ba', 'ba.booking_id = b.id', 'inner')
+                ->where('ba.asset_id', $assetId)
+                ->where('b.date', $maintenanceDate)
+                ->whereIn('b.status', ['PENDING', 'APPROVED'])
+                ->get()
+                ->getResultArray();
+
+            $bookingMessage = 'An asset you booked (' . $assetName . ' in ' . $labName . ') is currently under active maintenance. Your booking may be affected — please check your booking status or contact the lab administrator.';
+
+            foreach ($affected as $booking) {
+                $uid = (int) ($booking['user_id'] ?? 0);
+                if ($uid <= 0 || isset($notifiedUserIds[$uid])) {
+                    continue;
+                }
+
+                $bookingLink = $this->bookingDashboardLink($uid, (int) $booking['id']);
+                $this->createUserNotifications([$uid], 'maintenance', 'Booked Asset Under Maintenance', $bookingMessage, $bookingLink, 'maintenance', $maintenanceId);
+                $notifiedUserIds[$uid] = true;
+
+                $bookingEmail = strtolower(trim((string) ($this->emailForUserId($uid) ?? '')));
+                if ($bookingEmail !== '' && ! isset($sentEmails[$bookingEmail])) {
+                    $this->sendEmail(
+                        [$bookingEmail],
+                        'FKMP Smart Lab: Your Booked Asset Is Under Maintenance',
+                        $this->emailTemplate('Booked Asset Under Maintenance', [
+                            $bookingMessage,
+                            'Asset: ' . $assetName,
+                            'Laboratory: ' . $labName,
+                            'Case: ' . $caseTitle,
+                        ], site_url($bookingLink), 'View Booking Status'),
+                        null,
+                        $emailContext
+                    );
+                    $sentEmails[$bookingEmail] = true;
+                }
+            }
+        }
+    }
+
     public function notifyMaintenanceCompleted(int $maintenanceId): void
     {
         $context = $this->maintenanceContext($maintenanceId);
@@ -492,6 +611,80 @@ class NotificationService
                 ['entity_type' => 'asset', 'entity_id' => $assetId, 'notification_type' => 'maintenance_due']
             );
         }
+    }
+
+    public function notifyExternalAccessSubmitted(int $requestId): void
+    {
+        if ($requestId <= 0) {
+            return;
+        }
+
+        $row = $this->db->table('external_access_requests')
+            ->where('id', $requestId)
+            ->get()
+            ->getRowArray();
+
+        if (! $row) {
+            return;
+        }
+
+        $adminLink   = '/admin/external-access/' . $requestId;
+        $purposeSnip = mb_substr(trim((string) ($row['purpose'] ?? '')), 0, 120);
+        $message     = 'New external access request from ' . ($row['full_name'] ?? 'Unknown') . ' (' . ($row['organization'] ?? '-') . ')'
+            . ($purposeSnip !== '' ? '. Purpose: ' . $purposeSnip : '');
+
+        $adminIds = $this->groupUserIds('admin');
+        $this->createUserNotifications($adminIds, 'external_access', 'New External Access Request', $message, $adminLink, 'external_access_request', $requestId);
+
+        $this->sendEmail(
+            $this->emailsForUserIds($adminIds),
+            'FKMP Smart Lab: New External Access Request Received',
+            $this->emailTemplate('New External Access Request', [
+                'A new external access request has been submitted and is waiting for your review.',
+                'Name: ' . ($row['full_name'] ?? '-'),
+                'Email: ' . ($row['email'] ?? '-'),
+                'Organization: ' . ($row['organization'] ?? '-'),
+                'Purpose: ' . ($row['purpose'] ?? '-'),
+            ], site_url($adminLink), 'Review Request'),
+            null,
+            ['entity_type' => 'external_access_request', 'entity_id' => $requestId, 'notification_type' => 'external_access']
+        );
+    }
+
+    public function notifyExternalAccessRejected(int $requestId, string $rejectionReason = ''): void
+    {
+        if ($requestId <= 0) {
+            return;
+        }
+
+        $row = $this->db->table('external_access_requests')
+            ->where('id', $requestId)
+            ->get()
+            ->getRowArray();
+
+        $applicantEmail = strtolower(trim((string) ($row['email'] ?? '')));
+        if (! $row || $applicantEmail === '') {
+            return;
+        }
+
+        $paragraphs = [
+            'Thank you for submitting your request to access the FKMP Smart Laboratory Management System.',
+            'Unfortunately, your application has not been approved at this time.',
+        ];
+
+        if ($rejectionReason !== '') {
+            $paragraphs[] = 'Reason: ' . htmlspecialchars($rejectionReason, ENT_QUOTES, 'UTF-8');
+        }
+
+        $paragraphs[] = 'If you believe this is in error or need further assistance, please contact the lab administrator.';
+
+        $this->sendEmail(
+            [$applicantEmail],
+            'FKMP Smart Lab: External Access Request Not Approved',
+            $this->emailTemplate('External Access Request Not Approved', $paragraphs),
+            null,
+            ['entity_type' => 'external_access_request', 'entity_id' => $requestId, 'notification_type' => 'external_access']
+        );
     }
 
     protected function reminderAlreadySent(int $bookingId): bool
@@ -773,13 +966,25 @@ class NotificationService
 
     protected function bookingDashboardLink(int $userId, int $bookingId): string
     {
-        $isStaff = $userId > 0 && $this->db->table('auth_groups_users')
-            ->where('user_id', $userId)
-            ->where('group', 'staff')
-            ->countAllResults() > 0;
+        if ($userId > 0) {
+            $row = $this->db->table('auth_groups_users')
+                ->select('group')
+                ->where('user_id', $userId)
+                ->whereIn('group', ['staff', 'external'])
+                ->get()
+                ->getRowArray();
 
-        $base = $isStaff ? '/dashboard/staff' : '/dashboard/student';
-        return $base . '?focus_booking=' . $bookingId;
+            $userGroup = $row['group'] ?? '';
+            if ($userGroup === 'external') {
+                // External users cannot access /dashboard/student; use the public booking page instead.
+                return '/open/booking/' . $bookingId;
+            }
+            if ($userGroup === 'staff') {
+                return '/dashboard/staff?focus_booking=' . $bookingId;
+            }
+        }
+
+        return '/dashboard/student?focus_booking=' . $bookingId;
     }
 
     protected function googleCalendarLink(array $context): string

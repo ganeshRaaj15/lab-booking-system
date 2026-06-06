@@ -39,6 +39,7 @@ class NativeLaboratoryController extends WebLaboratoryController
 
         $assets = $this->assets
             ->where('lab_id', $labId)
+            ->where('status !=', 'decommissioned')
             ->orderBy('name', 'ASC')
             ->findAll();
 

@@ -106,7 +106,7 @@ class Filters extends BaseFilters
         ],
         'after' => [
             'honeypot'     => ['except' => ['api/*']],
-            // 'secureheaders',
+            'secureheaders',
             'toolbar'      => ['except' => ['api/*']],
         ],
     ];

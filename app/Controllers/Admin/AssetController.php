@@ -40,7 +40,7 @@ class AssetController extends BaseController
             'lab_id' => (int) $this->request->getGet('lab_id'),
             'status' => trim((string) $this->request->getGet('status')),
         ];
-        if (! in_array($filters['status'], ['available', 'maintenance', 'faulty'], true)) {
+        if (! in_array($filters['status'], ['available', 'maintenance', 'faulty', 'decommissioned'], true)) {
             $filters['status'] = '';
         }
 
@@ -69,7 +69,9 @@ class AssetController extends BaseController
         $assets = $builder
             ->orderBy('laboratories.name', 'ASC')
             ->orderBy('assets.name', 'ASC')
-            ->findAll();
+            ->paginate(20);
+
+        $pager = $this->assetModel->pager;
 
         $maintenanceStats = [];
         $statsRows = $this->maintenanceModel
@@ -100,10 +102,11 @@ class AssetController extends BaseController
         unset($asset);
 
         return view('admin/assets/index', [
-            'assets' => $assets,
-            'labs' => $this->labModel->orderBy('name', 'ASC')->findAll(),
-            'filters' => $filters,
-            'statusOptions' => ['available', 'maintenance', 'faulty'],
+            'assets'           => $assets,
+            'pager'            => $pager,
+            'labs'             => $this->labModel->orderBy('name', 'ASC')->findAll(),
+            'filters'          => $filters,
+            'statusOptions'    => ['available', 'maintenance', 'faulty', 'decommissioned'],
             'intelligenceStats' => $intelligenceService->stats($intelligenceMap),
         ]);
     }
@@ -213,6 +216,10 @@ class AssetController extends BaseController
             return redirect()->back()->withInput()->with('errors', ['asset_code' => $duplicateMessage]);
         }
 
+        // Preserve decommissioned status — admin must use the explicit decommission action to change it.
+        if (in_array($asset['status'] ?? '', $this->assetModel->permanentStatuses(), true)) {
+            return redirect()->to('/admin/assets')->with('error', 'Decommissioned assets cannot be edited. Restore the asset status first if needed.');
+        }
         $openUnits = min($this->assetModel->openMaintenanceUnits((int) $id), $payload['total_quantity']);
         $payload['quantity'] = max($payload['total_quantity'] - $openUnits, 0);
         $payload['status'] = $openUnits > 0 ? 'maintenance' : 'available';
@@ -221,6 +228,32 @@ class AssetController extends BaseController
         $this->assetModel->syncManagedAvailability((int) $id);
 
         return redirect()->to('/admin/assets')->with('message', 'Asset updated successfully.');
+    }
+
+    /**
+     * POST /admin/assets/decommission/:id
+     * Mark an asset as decommissioned (non-destructive; sets quantity=0, status=decommissioned).
+     * Can also be used to restore a decommissioned asset back to available.
+     */
+    public function decommission($id)
+    {
+        $asset = $this->assetModel->find($id);
+        if (! $asset) {
+            return redirect()->to('/admin/assets')->with('error', 'Asset not found.');
+        }
+
+        $action = trim((string) $this->request->getPost('action'));
+
+        if ($action === 'restore') {
+            // Restore: recalculate availability from open maintenance units.
+            $this->assetModel->update($id, ['status' => 'available', 'quantity' => (int) ($asset['total_quantity'] ?? 1)]);
+            $this->assetModel->syncManagedAvailability((int) $id);
+            return redirect()->to('/admin/assets')->with('message', 'Asset restored to active status.');
+        }
+
+        // Decommission: zero out quantity and mark permanently out of service.
+        $this->assetModel->update($id, ['status' => 'decommissioned', 'quantity' => 0]);
+        return redirect()->to('/admin/assets')->with('message', 'Asset marked as decommissioned.');
     }
 
     public function delete($id)

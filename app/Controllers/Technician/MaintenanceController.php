@@ -341,6 +341,11 @@ class MaintenanceController extends BaseController
                 fn(NotificationService $notifications) => $notifications->notifyMaintenanceScheduled($id),
                 'maintenance rescheduled'
             );
+        } elseif ($targetStatus === 'in_progress') {
+            NotificationService::dispatchSafely(
+                fn(NotificationService $notifications) => $notifications->notifyMaintenanceInProgress($id),
+                'maintenance in progress'
+            );
         } elseif ($targetStatus === 'completed') {
             NotificationService::dispatchSafely(
                 fn(NotificationService $notifications) => $notifications->notifyMaintenanceCompleted($id),
