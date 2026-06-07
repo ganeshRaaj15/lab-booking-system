@@ -40,7 +40,7 @@ $heroFallbackUrl = base_url('images/fkmp/FKMP.jpeg');
                 </div>
                 <div>
                     <h2 class="auth-shell__brand-name">SLAMS</h2>
-                    <p class="auth-shell__brand-copy">Smart Laboratory Access Management System</p>
+                    <p class="auth-shell__brand-copy">Smart Laboratory and Asset Management System</p>
                 </div>
             </div>
 
@@ -113,10 +113,6 @@ $heroFallbackUrl = base_url('images/fkmp/FKMP.jpeg');
                     </button>
                 </form>
 
-                <p class="auth-shell__footer">
-                    Need access first?
-                    <a href="<?= url_to('register') ?>">Create your account</a>
-                </p>
             </div>
         </div>
     </section>

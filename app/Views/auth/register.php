@@ -118,10 +118,6 @@ $heroFallbackUrl = base_url('images/fkmp/FKMP.jpeg');
                     </button>
                 </form>
 
-                <p class="auth-shell__footer">
-                    Already registered?
-                    <a href="<?= url_to('login') ?>">Sign in here</a>
-                </p>
             </div>
         </div>
     </section>
