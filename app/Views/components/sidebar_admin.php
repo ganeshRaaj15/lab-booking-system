@@ -29,6 +29,10 @@
         <i class="bi bi-clipboard-data"></i> External Requests
     </a>
 
+    <a href="/admin/reservations" class="sidebar-link <?= url_is('admin/reservations*') ? 'active' : '' ?>">
+        <i class="bi bi-calendar-check"></i> Lab Reservations
+    </a>
+
     <a href="/admin/settings" class="sidebar-link <?= url_is('admin/settings') ? 'active' : '' ?>">
         <i class="bi bi-gear"></i> System Settings
     </a>

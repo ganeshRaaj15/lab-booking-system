@@ -513,6 +513,66 @@ class NotificationService
         }
     }
 
+    /**
+     * Notify a user that their booking was automatically cancelled because a
+     * maintenance record for one of its assets just transitioned to in_progress.
+     *
+     * @param array $booking  Full booking row (id, user_id, date, start_time, end_time, lab_id)
+     * @param array $ctx      maintenanceContext() result with asset_name, lab_name, pic_name, pic_email
+     */
+    public function notifyBookingCancelledByMaintenance(array $booking, array $ctx): void
+    {
+        $uid = (int) ($booking['user_id'] ?? 0);
+        if ($uid <= 0) {
+            return;
+        }
+
+        $assetName = $ctx['asset_name'] ?? 'equipment';
+        $labName   = $ctx['lab_name']   ?? 'the laboratory';
+        $picName   = $ctx['pic_name']   ?? '';
+        $picEmail  = $ctx['pic_email']  ?? '';
+
+        $date  = isset($booking['date'])       ? date('d M Y', strtotime((string) $booking['date']))       : '';
+        $start = isset($booking['start_time']) ? substr((string) $booking['start_time'], 0, 5) : '';
+        $end   = isset($booking['end_time'])   ? substr((string) $booking['end_time'],   0, 5) : '';
+
+        $contactLine = ($picName !== '' || $picEmail !== '')
+            ? ' Contact ' . ($picName ?: 'the PIC') . ($picEmail !== '' ? ' at ' . $picEmail : '') . ' to reschedule.'
+            : ' Please contact the lab administrator to reschedule.';
+
+        $message = 'Your booking on ' . $date . ' (' . $start . '–' . $end . ') at ' . $labName
+            . ' has been automatically cancelled because ' . $assetName
+            . ' is now under active maintenance.' . $contactLine;
+
+        $bookingLink = $this->bookingDashboardLink($uid, (int) $booking['id']);
+
+        $this->createUserNotifications(
+            [$uid],
+            'booking',
+            'Booking Cancelled – Maintenance',
+            $message,
+            $bookingLink,
+            'booking',
+            (int) $booking['id']
+        );
+
+        $userEmail = strtolower(trim((string) ($this->emailForUserId($uid) ?? '')));
+        if ($userEmail !== '') {
+            $this->sendEmail(
+                [$userEmail],
+                'FKMP Smart Lab: Your Booking Has Been Cancelled',
+                $this->emailTemplate('Booking Cancelled – Maintenance', [
+                    $message,
+                    'Booking Date: ' . $date . ' · ' . $start . '–' . $end,
+                    'Laboratory: ' . $labName,
+                    'Reason: ' . $assetName . ' is under active maintenance.',
+                ], site_url($bookingLink), 'View My Bookings'),
+                null,
+                ['entity_type' => 'booking', 'entity_id' => (int) $booking['id'], 'notification_type' => 'booking']
+            );
+        }
+    }
+
     public function notifyMaintenanceCompleted(int $maintenanceId): void
     {
         $context = $this->maintenanceContext($maintenanceId);

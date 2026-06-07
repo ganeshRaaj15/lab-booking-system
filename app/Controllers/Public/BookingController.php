@@ -10,6 +10,7 @@ use App\Models\BookingModel;
 use App\Models\BookingApplicantModel;
 use App\Models\BookingAssetModel;
 use App\Models\AssetModel;
+use App\Models\LabReservationModel;
 use App\Models\LabServiceModel;
 use CodeIgniter\HTTP\ResponseInterface;
 use Config\Services;
@@ -204,8 +205,9 @@ class BookingController extends BaseController
     {
         if (empty($selected)) return [];
 
-        $db = \Config\Database::connect();
-        $bookingModel = new BookingModel();
+        $db               = \Config\Database::connect();
+        $bookingModel     = new BookingModel();
+        $reservationModel = new LabReservationModel();
         $today = date('Y-m-d');
         $slotDefs = $this->getSlotDefinitions();
 
@@ -226,6 +228,10 @@ class BookingController extends BaseController
 
             foreach ($slotDefs as $slot) {
                 if ($bookingModel->hasLabConflict($labId, $date, $slot['start'], $slot['end'])) {
+                    continue;
+                }
+
+                if ($reservationModel->conflictsWithSlot($labId, $date, $slot['start'], $slot['end'])) {
                     continue;
                 }
 
@@ -274,8 +280,9 @@ class BookingController extends BaseController
 
     protected function dayAssetsInternal(int $labId, string $date, array $selected, ?int $excludeBookingId = null): array
     {
-        $slotDefs     = $this->getSlotDefinitions();
-        $bookingModel = new BookingModel();
+        $slotDefs        = $this->getSlotDefinitions();
+        $bookingModel    = new BookingModel();
+        $reservationModel = new LabReservationModel();
 
         $assetNames = [];
         if (! empty($selected)) {
@@ -301,6 +308,14 @@ class BookingController extends BaseController
             if ($bookingModel->hasLabConflict($labId, $date, $slot['start'], $slot['end'], $excludeBookingId)) {
                 $slotOK = false;
                 $reason = 'Laboratory already booked for this slot.';
+            }
+
+            if ($slotOK) {
+                $res = $reservationModel->conflictsWithSlot($labId, $date, $slot['start'], $slot['end']);
+                if ($res) {
+                    $slotOK = false;
+                    $reason = $res['title'];
+                }
             }
 
             if (! empty($selected)) {
@@ -401,6 +416,14 @@ class BookingController extends BaseController
             return $this->slotJson([
                 'conflict' => true,
                 'reason'   => 'This laboratory already has an active booking for that time.'
+            ]);
+        }
+
+        $reservation = (new LabReservationModel())->conflictsWithSlot($labId, $date, $start, $end);
+        if ($reservation) {
+            return $this->slotJson([
+                'conflict' => true,
+                'reason'   => $reservation['title'],
             ]);
         }
 
@@ -591,6 +614,14 @@ class BookingController extends BaseController
             ]);
         }
 
+        $reservation = (new LabReservationModel())->conflictsWithSlot($labId, $date, $startTime, $endTime);
+        if ($reservation) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'This time slot is reserved: ' . $reservation['title'],
+            ]);
+        }
+
         $remaining = $this->computeRemainingForSlot($labId, $date, $startTime, $endTime, $selectedAssets);
 
         foreach ($selectedAssets as $assetId => $qtyNeeded) {
@@ -616,6 +647,10 @@ class BookingController extends BaseController
             $conflicts = $bookingModel->activeLabConflictsForUpdate($labId, $date, $startTime, $endTime);
             if ($conflicts !== []) {
                 throw new \DomainException('This laboratory slot was just taken. Please choose another time.');
+            }
+
+            if ((new LabReservationModel())->conflictsWithSlot($labId, $date, $startTime, $endTime)) {
+                throw new \DomainException('This time slot is reserved and cannot be booked.');
             }
 
             $remaining = $this->computeRemainingForSlot($labId, $date, $startTime, $endTime, $selectedAssets);

@@ -7,6 +7,7 @@ use App\Libraries\NotificationService;
 use App\Libraries\MaintenanceForecastService;
 use App\Libraries\MaintenancePredictionService;
 use App\Models\AssetModel;
+use App\Models\BookingModel;
 use App\Models\LaboratoryModel;
 use App\Models\MaintenanceLogModel;
 use App\Models\MaintenanceRecordModel;
@@ -342,6 +343,7 @@ class MaintenanceController extends BaseController
                 'maintenance rescheduled'
             );
         } elseif ($targetStatus === 'in_progress') {
+            $this->cancelBookingsForMaintenance($id, $newAssetId, $updateData['title'] ?? '');
             NotificationService::dispatchSafely(
                 fn(NotificationService $notifications) => $notifications->notifyMaintenanceInProgress($id),
                 'maintenance in progress'
@@ -677,6 +679,80 @@ class MaintenanceController extends BaseController
         }
 
         return $currentPath;
+    }
+
+    /**
+     * Cancel all future PENDING/APPROVED bookings that include the given asset,
+     * then fire a per-booking cancellation notification.
+     * Called just before notifyMaintenanceInProgress() in the in_progress transition.
+     */
+    protected function cancelBookingsForMaintenance(int $maintenanceId, int $assetId, string $maintenanceTitle): void
+    {
+        if ($assetId <= 0) {
+            return;
+        }
+
+        $db = \Config\Database::connect();
+
+        $affected = $db->table('bookings b')
+            ->select('b.id, b.user_id, b.date, b.start_time, b.end_time, b.lab_id')
+            ->join('booking_assets ba', 'ba.booking_id = b.id', 'inner')
+            ->where('ba.asset_id', $assetId)
+            ->where('b.date >=', date('Y-m-d'))
+            ->whereIn('b.status', ['PENDING', 'APPROVED'])
+            ->get()
+            ->getResultArray();
+
+        if (empty($affected)) {
+            return;
+        }
+
+        $asset = $this->assetModel->find($assetId);
+        $assetName = $asset['name'] ?? 'Equipment';
+
+        $reason = 'Automatically cancelled: ' . $assetName . ' is now under active maintenance'
+            . ($maintenanceTitle !== '' ? ' (' . $maintenanceTitle . ')' : '') . '.';
+
+        $now = date('Y-m-d H:i:s');
+        $bookingIds = array_column($affected, 'id');
+
+        $db->table('bookings')->whereIn('id', $bookingIds)->update([
+            'status'              => 'CANCELLED',
+            'approved_by_pic'     => 0,
+            'approved_by_manager' => 0,
+            'cancellation_reason' => $reason,
+            'updated_at'          => $now,
+        ]);
+
+        $ctx = $this->maintenanceContext($maintenanceId);
+        if (! $ctx) {
+            return;
+        }
+
+        foreach ($affected as $booking) {
+            NotificationService::dispatchSafely(
+                fn(NotificationService $ns) => $ns->notifyBookingCancelledByMaintenance($booking, $ctx),
+                'booking cancelled by maintenance'
+            );
+        }
+    }
+
+    /**
+     * Retrieve maintenance context needed for cancellation notifications.
+     * Mirrors the private maintenanceContext() in NotificationService.
+     */
+    private function maintenanceContext(int $id): ?array
+    {
+        $row = \Config\Database::connect()
+            ->table('maintenance_records mr')
+            ->select('mr.*, a.name AS asset_name, a.lab_id, l.name AS lab_name, l.pic_name, l.pic_email')
+            ->join('assets a', 'a.id = mr.asset_id', 'left')
+            ->join('laboratories l', 'l.id = a.lab_id', 'left')
+            ->where('mr.id', $id)
+            ->get()
+            ->getRowArray();
+
+        return $row ?: null;
     }
 }
 

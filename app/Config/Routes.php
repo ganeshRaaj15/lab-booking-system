@@ -60,6 +60,7 @@ use App\Controllers\Dashboard\ExternalRequestsController;
 use App\Controllers\Dashboard\PushSubscriptionController;
 use App\Controllers\Dashboard\PicLabManagementController;
 use App\Controllers\Dashboard\PicAssetManagementController;
+use App\Controllers\Dashboard\PicLabReservationController;
 use App\Controllers\Dashboard\ManagerMaintenanceController;
 
 // ---------------------------------------------------------
@@ -71,6 +72,7 @@ use App\Controllers\Approvals\BookingApprovalController;
 // ADMIN CONTROLLERS
 // ---------------------------------------------------------
 use App\Controllers\Admin\ContactSettingsController;
+use App\Controllers\Admin\LabReservationController;
 use App\Controllers\Admin\SettingsController;
 use App\Controllers\Admin\AssetController;
 use App\Controllers\Admin\LaboratoryAdminController;
@@ -502,6 +504,14 @@ $routes->group('dashboard', ['filter' => 'session'], function ($routes) {
     $routes->post('pic/assets/delete/(:num)',            [PicAssetManagementController::class, 'delete/$1'],        ['filter' => 'group:pic']);
     $routes->post('pic/assets/decommission/(:num)',      [PicAssetManagementController::class, 'decommission/$1'],  ['filter' => 'group:pic']);
 
+    // PIC RESERVATION MANAGEMENT
+    $routes->get('pic/reservations',               [PicLabReservationController::class, 'index'],        ['filter' => 'group:pic']);
+    $routes->get('pic/reservations/create',        [PicLabReservationController::class, 'create'],       ['filter' => 'group:pic']);
+    $routes->post('pic/reservations/store',        [PicLabReservationController::class, 'store'],        ['filter' => 'group:pic']);
+    $routes->get('pic/reservations/edit/(:num)',   [PicLabReservationController::class, 'edit/$1'],      ['filter' => 'group:pic']);
+    $routes->post('pic/reservations/update/(:num)',[PicLabReservationController::class, 'update/$1'],    ['filter' => 'group:pic']);
+    $routes->post('pic/reservations/delete/(:num)',[PicLabReservationController::class, 'delete/$1'],    ['filter' => 'group:pic']);
+
     // MANAGER DASHBOARD
     $routes->get('manager', [ManagerDashboard::class, 'index'], ['filter' => 'group:manager']);
     $routes->get('manager/booking/(:num)', [ManagerDashboard::class, 'getBookingDetails/$1'], ['filter' => 'group:manager']);
@@ -586,6 +596,17 @@ $routes->group('admin', ['filter' => 'group:admin'], function ($routes) {
     $routes->get('external-access/(:num)', [ExternalAccessAdminController::class, 'show/$1']);
     $routes->post('external-access/(:num)/approve', [ExternalAccessAdminController::class, 'approve/$1']);
     $routes->post('external-access/(:num)/reject', [ExternalAccessAdminController::class, 'reject/$1']);
+
+    // Lab Reservations
+    $routes->get('reservations',                         [LabReservationController::class, 'index']);
+    $routes->get('reservations/create',                  [LabReservationController::class, 'create']);
+    $routes->post('reservations/store',                  [LabReservationController::class, 'store']);
+    $routes->get('reservations/edit/(:num)',              [LabReservationController::class, 'edit/$1']);
+    $routes->post('reservations/update/(:num)',           [LabReservationController::class, 'update/$1']);
+    $routes->post('reservations/delete/(:num)',           [LabReservationController::class, 'delete/$1']);
+    $routes->get('reservations/upload',                  [LabReservationController::class, 'uploadForm']);
+    $routes->post('reservations/upload/preview',         [LabReservationController::class, 'uploadPreview']);
+    $routes->post('reservations/upload/confirm',         [LabReservationController::class, 'uploadConfirm']);
 
     // User Management
     $routes->get('users', [UserManagementController::class, 'index']);
