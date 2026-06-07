@@ -1,304 +1,163 @@
-<?php
-$title = 'SLAMS | Create your account';
-$authMode = 'register';
-$heroNightVideoUrl = base_url('images/uthm-aerial-compressed.mp4');
-$heroDayVideoUrl = base_url('images/day-time-aerial-compressed.mp4');
-$heroFallbackUrl = base_url('images/fkmp/FKMP.jpeg');
-
-$heroContent = [
-    'login' => [
-        'title' => 'Sign in to SLAMS',
-        'copy'  => 'Access bookings, approvals, requests, alerts, and the rest of your lab workspace without restarting the background footage when you switch screens.',
-    ],
-    'register' => [
-        'title' => 'Create your account',
-        'copy'  => 'Use your institutional student email for student access. Other sign-ups default to external access until they are reviewed.',
-    ],
-];
-?>
-
 <?= $this->extend('layouts/main_user'); ?>
 <?= $this->section('content'); ?>
 
-<div
-    class="auth-shell"
-    data-auth-shell
-    data-auth-mode="<?= esc($authMode, 'attr') ?>"
-    data-login-url="<?= esc(site_url('/login'), 'attr') ?>"
-    data-register-url="<?= esc(site_url('/register'), 'attr') ?>"
-    data-login-title="<?= esc($heroContent['login']['title'], 'attr') ?>"
-    data-login-copy="<?= esc($heroContent['login']['copy'], 'attr') ?>"
-    data-register-title="<?= esc($heroContent['register']['title'], 'attr') ?>"
-    data-register-copy="<?= esc($heroContent['register']['copy'], 'attr') ?>"
->
-    <div class="auth-shell__hero">
-        <div class="auth-shell__hero-media">
-            <div class="video-background auth-shell__video" aria-hidden="true">
-                <video class="hero-video hero-video-dark" autoplay muted loop playsinline webkit-playsinline preload="auto" poster="<?= esc($heroFallbackUrl, 'attr') ?>">
-                    <source src="<?= esc($heroNightVideoUrl, 'attr') ?>" type="video/mp4">
-                </video>
-                <video class="hero-video hero-video-light" autoplay muted loop playsinline webkit-playsinline preload="auto" poster="<?= esc($heroFallbackUrl, 'attr') ?>">
-                    <source src="<?= esc($heroDayVideoUrl, 'attr') ?>" type="video/mp4">
-                </video>
-            </div>
-            <div class="hero-overlay auth-shell__hero-overlay" aria-hidden="true"></div>
 
-            <div class="auth-shell__hero-card" aria-live="polite">
-                <p class="auth-shell__eyebrow">SLAMS</p>
-                <h1 class="auth-shell__hero-title" data-auth-hero-title>
-                    <?= esc($heroContent[$authMode]['title']) ?>
-                </h1>
-                <p class="auth-shell__hero-copy" data-auth-hero-copy>
-                    <?= esc($heroContent[$authMode]['copy']) ?>
-                </p>
-            </div>
+
+
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="auth-logo">
+            <i class="bi bi-person-plus"></i>
         </div>
-    </div>
+        <h3 class="auth-title mb-1">FKMP Smart Lab</h3>
+        <p class="auth-subtitle">Create your account to start booking equipment</p>
 
-    <div class="auth-shell__form-column">
-        <div class="auth-shell__form-card">
-            <div class="auth-shell__brand">
-                <div class="auth-shell__brand-badge" aria-hidden="true">
-                    <i class="bi bi-building-gear"></i>
+        <!-- SHOW ERRORS -->
+        <?php if (session()->has('errors')): ?>
+            <div class="alert alert-danger">
+                <?php foreach (session('errors') as $error): ?>
+                    <?= esc($error) ?><br>
+                <?php endforeach ?>
+            </div>
+        <?php endif; ?>
+
+        <form action="<?= url_to('register') ?>" method="post">
+            <?= csrf_field() ?>
+
+            <div class="mb-3">
+                <label class="form-label small fw-semibold">Username</label>
+                <input type="text" name="username"
+                       class="form-control form-control-lg"
+                       placeholder="Choose a username"
+                       value="<?= old('username') ?>" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label small fw-semibold">Email Address</label>
+                <input type="email" name="email"
+                       class="form-control form-control-lg"
+                       placeholder="you@example.com"
+                       value="<?= old('email') ?>" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label small fw-semibold">Password</label>
+                <div class="password-wrapper">
+                    <input type="password" id="password" name="password"
+                           class="form-control form-control-lg"
+                           placeholder="Create a password" required>
+                    <button type="button" class="toggle-password" id="togglePassword" aria-label="Show password">
+                        <i class="bi bi-eye-slash"></i>
+                    </button>
                 </div>
-                <div>
-                    <p class="auth-shell__brand-name">SLAMS</p>
-                    <p class="auth-shell__brand-copy">Smart Lab Administration &amp; Management System</p>
+                <div id="passwordCriteria" class="mt-2 small d-none">
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="pw-rule" data-rule="length"><i class="bi bi-circle me-1"></i>8+ characters</span>
+                        <span class="pw-rule" data-rule="upper"><i class="bi bi-circle me-1"></i>Uppercase</span>
+                        <span class="pw-rule" data-rule="lower"><i class="bi bi-circle me-1"></i>Lowercase</span>
+                        <span class="pw-rule" data-rule="number"><i class="bi bi-circle me-1"></i>Number</span>
+                        <span class="pw-rule" data-rule="special"><i class="bi bi-circle me-1"></i>Special character</span>
+                    </div>
                 </div>
             </div>
 
-            <div class="auth-shell__switcher" role="tablist" aria-label="Authentication pages">
-                <a
-                    id="auth-shell-login-tab"
-                    href="<?= site_url('/login') ?>"
-                    class="auth-shell__switcher-link"
-                    data-auth-mode-link="login"
-                    data-auth-mode-tab
-                    role="tab"
-                    aria-controls="auth-shell-login-panel"
-                    aria-selected="false"
-                >
-                    Sign In
-                </a>
-                <a
-                    id="auth-shell-register-tab"
-                    href="<?= site_url('/register') ?>"
-                    class="auth-shell__switcher-link is-active"
-                    data-auth-mode-link="register"
-                    data-auth-mode-tab
-                    role="tab"
-                    aria-controls="auth-shell-register-panel"
-                    aria-selected="true"
-                >
-                    Create Account
-                </a>
+            <div class="mb-3">
+                <label class="form-label small fw-semibold">Confirm Password</label>
+                <div class="password-wrapper">
+                    <input type="password" id="pass_confirm" name="password_confirm"
+                           class="form-control form-control-lg"
+                           placeholder="Re-enter password" required>
+                    <button type="button" class="toggle-password" id="togglePasswordConfirm" aria-label="Show password">
+                        <i class="bi bi-eye-slash"></i>
+                    </button>
+                </div>
             </div>
 
-            <section
-                id="auth-shell-login-panel"
-                class="auth-shell__panel"
-                data-auth-panel="login"
-                role="tabpanel"
-                aria-labelledby="auth-shell-login-tab auth-shell-login-title"
-                hidden
-            >
-                <div class="auth-shell__panel-header">
-                    <h2 id="auth-shell-login-title" class="auth-shell__panel-title">Welcome back</h2>
-                    <p class="auth-shell__panel-copy">Sign in with your SLAMS account to continue.</p>
-                </div>
+            <button type="submit" class="btn btn-fkmp-auth mb-3">
+                <i class="bi bi-person-plus-fill me-1"></i> Create Account
+            </button>
 
-                <form action="<?= url_to('login') ?>" method="post" class="auth-shell__form-stack">
-                    <?= csrf_field() ?>
-
-                    <div class="mb-3">
-                        <label for="loginEmail" class="form-label">Email Address</label>
-                        <input
-                            type="email"
-                            name="email"
-                            id="loginEmail"
-                            class="form-control form-control-lg"
-                            placeholder="Enter your email address"
-                            value="<?= esc(old('email') ?? '', 'attr') ?>"
-                            autocomplete="email"
-                            required
-                        >
-                        <small class="text-muted mt-1 d-block">Use your institutional email whenever possible.</small>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="loginPassword" class="form-label">Password</label>
-                        <div class="password-wrapper">
-                            <input
-                                type="password"
-                                name="password"
-                                id="loginPassword"
-                                class="form-control form-control-lg"
-                                placeholder="Enter your password"
-                                autocomplete="current-password"
-                                required
-                            >
-                            <button
-                                type="button"
-                                class="toggle-password"
-                                data-password-toggle
-                                data-password-target="loginPassword"
-                                aria-label="Show password"
-                            >
-                                <i class="bi bi-eye-slash"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="login-options">
-                        <div class="form-check">
-                            <input type="checkbox" name="remember" id="remember" class="form-check-input" <?= old('remember') ? 'checked' : '' ?>>
-                            <label for="remember" class="form-check-label">Remember me</label>
-                        </div>
-                        <a href="<?= url_to('magic-link') ?>" class="magic-link">
-                            <i class="bi bi-key me-1"></i>Forgot password?
-                        </a>
-                    </div>
-
-                    <button type="submit" class="login-btn">
-                        <i class="bi bi-box-arrow-in-right me-2"></i>
-                        Sign In
-                    </button>
-                </form>
-
-                <div class="auth-shell__footer">
-                    <p class="mb-2">Need access for the first time?</p>
-                    <a href="<?= site_url('/register') ?>" class="register-btn" data-auth-mode-link="register">
-                        <i class="bi bi-person-plus me-1"></i>
-                        Create New Account
-                    </a>
-                </div>
-            </section>
-
-            <section
-                id="auth-shell-register-panel"
-                class="auth-shell__panel"
-                data-auth-panel="register"
-                role="tabpanel"
-                aria-labelledby="auth-shell-register-tab auth-shell-register-title"
-            >
-                <div class="auth-shell__panel-header">
-                    <h2 id="auth-shell-register-title" class="auth-shell__panel-title">Create your account</h2>
-                    <p class="auth-shell__panel-copy">Student emails are mapped automatically when the domain matches the configured student domain.</p>
-                </div>
-
-                <?php if (session()->has('errors')): ?>
-                    <div class="alert alert-danger">
-                        <?php foreach ((array) session('errors') as $error): ?>
-                            <div><?= esc($error) ?></div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
-
-                <form action="<?= url_to('register') ?>" method="post" class="auth-shell__form-stack">
-                    <?= csrf_field() ?>
-
-                    <div class="mb-3">
-                        <label for="registerUsername" class="form-label small fw-semibold">Username</label>
-                        <input
-                            type="text"
-                            name="username"
-                            id="registerUsername"
-                            class="form-control form-control-lg"
-                            placeholder="Choose a username"
-                            value="<?= esc(old('username') ?? '', 'attr') ?>"
-                            autocomplete="username"
-                            required
-                            autofocus
-                        >
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="registerEmail" class="form-label small fw-semibold">Email Address</label>
-                        <input
-                            type="email"
-                            name="email"
-                            id="registerEmail"
-                            class="form-control form-control-lg"
-                            placeholder="you@example.com"
-                            value="<?= esc(old('email') ?? '', 'attr') ?>"
-                            autocomplete="email"
-                            required
-                        >
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="registerPassword" class="form-label small fw-semibold">Password</label>
-                        <div class="password-wrapper">
-                            <input
-                                type="password"
-                                name="password"
-                                id="registerPassword"
-                                class="form-control form-control-lg"
-                                placeholder="Create a password"
-                                autocomplete="new-password"
-                                required
-                            >
-                            <button
-                                type="button"
-                                class="toggle-password"
-                                data-password-toggle
-                                data-password-target="registerPassword"
-                                aria-label="Show password"
-                            >
-                                <i class="bi bi-eye-slash"></i>
-                            </button>
-                        </div>
-                        <div data-password-criteria class="auth-shell__password-criteria mt-2 small d-none">
-                            <div class="d-flex flex-wrap gap-2">
-                                <span class="pw-rule" data-rule="length"><i class="bi bi-circle me-1"></i>8+ characters</span>
-                                <span class="pw-rule" data-rule="upper"><i class="bi bi-circle me-1"></i>Uppercase</span>
-                                <span class="pw-rule" data-rule="lower"><i class="bi bi-circle me-1"></i>Lowercase</span>
-                                <span class="pw-rule" data-rule="number"><i class="bi bi-circle me-1"></i>Number</span>
-                                <span class="pw-rule" data-rule="special"><i class="bi bi-circle me-1"></i>Special character</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="registerPasswordConfirm" class="form-label small fw-semibold">Confirm Password</label>
-                        <div class="password-wrapper">
-                            <input
-                                type="password"
-                                name="password_confirm"
-                                id="registerPasswordConfirm"
-                                class="form-control form-control-lg"
-                                placeholder="Re-enter password"
-                                autocomplete="new-password"
-                                required
-                            >
-                            <button
-                                type="button"
-                                class="toggle-password"
-                                data-password-toggle
-                                data-password-target="registerPasswordConfirm"
-                                aria-label="Show password"
-                            >
-                                <i class="bi bi-eye-slash"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn btn-fkmp-auth mb-3">
-                        <i class="bi bi-person-plus-fill me-1"></i> Create Account
-                    </button>
-
-                    <p class="auth-shell__inline-footer">
-                        Already have an account?
-                        <a href="<?= site_url('/login') ?>" data-auth-mode-link="login">Sign in here</a>
-                    </p>
-                </form>
-            </section>
-        </div>
+            <p class="auth-footer">
+                Already have an account?
+                <a href="<?= url_to(controller: 'login') ?>">Login here</a>
+            </p>
+        </form>
     </div>
 </div>
 
-<?= $this->endSection(); ?>
+<style>
+.pw-rule {
+    display: inline-flex;
+    align-items: center;
+    color: #6c757d;
+    transition: color 0.2s;
+}
+.pw-rule.met {
+    color: #198754;
+}
+.pw-rule.met .bi::before {
+    content: "\f26b"; /* bi-check-circle-fill */
+}
+</style>
 
-<?= $this->section('scripts'); ?>
-<script src="<?= slams_asset('js/auth-shell.js') ?>"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    function setupPasswordToggle(toggleId, inputId) {
+        const toggle = document.getElementById(toggleId);
+        const input = document.getElementById(inputId);
+
+        if (!toggle || !input) {
+            return;
+        }
+
+        toggle.addEventListener("click", function () {
+            const isHidden = input.type === "password";
+            input.type = isHidden ? "text" : "password";
+            toggle.setAttribute("aria-label", isHidden ? "Hide password" : "Show password");
+            toggle.querySelector("i").classList.toggle("bi-eye", isHidden);
+            toggle.querySelector("i").classList.toggle("bi-eye-slash", !isHidden);
+            input.focus();
+        });
+    }
+
+    setupPasswordToggle("togglePassword", "password");
+    setupPasswordToggle("togglePasswordConfirm", "pass_confirm");
+
+    const passwordInput = document.getElementById("password");
+    const criteriaBox   = document.getElementById("passwordCriteria");
+
+    const rules = {
+        length:  (v) => v.length >= 8,
+        upper:   (v) => /[A-Z]/.test(v),
+        lower:   (v) => /[a-z]/.test(v),
+        number:  (v) => /[0-9]/.test(v),
+        special: (v) => /[^A-Za-z0-9]/.test(v),
+    };
+
+    passwordInput.addEventListener("input", function () {
+        const val = this.value;
+
+        if (val.length === 0) {
+            criteriaBox.classList.add("d-none");
+            return;
+        }
+
+        criteriaBox.classList.remove("d-none");
+
+        criteriaBox.querySelectorAll(".pw-rule").forEach((el) => {
+            const rule = el.dataset.rule;
+            const met  = rules[rule] && rules[rule](val);
+            el.classList.toggle("met", met);
+
+            const icon = el.querySelector("i");
+            if (met) {
+                icon.className = "bi bi-check-circle-fill me-1";
+            } else {
+                icon.className = "bi bi-circle me-1";
+            }
+        });
+    });
+});
+</script>
+
 <?= $this->endSection(); ?>
