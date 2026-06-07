@@ -138,6 +138,8 @@
             ".widget-card",
             ".stats-card",
             ".quick-stat",
+            ".auth-shell__hero-media",
+            ".auth-shell__form-card",
             ".admin-dashboard > .glass-card",
             ".lab-hero",
             ".asset-hero",
