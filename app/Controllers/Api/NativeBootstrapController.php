@@ -71,6 +71,7 @@ class NativeBootstrapController extends BaseController
                 ['id' => 'labs', 'label' => 'Labs'],
                 ['id' => 'issues', 'label' => 'Issues'],
                 ['id' => 'maintenance', 'label' => 'Maintenance'],
+                ['id' => 'reservations', 'label' => 'Reservations'],
                 ['id' => 'approvals', 'label' => 'Approvals'],
                 ['id' => 'requests', 'label' => 'External'],
                 ['id' => 'notifications', 'label' => 'Alerts'],
