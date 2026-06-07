@@ -555,12 +555,12 @@ $routes->post('pic/reservations/delete/(:num)', [PicLabReservationController::cl
 
 $routes->group('booking', ['filter' => 'session'], function ($routes) {
     // Combined filter - any of these groups can access
-    $routes->post('approve/(:num)', [BookingApprovalController::class, 'approve/$1'], 
-        ['filter' => 'group:pic,manager,admin']
+    $routes->post('approve/(:num)', [BookingApprovalController::class, 'approve/$1'],
+        ['filter' => 'group:pic,manager']
     );
-    
-    $routes->post('reject/(:num)', [BookingApprovalController::class, 'reject/$1'], 
-        ['filter' => 'group:pic,manager,admin']
+
+    $routes->post('reject/(:num)', [BookingApprovalController::class, 'reject/$1'],
+        ['filter' => 'group:pic,manager']
     );
 });
 

@@ -308,18 +308,6 @@ $rejected         = $rejected ?? [];
             </div>
             <div class="modal-footer border-0" id="adminBookingFooter" style="display:none;">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <form id="adminRejectForm" method="post" class="d-inline">
-                    <?= csrf_field() ?>
-                    <button type="submit" class="btn btn-outline-danger px-4">
-                        <i class="bi bi-x-lg me-1"></i>Reject
-                    </button>
-                </form>
-                <form id="adminApproveForm" method="post" class="d-inline">
-                    <?= csrf_field() ?>
-                    <button type="submit" class="btn btn-success px-4">
-                        <i class="bi bi-check-lg me-1"></i>Approve
-                    </button>
-                </form>
             </div>
         </div>
     </div>
@@ -598,7 +586,6 @@ function adminViewBooking(id) {
         }
 
         const b = data.booking;
-        const isPending = b.status === 'PENDING';
 
         let assetsHtml = '<p class="text-muted mb-0">No assets selected.</p>';
         if (b.assets && b.assets.length > 0) {
@@ -679,11 +666,7 @@ function adminViewBooking(id) {
             </div>
         `;
 
-        if (isPending) {
-            document.getElementById('adminApproveForm').action = `/booking/approve/${b.id}`;
-            document.getElementById('adminRejectForm').action  = `/booking/reject/${b.id}`;
-            footer.style.display = '';
-        }
+        footer.style.display = '';
     })
     .catch(() => {
         body.innerHTML = `<div class="alert alert-danger">Could not load booking details.</div>`;

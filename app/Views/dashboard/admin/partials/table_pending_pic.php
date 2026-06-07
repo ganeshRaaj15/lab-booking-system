@@ -26,28 +26,12 @@
             <td><?= esc($b['user_id']) ?: 'External' ?></td>
 
             <td class="text-end">
-                <div class="d-flex gap-2 justify-content-end align-items-center flex-nowrap">
-                    <button type="button"
-                            class="btn btn-outline-secondary btn-sm px-3"
-                            onclick="adminViewBooking(<?= (int) $b['id'] ?>)"
-                            title="View full booking details">
-                        <i class="bi bi-eye me-1"></i>View
-                    </button>
-
-                    <form action="/booking/approve/<?= (int) $b['id'] ?>" method="post" class="d-inline">
-                        <?= csrf_field() ?>
-                        <button type="submit" class="btn btn-success btn-sm px-3" title="Approve this booking">
-                            <i class="bi bi-check-lg me-1"></i>Approve
-                        </button>
-                    </form>
-
-                    <form action="/booking/reject/<?= (int) $b['id'] ?>" method="post" class="d-inline">
-                        <?= csrf_field() ?>
-                        <button type="submit" class="btn btn-outline-danger btn-sm px-3" title="Reject this booking">
-                            <i class="bi bi-x-lg me-1"></i>Reject
-                        </button>
-                    </form>
-                </div>
+                <button type="button"
+                        class="btn btn-outline-secondary btn-sm px-3"
+                        onclick="adminViewBooking(<?= (int) $b['id'] ?>)"
+                        title="View full booking details">
+                    <i class="bi bi-eye me-1"></i>View
+                </button>
             </td>
         </tr>
         <?php endforeach ?>
