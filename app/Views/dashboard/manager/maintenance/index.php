@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /** @var array $records */
 /** @var array $statusLabels */
 /** @var array $filters */
@@ -112,8 +112,8 @@ $statusBadge   = ['reported' => 'info', 'scheduled' => 'primary', 'in_progress' 
                         <tbody>
                             <?php foreach ($upcomingForecasts as $forecast): ?>
                                 <?php
-                                $nextDueLabel      = ! empty($forecast['next_due_at'])      ? date('d M Y', strtotime((string) $forecast['next_due_at']))      : '—';
-                                $lastCompletedLabel= ! empty($forecast['last_completed_at']) ? date('d M Y', strtotime((string) $forecast['last_completed_at'])) : '—';
+                                $nextDueLabel      = ! empty($forecast['next_due_at'])      ? date('d-m-Y', strtotime((string) $forecast['next_due_at']))      : '—';
+                                $lastCompletedLabel= ! empty($forecast['last_completed_at']) ? date('d-m-Y', strtotime((string) $forecast['last_completed_at'])) : '—';
                                 $riskBand          = $forecast['risk_band']    ?? 'low';
                                 $riskPercent       = (int) ($forecast['risk_percent'] ?? 0);
                                 $riskBadgeClass    = match ($riskBand) { 'high' => 'text-bg-danger', 'medium' => 'text-bg-warning', default => 'text-bg-success' };
@@ -215,7 +215,7 @@ $statusBadge   = ['reported' => 'info', 'scheduled' => 'primary', 'in_progress' 
                                 </span>
                             </td>
                             <td class="small text-muted">
-                                <?= $rec['created_at'] ? date('d M Y', strtotime((string) $rec['created_at'])) : '—' ?>
+                                <?= $rec['created_at'] ? date('d-m-Y', strtotime((string) $rec['created_at'])) : '—' ?>
                             </td>
                             <td class="text-end">
                                 <a href="/dashboard/manager/maintenance/<?= (int) $rec['id'] ?>"

@@ -1,4 +1,4 @@
-<?= $this->extend($layout ?? 'layouts/main_user') ?>
+﻿<?= $this->extend($layout ?? 'layouts/main_user') ?>
 <?= $this->section('content') ?>
 
 <div class="container-fluid">
@@ -28,7 +28,7 @@
                 </div>
                 <div>
                     <div class="text-muted small">Generated</div>
-                    <div class="fw-semibold"><?= esc(! empty($email['created_at']) ? date('d M Y H:i', strtotime($email['created_at'])) : '-') ?></div>
+                    <div class="fw-semibold"><?= esc(! empty($email['created_at']) ? date('d-m-Y H:i', strtotime($email['created_at'])) : '-') ?></div>
                 </div>
             </div>
             <?php if (! empty($email['has_attachment'])): ?>

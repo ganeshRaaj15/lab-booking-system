@@ -1,4 +1,4 @@
-<?= $this->extend('layouts/main_admin') ?>
+﻿<?= $this->extend('layouts/main_admin') ?>
 <?= $this->section('content') ?>
 
 <?php
@@ -151,7 +151,7 @@ $intelligence = $intelligence ?? [
                         <div class="small text-muted">Booked usage in last 90 days: <?= esc((int) ($intelligence['booking_units_last_90d'] ?? 0)) ?></div>
                         <div class="small text-muted">Days since last booking: <?= esc((int) ($intelligence['days_since_last_booking'] ?? 0)) ?></div>
                         <?php if (!empty($intelligence['next_due_at'])): ?>
-                            <div class="small text-muted">Next estimated due date: <?= esc(date('d M Y', strtotime($intelligence['next_due_at']))) ?></div>
+                            <div class="small text-muted">Next estimated due date: <?= esc(date('d-m-Y', strtotime($intelligence['next_due_at']))) ?></div>
                         <?php endif; ?>
                         <?php if (!empty($intelligence['reasons'])): ?>
                             <div class="small mt-3">
@@ -179,7 +179,7 @@ $intelligence = $intelligence ?? [
                                         <div class="small text-muted text-uppercase"><?= esc(str_replace('_', ' ', $record['status'])) ?> | <?= esc($record['priority']) ?></div>
                                         <div class="small text-muted">Affected units: <?= esc((int) ($record['quantity_affected'] ?? 1)) ?></div>
                                         <div class="small text-muted">Assigned PIC: <?= esc($record['technician_name'] ?: $record['technician_username'] ?: '-') ?></div>
-                                        <div class="small text-muted">Updated: <?= esc($record['updated_at'] ? date('d M Y H:i', strtotime($record['updated_at'])) : '-') ?></div>
+                                        <div class="small text-muted">Updated: <?= esc($record['updated_at'] ? date('d-m-Y H:i', strtotime($record['updated_at'])) : '-') ?></div>
                                         <?php if (!empty($record['resolution_notes'])): ?>
                                             <div class="small mt-2"><?= esc($record['resolution_notes']) ?></div>
                                         <?php endif; ?>

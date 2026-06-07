@@ -1,4 +1,4 @@
-<?= $this->extend('layouts/main_admin') ?>
+﻿<?= $this->extend('layouts/main_admin') ?>
 
 <?= $this->section('content') ?>
 
@@ -52,13 +52,13 @@
                 <div class="stat-label">Roles Assigned</div>
             </div>
             <div class="stat-item">
-                <div class="stat-value"><?= date('M d, Y', strtotime($user->created_at ?? 'now')) ?></div>
+                <div class="stat-value"><?= date('d-m-Y', strtotime($user->created_at ?? 'now')) ?></div>
                 <div class="stat-label">Member Since</div>
             </div>
             <div class="stat-item">
                 <div class="stat-value">
                     <?php 
-                    $lastLogin = $user->last_active ? date('M d', strtotime($user->last_active)) : 'Never';
+                    $lastLogin = $user->last_active ? date('d-m', strtotime($user->last_active)) : 'Never';
                     echo $lastLogin;
                     ?>
                 </div>

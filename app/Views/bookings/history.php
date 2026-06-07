@@ -1,4 +1,4 @@
-<?= $this->extend('layouts/main_user'); ?>
+﻿<?= $this->extend('layouts/main_user'); ?>
 <?= $this->section('content'); ?>
 
 <div class="container py-4">
@@ -26,7 +26,7 @@
                 <tbody>
                     <?php foreach ($bookings as $b): ?>
                         <tr>
-                            <td><?= date('d M Y', strtotime($b['date'])) ?></td>
+                            <td><?= date('d-m-Y', strtotime($b['date'])) ?></td>
 
                             <td><?= date('h:i A', strtotime($b['start_time'])) ?> &ndash;
                                 <?= date('h:i A', strtotime($b['end_time'])) ?></td>

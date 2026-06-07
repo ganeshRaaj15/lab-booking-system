@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /** @var array $stats */
 /** @var array $requests */
 /** @var array $labs */
@@ -174,7 +174,7 @@ $requestModel = $requestModel ?? null;
                                 <td>
                                     <div class="fw-semibold"><?= esc($request['organization_name'] ?? '-') ?></div>
                                     <div class="small text-muted"><?= esc($request['contact_name'] ?? '-') ?>, <?= esc($request['participant_count'] ?? 0) ?> participant(s)</div>
-                                    <div class="small text-muted">Submitted <?= esc(!empty($request['created_at']) ? date('d M Y H:i', strtotime((string) $request['created_at'])) : '-') ?></div>
+                                    <div class="small text-muted">Submitted <?= esc(!empty($request['created_at']) ? date('d-m-Y H:i', strtotime((string) $request['created_at'])) : '-') ?></div>
                                     <div class="small text-muted">Current stage: <?= esc($requestModel ? $requestModel->stageLabel($requestModel->currentApprovalStage($request)) : ucfirst((string) ($request['current_approval_stage'] ?? 'pic'))) ?></div>
                                 </td>
                                 <td>

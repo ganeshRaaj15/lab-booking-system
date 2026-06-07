@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /** @var array $stats */
 /** @var array $analytics */
 /** @var string $activeTab */
@@ -236,7 +236,7 @@ $topAtRisk = $equipmentHealth['topAtRisk'] ?? [];
                                     'medium' => 'var(--bs-warning)',
                                     default => 'var(--bs-success)',
                                 };
-                                $arDueLabel = $ar['next_due_at'] ? date('d M Y', strtotime($ar['next_due_at'])) : '-';
+                                $arDueLabel = $ar['next_due_at'] ? date('d-m-Y', strtotime($ar['next_due_at'])) : '-';
                             ?>
                             <tr>
                                 <td class="ps-3">

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /** @var array $stats */
 /** @var array $trends */
 /** @var array $facultyBreakdown */
@@ -38,7 +38,7 @@ $rejected         = $rejected ?? [];
                     <i class="bi bi-calendar-week"></i>
                     <div>
                         <div class="small text-muted">Today</div>
-                        <div class="fw-bold"><?= date('d M Y') ?></div>
+                        <div class="fw-bold"><?= date('d-m-Y') ?></div>
                     </div>
                 </div>
                 <div class="quick-stat">

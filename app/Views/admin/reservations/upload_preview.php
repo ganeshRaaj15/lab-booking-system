@@ -1,4 +1,4 @@
-<?= $this->extend('layouts/main_admin') ?>
+﻿<?= $this->extend('layouts/main_admin') ?>
 <?= $this->section('content') ?>
 
 <?php
@@ -42,8 +42,8 @@ $errors   = array_filter($rows, fn($r) => ! empty($r['error']));
                                     <td><?= esc($row['title']) ?></td>
                                     <td><?= esc($row['day_label'] ?? ($dayNames[$row['day_of_week']] ?? '?')) ?></td>
                                     <td class="text-nowrap"><?= esc(substr($row['start_time'], 0, 5)) ?> – <?= esc(substr($row['end_time'], 0, 5)) ?></td>
-                                    <td><?= $row['valid_from']  ? esc(date('d M Y', strtotime($row['valid_from'])))  : '—' ?></td>
-                                    <td><?= $row['valid_until'] ? esc(date('d M Y', strtotime($row['valid_until']))) : '—' ?></td>
+                                    <td><?= $row['valid_from']  ? esc(date('d-m-Y', strtotime($row['valid_from'])))  : '—' ?></td>
+                                    <td><?= $row['valid_until'] ? esc(date('d-m-Y', strtotime($row['valid_until']))) : '—' ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>

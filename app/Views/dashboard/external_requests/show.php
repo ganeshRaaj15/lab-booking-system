@@ -1,4 +1,4 @@
-<?= $this->extend($layout) ?>
+﻿<?= $this->extend($layout) ?>
 
 <?= $this->section('content') ?>
 
@@ -169,7 +169,7 @@ $latestNote = $requestModel ? $requestModel->latestRequesterNote($requestRecord)
 
                     <div class="col-12">
                         <div class="small text-muted">Last updated</div>
-                        <div><?= esc(!empty($requestRecord['updated_at']) ? date('d M Y H:i', strtotime((string) $requestRecord['updated_at'])) : '-') ?></div>
+                        <div><?= esc(!empty($requestRecord['updated_at']) ? date('d-m-Y H:i', strtotime((string) $requestRecord['updated_at'])) : '-') ?></div>
                     </div>
 
                     <?php if ($awaitingAction): ?>

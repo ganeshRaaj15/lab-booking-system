@@ -1,4 +1,4 @@
-<?= $this->extend('layouts/main_admin') ?>
+﻿<?= $this->extend('layouts/main_admin') ?>
 <?= $this->section('content') ?>
 
 <?php
@@ -95,7 +95,7 @@ $dayNames  = $dayNames  ?? [];
                                         <?php if ($r['recurrence'] === 'weekly'): ?>
                                             <span class="badge bg-secondary-subtle text-secondary">Every <?= esc($dayNames[(int) $r['day_of_week']] ?? '?') ?></span>
                                         <?php else: ?>
-                                            <?= esc(date('d M Y', strtotime((string) $r['date']))) ?>
+                                            <?= esc(date('d-m-Y', strtotime((string) $r['date']))) ?>
                                         <?php endif; ?>
                                     </td>
                                     <td class="text-nowrap">
@@ -103,9 +103,9 @@ $dayNames  = $dayNames  ?? [];
                                     </td>
                                     <td class="small text-muted text-nowrap">
                                         <?php if ($r['recurrence'] === 'weekly'): ?>
-                                            <?= $r['valid_from']  ? esc(date('d M Y', strtotime((string) $r['valid_from'])))  : '∞' ?>
+                                            <?= $r['valid_from']  ? esc(date('d-m-Y', strtotime((string) $r['valid_from'])))  : '∞' ?>
                                             –
-                                            <?= $r['valid_until'] ? esc(date('d M Y', strtotime((string) $r['valid_until']))) : '∞' ?>
+                                            <?= $r['valid_until'] ? esc(date('d-m-Y', strtotime((string) $r['valid_until']))) : '∞' ?>
                                         <?php else: ?>
                                             —
                                         <?php endif; ?>

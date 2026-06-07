@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Controllers\Dashboard;
 
@@ -815,7 +815,7 @@ private function getFacultyDistribution(array $labIds): array
                 $lines[] = 'Recommended action: ' . $decisionLabel . '.';
             }
             if ($nextDueAt !== '') {
-                $lines[] = 'Suggested due date: ' . date('d M Y', strtotime($nextDueAt)) . '.';
+                $lines[] = 'Suggested due date: ' . date('d-m-Y', strtotime($nextDueAt)) . '.';
             }
 
             $reasons = array_values(array_filter(array_map(static fn($reason): string => trim((string) $reason), (array) ($forecast['reasons'] ?? []))));

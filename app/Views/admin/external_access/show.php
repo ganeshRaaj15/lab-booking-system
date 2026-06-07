@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /** @var array $req */
 $req        = $req ?? [];
 $statusBadge = ['pending' => 'warning', 'approved' => 'success', 'rejected' => 'danger'];
@@ -54,11 +54,11 @@ $statusBadge = ['pending' => 'warning', 'approved' => 'success', 'rejected' => '
                         <?php endif; ?>
 
                         <dt class="col-sm-4 text-muted">Submitted</dt>
-                        <dd class="col-sm-8"><?= $req['created_at'] ? date('d M Y H:i', strtotime((string) $req['created_at'])) : '—' ?></dd>
+                        <dd class="col-sm-8"><?= $req['created_at'] ? date('d-m-Y H:i', strtotime((string) $req['created_at'])) : '—' ?></dd>
 
                         <?php if ($req['status'] !== 'pending'): ?>
                         <dt class="col-sm-4 text-muted">Reviewed At</dt>
-                        <dd class="col-sm-8"><?= $req['reviewed_at'] ? date('d M Y H:i', strtotime((string) $req['reviewed_at'])) : '—' ?></dd>
+                        <dd class="col-sm-8"><?= $req['reviewed_at'] ? date('d-m-Y H:i', strtotime((string) $req['reviewed_at'])) : '—' ?></dd>
                         <?php endif; ?>
 
                         <?php if (! empty($req['rejection_reason'])): ?>

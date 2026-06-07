@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /** @var array $record */
 /** @var array $logs */
 /** @var array|null $asset */
@@ -110,7 +110,7 @@ $statusLabel   = $statusLabels[$record['status'] ?? ''] ?? ucfirst((string) ($re
                                     <span class="badge bg-light text-dark border"><?= esc($log['to_status'] ?? '—') ?></span>
                                 </div>
                                 <div class="flex-grow-1">
-                                    <div class="small text-muted"><?= esc($log['full_name'] ?? $log['username'] ?? 'System') ?> &middot; <?= $log['created_at'] ? date('d M Y H:i', strtotime((string) $log['created_at'])) : '—' ?></div>
+                                    <div class="small text-muted"><?= esc($log['full_name'] ?? $log['username'] ?? 'System') ?> &middot; <?= $log['created_at'] ? date('d-m-Y H:i', strtotime((string) $log['created_at'])) : '—' ?></div>
                                     <?php if (! empty($log['notes'])): ?>
                                         <div><?= nl2br(esc($log['notes'])) ?></div>
                                     <?php endif; ?>
@@ -155,7 +155,7 @@ $statusLabel   = $statusLabels[$record['status'] ?? ''] ?? ucfirst((string) ($re
                         <?php if (! empty($record[$field])): ?>
                         <div class="mb-1">
                             <span class="text-muted"><?= $label ?>: </span>
-                            <span><?= date('d M Y H:i', strtotime((string) $record[$field])) ?></span>
+                            <span><?= date('d-m-Y H:i', strtotime((string) $record[$field])) ?></span>
                         </div>
                         <?php endif; ?>
                     <?php endforeach; ?>

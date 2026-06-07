@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /** @var array $assets */
 /** @var array $records */
 /** @var array $filters */
@@ -98,9 +98,9 @@ $priorityBadgeClass = [
                             <?php foreach ($upcomingForecasts as $forecast): ?>
                                 <?php
                                     $nextDueRaw = $forecast['next_due_at'] ?? '';
-                                    $nextDueLabel = $nextDueRaw ? date('d M Y', strtotime($nextDueRaw)) : '-';
+                                    $nextDueLabel = $nextDueRaw ? date('d-m-Y', strtotime($nextDueRaw)) : '-';
                                     $lastCompletedRaw = $forecast['last_completed_at'] ?? '';
-                                    $lastCompletedLabel = $lastCompletedRaw ? date('d M Y', strtotime($lastCompletedRaw)) : '-';
+                                    $lastCompletedLabel = $lastCompletedRaw ? date('d-m-Y', strtotime($lastCompletedRaw)) : '-';
                                     $intervalDays = (int) ($forecast['interval_days'] ?? 0);
                                     $months = $intervalDays > 0 ? max((int) round($intervalDays / 30), 1) : 0;
                                     $cycleLabel = $intervalDays > 0
@@ -226,7 +226,7 @@ $priorityBadgeClass = [
                                         <div class="small"><?= esc($record['reported_by_name'] ?: $record['reported_by_username'] ?: 'System') ?></div>
                                         <div class="small text-muted"><?= esc($record['unit_reference'] ?: 'No unit reference') ?></div>
                                     </td>
-                                    <td><?= esc($record['updated_at'] ? date('d M Y H:i', strtotime($record['updated_at'])) : '-') ?></td>
+                                    <td><?= esc($record['updated_at'] ? date('d-m-Y H:i', strtotime($record['updated_at'])) : '-') ?></td>
                                     <td class="text-end">
                                         <a href="/technician/maintenance/edit/<?= esc($record['id']) ?>" class="btn btn-sm btn-outline-primary">Open Case</a>
                                     </td>

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /** @var array $assets */
 /** @var array $filters */
 /** @var array $labs */
@@ -136,7 +136,7 @@ $unitsInMaintenance = array_sum(array_map(static fn($asset) => (int) ($asset['ma
                                 <td>
                                     <div class="fw-semibold"><?= esc($asset['maintenance_total']) ?> total record(s)</div>
                                     <div class="small text-muted"><?= esc($asset['maintenance_open']) ?> open</div>
-                                    <div class="small text-muted">Last completed: <?= esc($asset['last_completed_at'] ? date('d M Y', strtotime($asset['last_completed_at'])) : '-') ?></div>
+                                    <div class="small text-muted">Last completed: <?= esc($asset['last_completed_at'] ? date('d-m-Y', strtotime($asset['last_completed_at'])) : '-') ?></div>
                                 </td>
                                 <td>
                                     <?php $riskBadge = ($asset['risk_band'] ?? 'low') === 'high' ? 'danger' : (($asset['risk_band'] ?? 'low') === 'medium' ? 'warning text-dark' : 'success'); ?>
@@ -145,7 +145,7 @@ $unitsInMaintenance = array_sum(array_map(static fn($asset) => (int) ($asset['ma
                                     <div class="small text-muted">
                                         <?= esc((int) ($asset['bookings_last_30d'] ?? 0)) ?> bookings in 30d
                                         <?php if (!empty($asset['next_due_at'])): ?>
-                                            | Due <?= esc(date('d M Y', strtotime($asset['next_due_at']))) ?>
+                                            | Due <?= esc(date('d-m-Y', strtotime($asset['next_due_at']))) ?>
                                         <?php endif; ?>
                                     </div>
                                     <?php if (!empty($asset['reasons'][0])): ?>

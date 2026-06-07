@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /** @var array $stats */
 /** @var array $widget */
 /** @var array $labs */
@@ -226,7 +226,7 @@ $pendingExternalPic = $pendingExternalPic ?? [];
                                 'medium' => 'text-bg-warning',
                                 default  => 'text-bg-success',
                             };
-                            $rDue = $atRisk['next_due_at'] ? date('d M Y', strtotime((string) $atRisk['next_due_at'])) : '-';
+                            $rDue = $atRisk['next_due_at'] ? date('d-m-Y', strtotime((string) $atRisk['next_due_at'])) : '-';
                             $rReason = $atRisk['reasons'][0] ?? null;
                             ?>
                             <tr>

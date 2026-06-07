@@ -1,4 +1,4 @@
-<?= $this->extend($layout ?? 'layouts/main_user') ?>
+﻿<?= $this->extend($layout ?? 'layouts/main_user') ?>
 <?= $this->section('content') ?>
 
 <div class="container-fluid">
@@ -42,7 +42,7 @@
                                     <div class="text-muted small mb-2"><?= esc($notification['message'] ?? '') ?></div>
                                     <div class="small text-muted">
                                         <i class="bi bi-clock me-1"></i>
-                                        <?= esc(! empty($notification['created_at']) ? date('d M Y H:i', strtotime($notification['created_at'])) : '-') ?>
+                                        <?= esc(! empty($notification['created_at']) ? date('d-m-Y H:i', strtotime($notification['created_at'])) : '-') ?>
                                     </div>
                                 </div>
                                 <div class="d-flex align-items-start gap-2">

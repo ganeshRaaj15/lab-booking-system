@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /** @var array $requests */
 /** @var array $filters */
 /** @var array $counts */
@@ -89,7 +89,7 @@ $statusBadge = ['pending' => 'warning', 'approved' => 'success', 'rejected' => '
                                 </span>
                             </td>
                             <td class="small text-muted">
-                                <?= $req['created_at'] ? date('d M Y', strtotime((string) $req['created_at'])) : '—' ?>
+                                <?= $req['created_at'] ? date('d-m-Y', strtotime((string) $req['created_at'])) : '—' ?>
                             </td>
                             <td class="text-end">
                                 <a href="/admin/external-access/<?= (int) $req['id'] ?>"

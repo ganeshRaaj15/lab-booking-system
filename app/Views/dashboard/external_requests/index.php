@@ -1,4 +1,4 @@
-<?= $this->extend($layout) ?>
+﻿<?= $this->extend($layout) ?>
 
 <?= $this->section('content') ?>
 
@@ -121,7 +121,7 @@ $requestModel = $requestModel ?? null;
                                     <span class="badge bg-<?= esc($badgeClass) ?>"><?= esc($statusLabels[$status] ?? ucfirst($status)) ?></span>
                                     <div class="small text-muted mt-1"><?= esc($stageLabel) ?></div>
                                 </td>
-                                <td><?= esc(!empty($request['created_at']) ? date('d M Y H:i', strtotime((string) $request['created_at'])) : '-') ?></td>
+                                <td><?= esc(!empty($request['created_at']) ? date('d-m-Y H:i', strtotime((string) $request['created_at'])) : '-') ?></td>
                                 <td class="text-end"><a href="/dashboard/external-requests/<?= esc($request['id']) ?>" class="btn btn-sm btn-outline-primary">Open</a></td>
                             </tr>
                         <?php endforeach; ?>

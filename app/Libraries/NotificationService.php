@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Libraries;
 
@@ -292,7 +292,7 @@ class NotificationService
 
         $message = $managerName . ' requested planned maintenance for ' . $context['asset_name'] . ' in ' . $context['lab_name'] . '.';
         if (! empty($context['scheduled_for'])) {
-            $message .= ' Recommended maintenance date: ' . date('d M Y H:i', strtotime($context['scheduled_for'])) . '.';
+            $message .= ' Recommended maintenance date: ' . date('d-m-Y H:i', strtotime($context['scheduled_for'])) . '.';
         }
 
         $this->createUserNotifications(
@@ -322,7 +322,7 @@ class NotificationService
                 'Case: ' . ($context['title'] ?? 'Planned Maintenance'),
                 'Laboratory: ' . ($context['lab_name'] ?? '-'),
                 'Equipment: ' . ($context['asset_name'] ?? '-'),
-                ! empty($context['scheduled_for']) ? 'Recommended maintenance date: ' . date('d M Y H:i', strtotime($context['scheduled_for'])) : null,
+                ! empty($context['scheduled_for']) ? 'Recommended maintenance date: ' . date('d-m-Y H:i', strtotime($context['scheduled_for'])) : null,
             ], site_url($technicianLink), 'Open Maintenance Case'),
             null,
             ['entity_type' => 'maintenance', 'entity_id' => $maintenanceId, 'notification_type' => 'maintenance']
@@ -387,7 +387,7 @@ class NotificationService
         $reporterLink = '/dashboard/report-issue';
         $message = 'Maintenance for ' . $context['asset_name'] . ' in ' . $context['lab_name'] . ' has been accepted and scheduled.';
         if (! empty($context['scheduled_for'])) {
-            $message .= ' Scheduled for ' . date('d M Y H:i', strtotime($context['scheduled_for'])) . '.';
+            $message .= ' Scheduled for ' . date('d-m-Y H:i', strtotime($context['scheduled_for'])) . '.';
         }
 
         $this->createUserNotifications($this->compactIds([(int) ($context['reported_by'] ?? 0)]), 'maintenance', 'Maintenance Scheduled', $message, $reporterLink, 'maintenance', $maintenanceId);
@@ -532,7 +532,7 @@ class NotificationService
         $picName   = $ctx['pic_name']   ?? '';
         $picEmail  = $ctx['pic_email']  ?? '';
 
-        $date  = isset($booking['date'])       ? date('d M Y', strtotime((string) $booking['date']))       : '';
+        $date  = isset($booking['date'])       ? date('d-m-Y', strtotime((string) $booking['date']))       : '';
         $start = isset($booking['start_time']) ? substr((string) $booking['start_time'], 0, 5) : '';
         $end   = isset($booking['end_time'])   ? substr((string) $booking['end_time'],   0, 5) : '';
 
@@ -605,9 +605,9 @@ class NotificationService
 
         $dueText = '';
         if ($nextDue instanceof \DateTimeImmutable) {
-            $dueText = $nextDue->format('d M Y');
+            $dueText = $nextDue->format('d-m-Y');
         } elseif (is_string($nextDue) && $nextDue !== '') {
-            $dueText = date('d M Y', strtotime($nextDue));
+            $dueText = date('d-m-Y', strtotime($nextDue));
         }
 
         $message = 'Preventive maintenance is due soon for ' . $assetName;
@@ -621,9 +621,9 @@ class NotificationService
         }
 
         if ($lastCompleted instanceof \DateTimeImmutable) {
-            $message .= ' Last completed on ' . $lastCompleted->format('d M Y') . '.';
+            $message .= ' Last completed on ' . $lastCompleted->format('d-m-Y') . '.';
         } elseif (is_string($lastCompleted) && $lastCompleted !== '') {
-            $message .= ' Last completed on ' . date('d M Y', strtotime($lastCompleted)) . '.';
+            $message .= ' Last completed on ' . date('d-m-Y', strtotime($lastCompleted)) . '.';
         }
 
         if ($intervalDays > 0) {

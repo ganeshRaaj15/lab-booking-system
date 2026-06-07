@@ -1,4 +1,4 @@
-<?= $this->extend($layout ?? 'layouts/main_user') ?>
+﻿<?= $this->extend($layout ?? 'layouts/main_user') ?>
 <?= $this->section('content') ?>
 
 <div class="container-fluid">
@@ -40,7 +40,7 @@
                                     </div>
                                     <div class="small text-muted">
                                         <i class="bi bi-clock me-1"></i>
-                                        <?= esc(! empty($email['created_at']) ? date('d M Y H:i', strtotime($email['created_at'])) : '-') ?>
+                                        <?= esc(! empty($email['created_at']) ? date('d-m-Y H:i', strtotime($email['created_at'])) : '-') ?>
                                     </div>
                                 </div>
                                 <div class="d-flex align-items-start gap-2">

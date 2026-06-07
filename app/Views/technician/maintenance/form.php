@@ -1,4 +1,4 @@
-<?= $this->extend('layouts/main_user') ?>
+﻿<?= $this->extend('layouts/main_user') ?>
 <?= $this->section('content') ?>
 <?php
 $statusLabel = $statusLabels[$record['status'] ?? 'reported'] ?? ucwords(str_replace('_', ' ', $record['status'] ?? 'reported'));
@@ -284,7 +284,7 @@ $stageChecklist = match ($stageMode) {
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Scheduled Date And Time</label>
-                                <input type="text" class="form-control" value="<?= esc(!empty($record['scheduled_for']) ? date('d M Y H:i', strtotime($record['scheduled_for'])) : '-') ?>" readonly>
+                                <input type="text" class="form-control" value="<?= esc(!empty($record['scheduled_for']) ? date('d-m-Y H:i', strtotime($record['scheduled_for'])) : '-') ?>" readonly>
                             </div>
                             <div class="col-12">
                                 <label class="form-label">Diagnosis / Initial Findings</label>
@@ -301,7 +301,7 @@ $stageChecklist = match ($stageMode) {
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Scheduled Date And Time</label>
-                                <input type="text" class="form-control" value="<?= esc(!empty($record['scheduled_for']) ? date('d M Y H:i', strtotime($record['scheduled_for'])) : '-') ?>" readonly>
+                                <input type="text" class="form-control" value="<?= esc(!empty($record['scheduled_for']) ? date('d-m-Y H:i', strtotime($record['scheduled_for'])) : '-') ?>" readonly>
                             </div>
                             <div class="col-12">
                                 <label class="form-label">Diagnosis / Initial Findings</label>
@@ -323,7 +323,7 @@ $stageChecklist = match ($stageMode) {
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Scheduled Date And Time</label>
-                                <input type="text" class="form-control" value="<?= esc(!empty($record['scheduled_for']) ? date('d M Y H:i', strtotime($record['scheduled_for'])) : '-') ?>" readonly>
+                                <input type="text" class="form-control" value="<?= esc(!empty($record['scheduled_for']) ? date('d-m-Y H:i', strtotime($record['scheduled_for'])) : '-') ?>" readonly>
                             </div>
                             <div class="col-12">
                                 <label class="form-label">Diagnosis / Initial Findings</label>
@@ -456,10 +456,10 @@ $stageChecklist = match ($stageMode) {
                     <div class="mb-2"><strong>Category:</strong> <?= esc($issueTypeLabels[$record['issue_type'] ?? ''] ?? ucfirst((string) ($record['issue_type'] ?? ''))) ?></div>
                     <div class="mb-2"><strong>Affected Units:</strong> <?= esc((int) ($record['quantity_affected'] ?? 1)) ?></div>
                     <div class="mb-2"><strong>Unit Reference:</strong> <?= esc($record['unit_reference'] ?? 'Not specified') ?></div>
-                    <div class="mb-2"><strong>Accepted At:</strong> <?= esc(!empty($record['accepted_at']) ? date('d M Y H:i', strtotime($record['accepted_at'])) : '-') ?></div>
-                    <div class="mb-2"><strong>Scheduled For:</strong> <?= esc(!empty($record['scheduled_for']) ? date('d M Y H:i', strtotime($record['scheduled_for'])) : '-') ?></div>
-                    <div class="mb-2"><strong>Tested At:</strong> <?= esc(!empty($record['tested_at']) ? date('d M Y H:i', strtotime($record['tested_at'])) : '-') ?></div>
-                    <div class="mb-0"><strong>Completed At:</strong> <?= esc(!empty($record['completed_at']) ? date('d M Y H:i', strtotime($record['completed_at'])) : '-') ?></div>
+                    <div class="mb-2"><strong>Accepted At:</strong> <?= esc(!empty($record['accepted_at']) ? date('d-m-Y H:i', strtotime($record['accepted_at'])) : '-') ?></div>
+                    <div class="mb-2"><strong>Scheduled For:</strong> <?= esc(!empty($record['scheduled_for']) ? date('d-m-Y H:i', strtotime($record['scheduled_for'])) : '-') ?></div>
+                    <div class="mb-2"><strong>Tested At:</strong> <?= esc(!empty($record['tested_at']) ? date('d-m-Y H:i', strtotime($record['tested_at'])) : '-') ?></div>
+                    <div class="mb-0"><strong>Completed At:</strong> <?= esc(!empty($record['completed_at']) ? date('d-m-Y H:i', strtotime($record['completed_at'])) : '-') ?></div>
                 </div>
             </div>
 
@@ -484,7 +484,7 @@ $stageChecklist = match ($stageMode) {
             </div>
 
             <?php if ($isEdit): ?>
-                <div class="card border-0 shadow-sm"><div class="card-header bg-white"><h6 class="mb-1 fw-bold"><i class="bi bi-journal-text me-2 text-primary"></i>Activity Log</h6></div><div class="card-body"><?php if (empty($logs)): ?><p class="text-muted small mb-0">No activity logged for this case yet.</p><?php else: ?><div class="d-flex flex-column gap-3"><?php foreach ($logs as $log): ?><div class="rounded-3 p-3" style="background: var(--slams-primary-soft); border-left: 3px solid var(--slams-primary);"><div class="fw-semibold small" style="color: var(--slams-primary);"><?= esc($statusLabels[$log['to_status']] ?? ucwords(str_replace('_', ' ', $log['to_status'] ?? 'updated'))) ?></div><div class="small text-muted"><?= esc($log['full_name'] ?: $log['username'] ?: 'System') ?> | <?= esc(!empty($log['created_at']) ? date('d M Y H:i', strtotime($log['created_at'])) : '-') ?></div><?php if (!empty($log['notes'])): ?><div class="small mt-2"><?= esc($log['notes']) ?></div><?php endif; ?></div><?php endforeach; ?></div><?php endif; ?></div></div>
+                <div class="card border-0 shadow-sm"><div class="card-header bg-white"><h6 class="mb-1 fw-bold"><i class="bi bi-journal-text me-2 text-primary"></i>Activity Log</h6></div><div class="card-body"><?php if (empty($logs)): ?><p class="text-muted small mb-0">No activity logged for this case yet.</p><?php else: ?><div class="d-flex flex-column gap-3"><?php foreach ($logs as $log): ?><div class="rounded-3 p-3" style="background: var(--slams-primary-soft); border-left: 3px solid var(--slams-primary);"><div class="fw-semibold small" style="color: var(--slams-primary);"><?= esc($statusLabels[$log['to_status']] ?? ucwords(str_replace('_', ' ', $log['to_status'] ?? 'updated'))) ?></div><div class="small text-muted"><?= esc($log['full_name'] ?: $log['username'] ?: 'System') ?> | <?= esc(!empty($log['created_at']) ? date('d-m-Y H:i', strtotime($log['created_at'])) : '-') ?></div><?php if (!empty($log['notes'])): ?><div class="small mt-2"><?= esc($log['notes']) ?></div><?php endif; ?></div><?php endforeach; ?></div><?php endif; ?></div></div>
             <?php endif; ?>
         </div>
     </div>
