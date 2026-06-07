@@ -79,6 +79,7 @@ use App\Controllers\Admin\AssetController;
 use App\Controllers\Admin\LaboratoryAdminController;
 use App\Controllers\Admin\UserManagementController;
 use App\Controllers\Auth\PasswordRecoveryController;
+use App\Controllers\Auth\PublicAuthPageController;
 use App\Controllers\Technician\MaintenanceController;
 
 
@@ -653,7 +654,13 @@ $routes->get('login/magic-link', [PasswordRecoveryController::class, 'loginView'
 $routes->post('login/magic-link', [PasswordRecoveryController::class, 'loginAction']);
 $routes->get('login/verify-magic-link', [PasswordRecoveryController::class, 'verify'], ['as' => 'verify-magic-link']);
 
-service('auth')->routes($routes, ['except' => ['magic-link']]);
+service('auth')->routes($routes, ['except' => ['magic-link', 'login', 'register']]);
+
+// Override GET auth pages to bypass the cached Shield login/register view path.
+$routes->get('login', [PublicAuthPageController::class, 'loginView'], ['as' => 'login']);
+$routes->get('register', [PublicAuthPageController::class, 'registerView'], ['as' => 'register']);
+$routes->post('login', '\CodeIgniter\Shield\Controllers\LoginController::loginAction');
+$routes->post('register', '\CodeIgniter\Shield\Controllers\RegisterController::registerAction');
 
 // Logout
 $routes->post('logout', '\CodeIgniter\Shield\Controllers\LoginController::logoutAction', ['as' => 'logout']);
