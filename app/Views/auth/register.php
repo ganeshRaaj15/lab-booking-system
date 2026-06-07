@@ -27,7 +27,7 @@ $heroFallbackUrl = base_url('images/fkmp/FKMP.jpeg');
             <div class="auth-shell__hero-card">
                 <p class="auth-shell__eyebrow">FKMP UTHM</p>
                 <h1 class="auth-shell__hero-title">Create your account</h1>
-                <p class="auth-shell__hero-copy">Open your SLAMS access and start booking laboratories with a single account.</p>
+                <p class="auth-shell__hero-copy">Open your SLAMS access and start booking laboratories.</p>
             </div>
         </div>
     </aside>
