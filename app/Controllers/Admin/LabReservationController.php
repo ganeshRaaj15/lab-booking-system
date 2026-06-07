@@ -183,14 +183,18 @@ class LabReservationController extends BaseController
             }
 
             if ($validFrom !== '' && $validFrom !== null && ! $this->isValidDate($validFrom)) {
-                $rows[] = ['line' => $lineNum, 'error' => 'Invalid valid_from date.', 'raw' => implode(',', $cols)];
+                $rows[] = ['line' => $lineNum, 'error' => 'Invalid valid_from date (use DD-MM-YYYY).', 'raw' => implode(',', $cols)];
                 continue;
             }
             if ($validUntil !== '' && $validUntil !== null && ! $this->isValidDate($validUntil)) {
-                $rows[] = ['line' => $lineNum, 'error' => 'Invalid valid_until date.', 'raw' => implode(',', $cols)];
+                $rows[] = ['line' => $lineNum, 'error' => 'Invalid valid_until date (use DD-MM-YYYY).', 'raw' => implode(',', $cols)];
                 continue;
             }
-            if ($validFrom && $validUntil && $validFrom >= $validUntil) {
+
+            $validFromSql  = ($validFrom  && $validFrom  !== '') ? $this->toSqlDate($validFrom)  : null;
+            $validUntilSql = ($validUntil && $validUntil !== '') ? $this->toSqlDate($validUntil) : null;
+
+            if ($validFromSql && $validUntilSql && $validFromSql >= $validUntilSql) {
                 $rows[] = ['line' => $lineNum, 'error' => 'valid_from must be before valid_until.', 'raw' => implode(',', $cols)];
                 continue;
             }
@@ -209,8 +213,8 @@ class LabReservationController extends BaseController
                 'day_label'   => $this->dayNames[$dow],
                 'start_time'  => $startTime,
                 'end_time'    => $endTime,
-                'valid_from'  => ($validFrom ?: null),
-                'valid_until' => ($validUntil ?: null),
+                'valid_from'  => $validFromSql,
+                'valid_until' => $validUntilSql,
             ];
         }
         fclose($handle);
@@ -340,6 +344,12 @@ class LabReservationController extends BaseController
 
     private function isValidDate(string $d): bool
     {
-        return (bool) preg_match('/^\d{4}-\d{2}-\d{2}$/', $d) && strtotime($d) !== false;
+        $dt = \DateTime::createFromFormat('d-m-Y', $d);
+        return $dt !== false && $dt->format('d-m-Y') === $d;
+    }
+
+    private function toSqlDate(string $d): string
+    {
+        return \DateTime::createFromFormat('d-m-Y', $d)->format('Y-m-d');
     }
 }

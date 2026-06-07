@@ -52,16 +52,16 @@
                                 <tr><td>4</td><td>end_time</td><td>14:00</td></tr>
                                 <tr><td>5</td><td>subject_code</td><td>BDA2223</td></tr>
                                 <tr><td>6</td><td>subject_name</td><td>Fluid Mechanics</td></tr>
-                                <tr><td>7</td><td>valid_from <span class="text-muted">(optional)</span></td><td>2026-06-01</td></tr>
-                                <tr><td>8</td><td>valid_until <span class="text-muted">(optional)</span></td><td>2026-10-31</td></tr>
+                                <tr><td>7</td><td>valid_from <span class="text-muted">(optional)</span></td><td>01-06-2026</td></tr>
+                                <tr><td>8</td><td>valid_until <span class="text-muted">(optional)</span></td><td>31-10-2026</td></tr>
                             </tbody>
                         </table>
                     </div>
                     <p class="small text-muted mb-1"><strong>Day names accepted:</strong> Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday (or Mon, Tue, Wed, etc.)</p>
-                    <p class="small text-muted mb-0"><strong>Dates:</strong> YYYY-MM-DD format. Leave valid_from / valid_until blank for no semester restriction.</p>
+                    <p class="small text-muted mb-0"><strong>Dates:</strong> DD-MM-YYYY format. Leave valid_from / valid_until blank for no semester restriction.</p>
                     <div class="mt-3">
                         <p class="small text-muted mb-1"><strong>Example row:</strong></p>
-                        <code class="small">Makmal Fizik,Monday,08:00,14:00,BDA2223,Fluid Mechanics,2026-06-01,2026-10-31</code>
+                        <code class="small">Makmal Fizik,Monday,08:00,14:00,BDA2223,Fluid Mechanics,01-06-2026,31-10-2026</code>
                     </div>
                 </div>
             </div>

@@ -1,5 +1,5 @@
 lab_name,day_of_week,start_time,end_time,subject_code,subject_name,valid_from,valid_until
-Makmal Fizik,Monday,08:00,14:00,BDA2223,Fluid Mechanics,2026-06-01,2026-10-31
-Makmal Kimia,Wednesday,09:00,12:00,BKC3114,Applied Chemistry,2026-06-01,2026-10-31
-Makmal Kejuruteraan Mekanikal,Friday,14:00,17:00,BDA3133,Machine Design,2026-06-01,2026-10-31
+Makmal Fizik,Monday,08:00,14:00,BDA2223,Fluid Mechanics,01-06-2026,31-10-2026
+Makmal Kimia,Wednesday,09:00,12:00,BKC3114,Applied Chemistry,01-06-2026,31-10-2026
+Makmal Kejuruteraan Mekanikal,Friday,14:00,17:00,BDA3133,Machine Design,01-06-2026,31-10-2026
 Makmal Fizik,Thursday,08:00,11:00,BDA1013,Engineering Mathematics,,
