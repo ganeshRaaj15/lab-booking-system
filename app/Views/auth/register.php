@@ -5,6 +5,7 @@ $mainClass = 'container py-4 slams-main slams-main--auth';
 $hideFooter = true;
 $hideChatbot = true;
 $hideMobileQuickActions = true;
+$logoUrl = slams_asset('images/logo.png');
 $heroVideoUrl = base_url('images/uthm-aerial-compressed.mp4');
 $heroDayVideoUrl = base_url('images/day-time-aerial-compressed.mp4');
 $heroFallbackUrl = base_url('images/fkmp/FKMP.jpeg');
@@ -25,104 +26,112 @@ $heroFallbackUrl = base_url('images/fkmp/FKMP.jpeg');
             </div>
             <div class="hero-overlay auth-shell__hero-overlay"></div>
             <div class="auth-shell__hero-card">
-                <p class="auth-shell__eyebrow">FKMP UTHM</p>
+                <p class="auth-shell__eyebrow">SLAMS</p>
                 <h1 class="auth-shell__hero-title">Create your account</h1>
-                <p class="auth-shell__hero-copy">Open your SLAMS access and start booking laboratories with a single account.</p>
+                <p class="auth-shell__hero-copy">Use your institutional student email for student access. Other sign-ups default to external access.</p>
             </div>
         </div>
     </aside>
 
     <section class="auth-shell__form-column">
         <div class="auth-shell__form-card">
-            <div class="auth-shell__brand">
-                <div class="auth-shell__brand-badge">
-                    <i class="bi bi-person-plus"></i>
-                </div>
-                <div>
-                    <h2 class="auth-shell__brand-name">Join SLAMS</h2>
-                    <p class="auth-shell__brand-copy">Create an account for laboratory booking and approvals.</p>
-                </div>
+            <div class="auth-shell__logo-badge" aria-hidden="true">
+                <img src="<?= esc($logoUrl, 'attr') ?>" alt="" class="auth-shell__logo-image">
             </div>
 
-            <nav class="auth-shell__switcher" aria-label="Authentication pages">
-                <a href="<?= url_to('login') ?>" class="auth-shell__switcher-link">Sign in</a>
-                <a href="<?= url_to('register') ?>" class="auth-shell__switcher-link is-active" aria-current="page">Create account</a>
-            </nav>
+            <?php if (session()->has('error')): ?>
+                <div class="alert alert-danger auth-shell__inline-alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <?= esc((string) session('error')) ?>
+                </div>
+            <?php endif; ?>
 
-            <div class="auth-shell__panel">
-                <header class="auth-shell__panel-header">
-                    <h3 class="auth-shell__panel-title">Create your account</h3>
-                    <p class="auth-shell__panel-copy">Use a clear username, your institutional email, and a strong password.</p>
-                </header>
+            <?php if (session()->has('errors')): ?>
+                <div class="alert alert-danger auth-shell__inline-alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <?php foreach ((array) session('errors') as $error): ?>
+                        <div><?= esc($error) ?></div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
 
-                <?php if (session()->has('error')): ?>
-                    <div class="alert alert-danger">
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        <?= esc((string) session('error')) ?>
+            <form action="<?= url_to('register') ?>" method="post" class="auth-shell__form-stack">
+                <?= csrf_field() ?>
+
+                <div class="mb-3">
+                    <label class="form-label" for="registerUsername">Username</label>
+                    <input
+                        type="text"
+                        name="username"
+                        id="registerUsername"
+                        class="form-control form-control-lg"
+                        placeholder="Choose a username"
+                        value="<?= esc(old('username')) ?>"
+                        autocomplete="username"
+                        required
+                    >
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="registerEmail">Email</label>
+                    <input
+                        type="email"
+                        name="email"
+                        id="registerEmail"
+                        class="form-control form-control-lg"
+                        placeholder="name@example.com"
+                        value="<?= esc(old('email')) ?>"
+                        autocomplete="email"
+                        required
+                    >
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="registerPassword">Password</label>
+                    <div class="password-wrapper">
+                        <input
+                            type="password"
+                            id="registerPassword"
+                            name="password"
+                            class="form-control form-control-lg"
+                            placeholder="Create a password"
+                            autocomplete="new-password"
+                            required
+                        >
+                        <button type="button" class="toggle-password" id="toggleRegisterPassword" aria-label="Show password">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
                     </div>
-                <?php endif; ?>
+                </div>
 
-                <?php if (session()->has('errors')): ?>
-                    <div class="alert alert-danger">
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        <?php foreach ((array) session('errors') as $error): ?>
-                            <div><?= esc($error) ?></div>
-                        <?php endforeach; ?>
+                <div class="mb-3">
+                    <label class="form-label" for="registerPasswordConfirm">Confirm Password</label>
+                    <div class="password-wrapper">
+                        <input
+                            type="password"
+                            id="registerPasswordConfirm"
+                            name="password_confirm"
+                            class="form-control form-control-lg"
+                            placeholder="Repeat your password"
+                            autocomplete="new-password"
+                            required
+                        >
+                        <button type="button" class="toggle-password" id="toggleRegisterPasswordConfirm" aria-label="Show password">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
                     </div>
-                <?php endif; ?>
+                </div>
 
-                <form action="<?= url_to('register') ?>" method="post" class="auth-shell__form-stack">
-                    <?= csrf_field() ?>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold" for="registerUsername">Username</label>
-                        <input type="text" name="username" id="registerUsername" class="form-control form-control-lg" placeholder="Choose a username" value="<?= esc(old('username')) ?>" autocomplete="username" required>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold" for="registerEmail">Email Address</label>
-                        <input type="email" name="email" id="registerEmail" class="form-control form-control-lg" placeholder="you@example.com" value="<?= esc(old('email')) ?>" autocomplete="email" required>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold" for="registerPassword">Password</label>
-                        <div class="password-wrapper">
-                            <input type="password" id="registerPassword" name="password" class="form-control form-control-lg" placeholder="Create a password" autocomplete="new-password" required>
-                            <button type="button" class="toggle-password" id="toggleRegisterPassword" aria-label="Show password">
-                                <i class="bi bi-eye-slash"></i>
-                            </button>
-                        </div>
-                        <div id="passwordCriteria" class="auth-shell__password-criteria mt-2 small d-none">
-                            <div class="d-flex flex-wrap gap-2">
-                                <span class="pw-rule" data-rule="length"><i class="bi bi-circle me-1"></i>8+ characters</span>
-                                <span class="pw-rule" data-rule="upper"><i class="bi bi-circle me-1"></i>Uppercase</span>
-                                <span class="pw-rule" data-rule="lower"><i class="bi bi-circle me-1"></i>Lowercase</span>
-                                <span class="pw-rule" data-rule="number"><i class="bi bi-circle me-1"></i>Number</span>
-                                <span class="pw-rule" data-rule="special"><i class="bi bi-circle me-1"></i>Special character</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold" for="registerPasswordConfirm">Confirm Password</label>
-                        <div class="password-wrapper">
-                            <input type="password" id="registerPasswordConfirm" name="password_confirm" class="form-control form-control-lg" placeholder="Re-enter password" autocomplete="new-password" required>
-                            <button type="button" class="toggle-password" id="toggleRegisterPasswordConfirm" aria-label="Show password">
-                                <i class="bi bi-eye-slash"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn btn-fkmp-auth mb-3">
-                        <i class="bi bi-person-plus-fill me-1"></i> Create Account
+                <div class="auth-shell__actions">
+                    <button type="submit" class="btn btn-fkmp-auth auth-shell__primary-button">
+                        Create Account
                     </button>
-                </form>
 
-                <p class="auth-shell__footer">
-                    Already registered?
-                    <a href="<?= url_to('login') ?>">Sign in here</a>
-                </p>
-            </div>
+                    <a href="<?= url_to('login') ?>" class="auth-shell__secondary-button">
+                        Back to Sign In
+                    </a>
+                </div>
+            </form>
         </div>
     </section>
 </div>
@@ -149,43 +158,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     setupPasswordToggle("toggleRegisterPassword", "registerPassword");
     setupPasswordToggle("toggleRegisterPasswordConfirm", "registerPasswordConfirm");
-
-    const passwordInput = document.getElementById("registerPassword");
-    const criteriaBox = document.getElementById("passwordCriteria");
-
-    if (!passwordInput || !criteriaBox) {
-        return;
-    }
-
-    const rules = {
-        length: (v) => v.length >= 8,
-        upper: (v) => /[A-Z]/.test(v),
-        lower: (v) => /[a-z]/.test(v),
-        number: (v) => /[0-9]/.test(v),
-        special: (v) => /[^A-Za-z0-9]/.test(v),
-    };
-
-    passwordInput.addEventListener("input", function () {
-        const val = this.value;
-
-        if (val.length === 0) {
-            criteriaBox.classList.add("d-none");
-            return;
-        }
-
-        criteriaBox.classList.remove("d-none");
-
-        criteriaBox.querySelectorAll(".pw-rule").forEach((el) => {
-            const rule = el.dataset.rule;
-            const met = rules[rule] && rules[rule](val);
-            el.classList.toggle("met", met);
-
-            const icon = el.querySelector("i");
-            if (icon) {
-                icon.className = met ? "bi bi-check-circle-fill me-1" : "bi bi-circle me-1";
-            }
-        });
-    });
 });
 </script>
 
