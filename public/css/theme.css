@@ -285,8 +285,8 @@ p,
 .slams-main {
     width: min(100%, 1240px);
     min-height: calc(100vh - 180px);
-    padding-top: 1rem !important;
-    padding-bottom: 2rem !important;
+    padding-top: 0.75rem !important;
+    padding-bottom: 1.5rem !important;
 }
 
 body.auth-page-layout .slams-main--auth {
@@ -296,6 +296,26 @@ body.auth-page-layout .slams-main--auth {
     padding-bottom: 0.5rem !important;
 }
 
+/* ── Compact spacing — Bootstrap utilities scaled down one step ── */
+.slams-app .py-4  { padding-top: 1rem !important;    padding-bottom: 1rem !important; }
+.slams-app .py-5  { padding-top: 1.75rem !important; padding-bottom: 1.75rem !important; }
+.slams-app .pt-4  { padding-top: 1rem !important; }
+.slams-app .pt-5  { padding-top: 1.75rem !important; }
+.slams-app .pb-4  { padding-bottom: 1rem !important; }
+.slams-app .pb-5  { padding-bottom: 1.75rem !important; }
+.slams-app .mt-4  { margin-top: 1rem !important; }
+.slams-app .mt-5  { margin-top: 1.75rem !important; }
+.slams-app .mb-4  { margin-bottom: 1rem !important; }
+.slams-app .mb-5  { margin-bottom: 1.75rem !important; }
+.slams-app .gap-4 { gap: 1rem !important; }
+.slams-app .gap-5 { gap: 1.75rem !important; }
+.slams-app .g-4   { --bs-gutter-x: 1rem;    --bs-gutter-y: 1rem; }
+.slams-app .g-5   { --bs-gutter-x: 1.75rem; --bs-gutter-y: 1.75rem; }
+.slams-app .gy-4  { --bs-gutter-y: 1rem; }
+.slams-app .gy-5  { --bs-gutter-y: 1.75rem; }
+.slams-app .gx-4  { --bs-gutter-x: 1rem; }
+.slams-app .gx-5  { --bs-gutter-x: 1.75rem; }
+
 .admin-layout,
 .technician-layout {
     min-height: 100vh;
@@ -304,7 +324,7 @@ body.auth-page-layout .slams-main--auth {
 
 .content-area {
     min-height: 100vh;
-    padding: calc(var(--admin-navbar-height) + 16px) 20px 28px;
+    padding: calc(var(--admin-navbar-height) + 10px) 18px 22px;
 }
 
 .sidebar-overlay {
@@ -1122,7 +1142,7 @@ input::placeholder {
 .kpi-glass-card,
 .widget-card,
 .stats-card {
-    padding: 0.86rem !important;
+    padding: 0.72rem !important;
 }
 
 .kpi-glass-card:hover,
@@ -2484,8 +2504,8 @@ input::placeholder {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 520px;
-    margin-bottom: 1.7rem;
+    min-height: 420px;
+    margin-bottom: 1.25rem;
     overflow: hidden;
     border: 1px solid var(--slams-hero-border);
     border-radius: var(--slams-radius);
@@ -2567,7 +2587,7 @@ input::placeholder {
     width: 100%;
     max-width: 600px;
     margin: 0 auto;
-    padding: clamp(1.75rem, 4.4vw, 2.65rem) 0;
+    padding: clamp(1.2rem, 3.2vw, 1.85rem) 0;
     color: var(--slams-hero-title);
     text-align: center;
 }
@@ -2838,7 +2858,7 @@ input::placeholder {
 }
 
 .home-stats-section {
-    margin: 0 auto 2.05rem;
+    margin: 0 auto 1.4rem;
 }
 
 .home-stat-grid {
@@ -2929,7 +2949,7 @@ input::placeholder {
 
 .home-section-header {
     max-width: 680px;
-    margin: 0 auto 1.25rem;
+    margin: 0 auto 0.9rem;
     text-align: center;
 }
 
@@ -2960,7 +2980,7 @@ input::placeholder {
 .feature-card,
 .cta-section {
     height: 100%;
-    padding: 1.15rem;
+    padding: 0.9rem;
     border: 1px solid var(--slams-home-card-border);
     border-radius: var(--slams-radius);
     background: var(--slams-home-card-bg);
@@ -2989,7 +3009,7 @@ input::placeholder {
 }
 
 .home-flow-section {
-    margin: 0 0 1.7rem;
+    margin: 0 0 1.2rem;
 }
 
 .home-flow-grid {
@@ -3000,8 +3020,8 @@ input::placeholder {
 
 .home-flow-card {
     position: relative;
-    min-height: 136px;
-    padding: 1.02rem;
+    min-height: 112px;
+    padding: 0.85rem;
     border: 1px solid var(--slams-home-card-border);
     border-radius: var(--slams-radius);
     background: var(--slams-home-card-bg);
@@ -3031,7 +3051,7 @@ input::placeholder {
 
 .cta-section {
     margin: 0 0 1rem;
-    padding: 1.4rem;
+    padding: 1.1rem;
     background:
         radial-gradient(70% 130% at 12% 10%, color-mix(in srgb, var(--slams-primary) 14%, transparent), transparent 56%),
         var(--slams-home-card-bg);
@@ -3858,7 +3878,7 @@ input::placeholder {
     }
 
     .content-area {
-        padding: calc(var(--admin-navbar-height) + 16px) 14px 24px;
+        padding: calc(var(--admin-navbar-height) + 10px) 12px 18px;
     }
 
     .admin-glass-navbar {
@@ -3893,7 +3913,7 @@ input::placeholder {
     }
 
     .hero-section {
-        min-height: 470px;
+        min-height: 380px;
     }
 
     .hero-section .hero-content {
