@@ -1,5 +1,10 @@
 <?php
 $title = 'SLAMS | Create your account';
+$bodyClass = 'auth-page-layout';
+$mainClass = 'container py-4 slams-main slams-main--auth';
+$hideFooter = true;
+$hideChatbot = true;
+$hideMobileQuickActions = true;
 $heroVideoUrl = base_url('images/uthm-aerial-compressed.mp4');
 $heroDayVideoUrl = base_url('images/day-time-aerial-compressed.mp4');
 $heroFallbackUrl = base_url('images/fkmp/FKMP.jpeg');
@@ -22,7 +27,7 @@ $heroFallbackUrl = base_url('images/fkmp/FKMP.jpeg');
             <div class="auth-shell__hero-card">
                 <p class="auth-shell__eyebrow">FKMP UTHM</p>
                 <h1 class="auth-shell__hero-title">Create your account</h1>
-                <p class="auth-shell__hero-copy">Set up your SLAMS access and start booking laboratories with the aerial campus footage framing the experience on every visit.</p>
+                <p class="auth-shell__hero-copy">Open your SLAMS access and start booking laboratories with a single account.</p>
             </div>
         </div>
     </aside>
@@ -47,7 +52,7 @@ $heroFallbackUrl = base_url('images/fkmp/FKMP.jpeg');
             <div class="auth-shell__panel">
                 <header class="auth-shell__panel-header">
                     <h3 class="auth-shell__panel-title">Create your account</h3>
-                    <p class="auth-shell__panel-copy">Use a clear username, your institutional email, and a strong password to get started.</p>
+                    <p class="auth-shell__panel-copy">Use a clear username, your institutional email, and a strong password.</p>
                 </header>
 
                 <?php if (session()->has('error')): ?>

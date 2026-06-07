@@ -1,5 +1,10 @@
 <?php
 $title = 'SLAMS | Sign in';
+$bodyClass = 'auth-page-layout';
+$mainClass = 'container py-4 slams-main slams-main--auth';
+$hideFooter = true;
+$hideChatbot = true;
+$hideMobileQuickActions = true;
 $heroVideoUrl = base_url('images/uthm-aerial-compressed.mp4');
 $heroDayVideoUrl = base_url('images/day-time-aerial-compressed.mp4');
 $heroFallbackUrl = base_url('images/fkmp/FKMP.jpeg');
@@ -22,7 +27,7 @@ $heroFallbackUrl = base_url('images/fkmp/FKMP.jpeg');
             <div class="auth-shell__hero-card">
                 <p class="auth-shell__eyebrow">FKMP UTHM</p>
                 <h1 class="auth-shell__hero-title">Sign in to SLAMS</h1>
-                <p class="auth-shell__hero-copy">Access your lab bookings, approvals, and profile from one place with the same aerial campus backdrop used in the tablet experience.</p>
+                <p class="auth-shell__hero-copy">View your bookings, approvals, and profile against the live campus backdrop.</p>
             </div>
         </div>
     </aside>
@@ -47,7 +52,7 @@ $heroFallbackUrl = base_url('images/fkmp/FKMP.jpeg');
             <div class="auth-shell__panel">
                 <header class="auth-shell__panel-header">
                     <h3 class="auth-shell__panel-title">Welcome back</h3>
-                    <p class="auth-shell__panel-copy">Use your institutional email to continue into the laboratory booking system.</p>
+                    <p class="auth-shell__panel-copy">Sign in with your institutional email to continue.</p>
                 </header>
 
                 <?php if (session()->has('error')): ?>

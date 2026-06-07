@@ -26,17 +26,23 @@ helper(['url', 'asset', 'auth']);
     <?= $this->renderSection('styles') ?>
 </head>
 
-<body class="slams-app slams-mobile-app slams-layout-user">
+<body class="slams-app slams-mobile-app slams-layout-user<?= isset($bodyClass) && $bodyClass !== '' ? ' ' . esc($bodyClass, 'attr') : '' ?>">
     <?= $this->include('components/navbar_user') ?>
 
-    <main class="container py-4 slams-main">
+    <main class="<?= esc($mainClass ?? 'container py-4 slams-main', 'attr') ?>">
         <?= $this->renderSection('content') ?>
     </main>
 
-    <?= $this->include('components/footer') ?>
+    <?php if (! ($hideFooter ?? false)): ?>
+        <?= $this->include('components/footer') ?>
+    <?php endif; ?>
     <?= $this->include('components/theme_toggle') ?>
-    <?= $this->include('components/chatbot') ?>
-    <?= $this->include('components/mobile_quick_actions') ?>
+    <?php if (! ($hideChatbot ?? false)): ?>
+        <?= $this->include('components/chatbot') ?>
+    <?php endif; ?>
+    <?php if (! ($hideMobileQuickActions ?? false)): ?>
+        <?= $this->include('components/mobile_quick_actions') ?>
+    <?php endif; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="<?= slams_asset('js/mobile-app.js') ?>"></script>
