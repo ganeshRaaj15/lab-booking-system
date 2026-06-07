@@ -409,23 +409,21 @@ $topAtRisk = $equipmentHealth['topAtRisk'] ?? [];
 
                                             <td class="pe-4 text-end">
                                                 <div class="d-flex gap-2 justify-content-end">
-                                                    <button class="btn btn-outline-primary btn-sm px-3"
+                                                    <button class="btn btn-outline-secondary btn-sm"
                                                             onclick="viewBookingDetails(<?= $b['id'] ?>)"
                                                             data-bs-toggle="tooltip" title="View Details">
-                                                        <i class="bi bi-eye me-1"></i>View
+                                                        <i class="bi bi-eye"></i>
                                                     </button>
-                                                    <div class="btn-group">
-                                                        <button class="btn btn-success btn-sm px-3"
-                                                                onclick="approveBooking(<?= $b['id'] ?>)"
-                                                                data-bs-toggle="tooltip" title="Approve Booking">
-                                                            <i class="bi bi-check-lg"></i>
-                                                        </button>
-                                                        <button class="btn btn-danger btn-sm px-3"
-                                                                onclick="rejectBooking(<?= $b['id'] ?>)"
-                                                                data-bs-toggle="tooltip" title="Reject Booking">
-                                                            <i class="bi bi-x-lg"></i>
-                                                        </button>
-                                                    </div>
+                                                    <button class="btn btn-success btn-sm"
+                                                            onclick="approveBooking(<?= $b['id'] ?>)"
+                                                            data-bs-toggle="tooltip" title="Approve Booking">
+                                                        <i class="bi bi-check-lg"></i>
+                                                    </button>
+                                                    <button class="btn btn-danger btn-sm"
+                                                            onclick="rejectBooking(<?= $b['id'] ?>)"
+                                                            data-bs-toggle="tooltip" title="Reject Booking">
+                                                        <i class="bi bi-x-lg"></i>
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
