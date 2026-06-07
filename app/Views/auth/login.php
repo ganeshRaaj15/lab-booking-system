@@ -5,7 +5,6 @@ $mainClass = 'container py-4 slams-main slams-main--auth';
 $hideFooter = true;
 $hideChatbot = true;
 $hideMobileQuickActions = true;
-$logoUrl = slams_asset('images/logo.png');
 $heroVideoUrl = base_url('images/uthm-aerial-compressed.mp4');
 $heroDayVideoUrl = base_url('images/day-time-aerial-compressed.mp4');
 $heroFallbackUrl = base_url('images/fkmp/FKMP.jpeg');
@@ -26,92 +25,99 @@ $heroFallbackUrl = base_url('images/fkmp/FKMP.jpeg');
             </div>
             <div class="hero-overlay auth-shell__hero-overlay"></div>
             <div class="auth-shell__hero-card">
-                <p class="auth-shell__eyebrow">SLAMS</p>
+                <p class="auth-shell__eyebrow">FKMP UTHM</p>
                 <h1 class="auth-shell__hero-title">Sign in to SLAMS</h1>
-                <p class="auth-shell__hero-copy">Access bookings, approvals, requests, alerts, and your workspace tools.</p>
+                <p class="auth-shell__hero-copy">View your bookings, approvals, and profile against the live campus backdrop.</p>
             </div>
         </div>
     </aside>
 
     <section class="auth-shell__form-column">
         <div class="auth-shell__form-card">
-            <div class="auth-shell__logo-badge" aria-hidden="true">
-                <img src="<?= esc($logoUrl, 'attr') ?>" alt="" class="auth-shell__logo-image">
+            <div class="auth-shell__brand">
+                <div class="auth-shell__brand-badge">
+                    <i class="bi bi-building-gear"></i>
+                </div>
+                <div>
+                    <h2 class="auth-shell__brand-name">SLAMS</h2>
+                    <p class="auth-shell__brand-copy">Smart Laboratory Access Management System</p>
+                </div>
             </div>
 
-            <?php if (session()->has('error')): ?>
-                <div class="alert alert-danger auth-shell__inline-alert">
-                    <i class="bi bi-exclamation-triangle me-2"></i>
-                    <?= esc((string) session('error')) ?>
-                </div>
-            <?php endif; ?>
+            <nav class="auth-shell__switcher" aria-label="Authentication pages">
+                <a href="<?= url_to('login') ?>" class="auth-shell__switcher-link is-active" aria-current="page">Sign in</a>
+                <a href="<?= url_to('register') ?>" class="auth-shell__switcher-link">Create account</a>
+            </nav>
 
-            <?php if (session()->has('errors')): ?>
-                <div class="alert alert-danger auth-shell__inline-alert">
-                    <i class="bi bi-exclamation-triangle me-2"></i>
-                    <?php foreach ((array) session('errors') as $error): ?>
-                        <div><?= esc($error) ?></div>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
+            <div class="auth-shell__panel">
+                <header class="auth-shell__panel-header">
+                    <h3 class="auth-shell__panel-title">Welcome back</h3>
+                    <p class="auth-shell__panel-copy">Sign in with your institutional email to continue.</p>
+                </header>
 
-            <?php if (session()->has('success')): ?>
-                <div class="alert alert-success auth-shell__inline-alert">
-                    <i class="bi bi-check-circle me-2"></i>
-                    <?= esc((string) session('success')) ?>
-                </div>
-            <?php endif; ?>
-
-            <form action="<?= url_to('login') ?>" method="post" class="auth-shell__form-stack">
-                <?= csrf_field() ?>
-
-                <div class="mb-3">
-                    <label class="form-label" for="loginEmail">Email</label>
-                    <input
-                        type="email"
-                        name="email"
-                        id="loginEmail"
-                        class="form-control form-control-lg"
-                        placeholder="name@example.com"
-                        value="<?= esc(old('email')) ?>"
-                        autocomplete="email"
-                        required
-                        autofocus
-                    >
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label" for="loginPassword">Password</label>
-                    <div class="password-wrapper">
-                        <input
-                            type="password"
-                            name="password"
-                            id="loginPassword"
-                            class="form-control form-control-lg"
-                            placeholder="Enter your password"
-                            autocomplete="current-password"
-                            required
-                        >
-                        <button type="button" class="toggle-password" id="toggleLoginPassword" aria-label="Show password">
-                            <i class="bi bi-eye-slash"></i>
-                        </button>
+                <?php if (session()->has('error')): ?>
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <?= esc((string) session('error')) ?>
                     </div>
-                </div>
+                <?php endif; ?>
 
-                <div class="auth-shell__actions">
-                    <button type="submit" class="login-btn auth-shell__primary-button">
-                        Sign In
+                <?php if (session()->has('errors')): ?>
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <?php foreach ((array) session('errors') as $error): ?>
+                            <div><?= esc($error) ?></div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (session()->has('success')): ?>
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle me-2"></i>
+                        <?= esc((string) session('success')) ?>
+                    </div>
+                <?php endif; ?>
+
+                <form action="<?= url_to('login') ?>" method="post" class="login-form auth-shell__form-stack">
+                    <?= csrf_field() ?>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="loginEmail">Email Address</label>
+                        <input type="email" name="email" id="loginEmail" class="form-control form-control-lg" placeholder="Enter your email address" value="<?= esc(old('email')) ?>" autocomplete="email" required autofocus>
+                        <small class="text-muted mt-1 d-block">Use your institutional email.</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="loginPassword">Password</label>
+                        <div class="password-wrapper">
+                            <input type="password" name="password" id="loginPassword" class="form-control form-control-lg" placeholder="Enter your password" autocomplete="current-password" required>
+                            <button type="button" class="toggle-password" id="toggleLoginPassword" aria-label="Show password">
+                                <i class="bi bi-eye-slash"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="login-options">
+                        <div class="form-check">
+                            <input type="checkbox" name="remember" id="remember" class="form-check-input" <?= old('remember') ? 'checked' : '' ?>>
+                            <label for="remember" class="form-check-label">Remember me</label>
+                        </div>
+                        <a href="<?= url_to('magic-link') ?>" class="magic-link">
+                            <i class="bi bi-key me-1"></i>Use a sign-in link
+                        </a>
+                    </div>
+
+                    <button type="submit" class="login-btn">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>
+                        Sign in to Account
                     </button>
+                </form>
 
-                    <a href="<?= url_to('register') ?>" class="auth-shell__secondary-button">
-                        Create Account
-                    </a>
-                </div>
-
-                <p class="auth-shell__support-link">
-                    <a href="<?= url_to('magic-link') ?>">Use a sign-in link</a>
+                <p class="auth-shell__footer">
+                    Need access first?
+                    <a href="<?= url_to('register') ?>">Create your account</a>
                 </p>
-            </form>
+            </div>
         </div>
     </section>
 </div>
