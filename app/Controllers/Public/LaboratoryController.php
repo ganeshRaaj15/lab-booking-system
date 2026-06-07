@@ -100,9 +100,20 @@ class LaboratoryController extends BaseController
             unset($lab);
         }
 
+        $labFitMode = 'guest';
+        if (function_exists('auth') && auth()->loggedIn()) {
+            $user = auth()->user();
+            if ($user->inGroup('student') || $user->inGroup('staff') || $user->inGroup('external')) {
+                $labFitMode = 'eligible';
+            } else {
+                $labFitMode = 'restricted';
+            }
+        }
+
         return view('public/laboratories/index', [
             'labs'   => $labs,
             'search' => $search,
+            'labFitMode' => $labFitMode,
         ]);
     }
 

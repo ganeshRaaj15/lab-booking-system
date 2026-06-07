@@ -18,6 +18,7 @@ use App\Controllers\Public\ChatbotController;
 use App\Controllers\Public\QrController;
 use App\Controllers\Public\AppLinkController;
 use App\Controllers\Public\ExternalAccessController;
+use App\Controllers\Public\LabFitController;
 use App\Controllers\Admin\ExternalAccessAdminController;
 use App\Controllers\Api\NativeAuthController;
 use App\Controllers\Api\NativeBootstrapController;
@@ -194,6 +195,10 @@ $routes->group('api/native', ['filter' => ['tokens', 'group:admin']], static fun
 });
 
 // Laboratories
+$routes->get('/laboratories/find-best-lab', [LabFitController::class, 'index'], ['filter' => 'group:student,staff,external']);
+$routes->post('/laboratories/find-best-lab/suggest', [LabFitController::class, 'suggest'], ['filter' => 'group:student,staff,external']);
+$routes->get('/laboratories/find-best-lab/templates/sop', [LabFitController::class, 'downloadSopTemplate'], ['filter' => 'group:student,staff,external']);
+$routes->get('/laboratories/find-best-lab/templates/swp', [LabFitController::class, 'downloadSwpTemplate'], ['filter' => 'group:student,staff,external']);
 $routes->get('/laboratories', [LaboratoryController::class, 'index']);
 $routes->get('/laboratories/(:num)', [LaboratoryController::class, 'show/$1']);
 

@@ -3,6 +3,8 @@
 <!-- ============================================================
      LABORATORY PAGE CONTENT
      ============================================================ -->
+<?php $labFitMode = $labFitMode ?? 'guest'; ?>
+
 <div class="lab-page">
     
     <!-- HERO SECTION - Now positioned closer to navbar -->
@@ -40,6 +42,28 @@
                             <button class="clear-search-btn ms-2" id="clearFilterBtn" type="button" style="display: none;">Clear</button>
                         <?php endif; ?>
                     </div>
+                </div>
+
+                <div class="lab-fit-cta mt-4">
+                    <?php if ($labFitMode === 'eligible'): ?>
+                        <a href="<?= site_url('/laboratories/find-best-lab') ?>" class="btn btn-lg btn-dark px-4 py-3">
+                            <i class="bi bi-stars me-2"></i>
+                            Find Best Lab for My Work
+                        </a>
+                        <div class="small text-muted mt-2">Upload your completed SOP or SWP and let the system suggest the best-fit lab and equipment context.</div>
+                    <?php elseif ($labFitMode === 'guest'): ?>
+                        <a href="<?= site_url('/login') ?>" class="btn btn-lg btn-outline-dark px-4 py-3">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>
+                            Find Best Lab for My Work
+                        </a>
+                        <div class="small text-muted mt-2">You need to log in to use this feature.</div>
+                    <?php else: ?>
+                        <button type="button" class="btn btn-lg btn-outline-dark px-4 py-3" disabled>
+                            <i class="bi bi-stars me-2"></i>
+                            Find Best Lab for My Work
+                        </button>
+                        <div class="small text-muted mt-2">This feature is currently limited to student, staff, and external booking accounts.</div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
