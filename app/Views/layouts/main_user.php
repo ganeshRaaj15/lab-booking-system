@@ -22,6 +22,7 @@ helper(['url', 'asset', 'auth']);
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link href="<?= slams_asset('css/theme.css') ?>" rel="stylesheet">
+    <link href="<?= slams_asset('css/auth.css') ?>" rel="stylesheet">
     <link href="<?= slams_asset('css/mobile-app.css') ?>" rel="stylesheet">
     <?= $this->renderSection('styles') ?>
 </head>

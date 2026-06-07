@@ -1,1 +1,118 @@
-/* Auth page styling is centralized in /css/theme.css. */
+/* SLAMS auth supplementary styles */
+
+/* ── Centered auth card (magic-link, 2FA, confirmation) ── */
+.auth-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100dvh - var(--slams-navbar-height) - 4rem);
+    padding: 1.5rem 0;
+}
+
+.auth-center__card {
+    width: min(100%, 460px);
+    padding: 2.25rem 2.25rem 1.75rem;
+    border: 1px solid var(--slams-auth-card-border);
+    border-radius: 22px;
+    background: var(--slams-auth-card-bg);
+    box-shadow: var(--slams-auth-card-shadow);
+}
+
+.auth-center__head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--slams-border);
+}
+
+.auth-center__icon {
+    display: grid;
+    place-items: center;
+    width: 62px;
+    height: 62px;
+    border: 1px solid color-mix(in srgb, var(--slams-primary) 28%, transparent);
+    border-radius: 20px;
+    background: var(--slams-primary-soft);
+    color: var(--slams-primary);
+    font-size: 1.72rem;
+}
+
+.auth-center__title {
+    margin: 0;
+    color: var(--slams-heading);
+    font-family: var(--slams-font-display);
+    font-size: clamp(1.2rem, 2.2vw, 1.5rem);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.25;
+}
+
+.auth-center__copy {
+    margin: 0;
+    color: var(--slams-muted);
+    font-size: 0.9rem;
+    line-height: 1.55;
+    text-align: center;
+}
+
+.auth-center .form-label {
+    margin-bottom: 0.3rem;
+    color: var(--slams-text);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.auth-center .form-control:focus,
+.auth-center .form-control-lg:focus {
+    border-color: var(--slams-primary);
+    box-shadow: var(--slams-focus);
+}
+
+.auth-center .login-btn,
+.auth-center .btn-fkmp-auth {
+    width: 100%;
+    min-height: 3rem;
+    margin-top: 0.25rem;
+}
+
+.auth-center__footer {
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--slams-border);
+    text-align: center;
+    color: var(--slams-muted);
+    font-size: 0.88rem;
+}
+
+.auth-center__footer a {
+    color: var(--slams-primary);
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.auth-center__footer a:hover {
+    text-decoration: underline;
+}
+
+.auth-center__icon--success {
+    border-color: color-mix(in srgb, var(--slams-success) 30%, transparent);
+    background: color-mix(in srgb, var(--slams-success) 12%, transparent);
+    color: var(--slams-success);
+}
+
+@media (max-width: 991.98px) {
+    .auth-center {
+        min-height: calc(100dvh - var(--slams-navbar-height) - 3rem);
+    }
+}
+
+@media (max-width: 575.98px) {
+    .auth-center__card {
+        border-radius: 18px;
+        padding: 1.75rem 1.25rem 1.4rem;
+    }
+}
