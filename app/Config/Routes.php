@@ -504,14 +504,6 @@ $routes->group('dashboard', ['filter' => 'session'], function ($routes) {
     $routes->post('pic/assets/delete/(:num)',            [PicAssetManagementController::class, 'delete/$1'],        ['filter' => 'group:pic']);
     $routes->post('pic/assets/decommission/(:num)',      [PicAssetManagementController::class, 'decommission/$1'],  ['filter' => 'group:pic']);
 
-    // PIC RESERVATION MANAGEMENT
-    $routes->get('pic/reservations',               [PicLabReservationController::class, 'index'],        ['filter' => 'group:pic']);
-    $routes->get('pic/reservations/create',        [PicLabReservationController::class, 'create'],       ['filter' => 'group:pic']);
-    $routes->post('pic/reservations/store',        [PicLabReservationController::class, 'store'],        ['filter' => 'group:pic']);
-    $routes->get('pic/reservations/edit/(:num)',   [PicLabReservationController::class, 'edit/$1'],      ['filter' => 'group:pic']);
-    $routes->post('pic/reservations/update/(:num)',[PicLabReservationController::class, 'update/$1'],    ['filter' => 'group:pic']);
-    $routes->post('pic/reservations/delete/(:num)',[PicLabReservationController::class, 'delete/$1'],    ['filter' => 'group:pic']);
-
     // MANAGER DASHBOARD
     $routes->get('manager', [ManagerDashboard::class, 'index'], ['filter' => 'group:manager']);
     $routes->get('manager/booking/(:num)', [ManagerDashboard::class, 'getBookingDetails/$1'], ['filter' => 'group:manager']);
@@ -536,6 +528,18 @@ $routes->group('dashboard', ['filter' => 'session'], function ($routes) {
     $routes->get('external-requests/(:num)', [ExternalRequestsController::class, 'show/$1'], ['filter' => 'group:pic,manager,admin']);
     $routes->post('external-requests/update/(:num)', [ExternalRequestsController::class, 'updateStatus/$1'], ['filter' => 'group:pic,manager,admin']);
 });
+
+
+// ====================================================================
+// PIC RESERVATION MANAGEMENT
+// ====================================================================
+
+$routes->get('pic/reservations',                [PicLabReservationController::class, 'index'],        ['filter' => 'group:pic']);
+$routes->get('pic/reservations/create',         [PicLabReservationController::class, 'create'],       ['filter' => 'group:pic']);
+$routes->post('pic/reservations/store',         [PicLabReservationController::class, 'store'],        ['filter' => 'group:pic']);
+$routes->get('pic/reservations/edit/(:num)',    [PicLabReservationController::class, 'edit/$1'],      ['filter' => 'group:pic']);
+$routes->post('pic/reservations/update/(:num)', [PicLabReservationController::class, 'update/$1'],    ['filter' => 'group:pic']);
+$routes->post('pic/reservations/delete/(:num)', [PicLabReservationController::class, 'delete/$1'],    ['filter' => 'group:pic']);
 
 
 // ====================================================================
