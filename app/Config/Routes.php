@@ -38,6 +38,7 @@ use App\Controllers\Api\NativeAdminSettingsController;
 use App\Controllers\Api\NativeAdminUserController;
 use App\Controllers\Api\NativeAdminLaboratoryController;
 use App\Controllers\Api\NativeAdminAssetController;
+use App\Controllers\Api\NativeReservationController;
 
 // ---------------------------------------------------------
 // DASHBOARD CONTROLLERS
@@ -156,6 +157,12 @@ $routes->group('api/native', ['filter' => 'tokens'], static function ($routes) {
     $routes->get('maintenance/(:num)', [NativeMaintenanceController::class, 'show/$1']);
     $routes->post('maintenance', [NativeMaintenanceController::class, 'store']);
     $routes->post('maintenance/(:num)', [NativeMaintenanceController::class, 'update/$1']);
+
+    $routes->get('reservations', [NativeReservationController::class, 'index']);
+    $routes->get('reservations/(:num)', [NativeReservationController::class, 'show/$1']);
+    $routes->post('reservations', [NativeReservationController::class, 'store']);
+    $routes->post('reservations/(:num)', [NativeReservationController::class, 'update/$1']);
+    $routes->post('reservations/(:num)/delete', [NativeReservationController::class, 'delete/$1']);
 
     $routes->get('documents/pdf/(:segment)', [DocumentController::class, 'viewPdf/$1']);
 });

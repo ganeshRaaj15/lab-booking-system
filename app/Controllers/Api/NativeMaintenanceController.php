@@ -73,14 +73,14 @@ class NativeMaintenanceController extends WebMaintenanceController
             'status' => 'success',
             'stats' => [
                 'assigned' => (int) $statsModel
-                    ->where('assigned_technician_id', $user->id)
-                    ->whereIn('status', $openStatuses)
+                    ->where('maintenance_records.assigned_technician_id', $user->id)
+                    ->whereIn('maintenance_records.status', $openStatuses)
                     ->countAllResults(),
                 'open_total' => (int) $statsModelOpen
-                    ->whereIn('status', $openStatuses)
+                    ->whereIn('maintenance_records.status', $openStatuses)
                     ->countAllResults(),
                 'testing' => (int) $statsModelTesting
-                    ->where('status', 'testing')
+                    ->where('maintenance_records.status', 'testing')
                     ->countAllResults(),
                 // predictive reflects the full actionable set, not just the capped display slice
                 'predictive' => $predictiveTotal,
