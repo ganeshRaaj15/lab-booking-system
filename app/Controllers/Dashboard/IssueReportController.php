@@ -89,6 +89,10 @@ class IssueReportController extends BaseController
             return redirect()->back()->withInput()->with('error', 'Selected asset was not found.');
         }
 
+        if (in_array($asset['status'] ?? '', $this->assetModel->permanentStatuses(), true)) {
+            return redirect()->back()->withInput()->with('error', 'This asset has been decommissioned and can no longer be reported.');
+        }
+
         // Backend validation: asset must belong to the submitted lab_id.
         if ((int) $asset['lab_id'] !== $labId) {
             return redirect()->back()->withInput()->with('error', 'The selected asset does not belong to the selected laboratory.');
@@ -244,7 +248,8 @@ class IssueReportController extends BaseController
     {
         $builder = $this->assetModel
             ->select('assets.id, assets.name, assets.asset_code, assets.status, assets.quantity, assets.total_quantity, laboratories.name AS lab_name, laboratories.room AS lab_room')
-            ->join('laboratories', 'laboratories.id = assets.lab_id', 'left');
+            ->join('laboratories', 'laboratories.id = assets.lab_id', 'left')
+            ->where('assets.status !=', 'decommissioned');
 
         if ($user->inGroup('pic')) {
             $builder->where('LOWER(TRIM(laboratories.pic_email)) =', strtolower(trim((string) $user->email)));
