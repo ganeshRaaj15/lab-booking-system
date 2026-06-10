@@ -106,16 +106,10 @@ class ManagerDashboard extends BaseController
         ]);
     }
 
-    public function planMaintenance()
+    public function planMaintenanceForm(int $assetId)
     {
         if (! auth()->loggedIn() || ! auth()->user()->inGroup('manager')) {
             return redirect()->to('/dashboard')->with('error', 'Access denied.');
-        }
-
-        $user = auth()->user();
-        $assetId = (int) $this->request->getPost('asset_id');
-        if ($assetId <= 0) {
-            return redirect()->to('/dashboard/manager')->with('error', 'Selected equipment was not provided.');
         }
 
         $asset = $this->assetModel
@@ -123,6 +117,7 @@ class ManagerDashboard extends BaseController
             ->join('laboratories', 'laboratories.id = assets.lab_id', 'left')
             ->where('assets.id', $assetId)
             ->first();
+
         if (! $asset) {
             return redirect()->to('/dashboard/manager')->with('error', 'Selected equipment was not found.');
         }
@@ -135,59 +130,126 @@ class ManagerDashboard extends BaseController
             ->where('asset_id', $assetId)
             ->whereIn('status', $this->maintenanceModel->openStatuses())
             ->first();
+
         if ($existingOpenCase) {
             return redirect()->to('/dashboard/manager')->with('error', 'An open maintenance case already exists for this equipment.');
         }
 
         $forecast = $this->forecastForAsset($assetId);
-        $title = 'Planned Maintenance - ' . ($asset['name'] ?? 'Equipment');
-        $description = $this->plannedMaintenanceDescription($asset, $forecast);
-        $priority = $this->plannedMaintenancePriority($forecast);
-        $scheduledFor = $this->plannedMaintenanceSchedule($forecast);
+
+        return view('dashboard/manager/plan_maintenance', [
+            'title'        => 'Plan Maintenance | FKMP Smart Lab',
+            'page'         => 'Plan Maintenance',
+            'user'         => auth()->user(),
+            'asset'        => $asset,
+            'forecast'     => $forecast,
+            'prefillTitle' => 'Planned Maintenance - ' . ($asset['name'] ?? 'Equipment'),
+            'prefillDesc'  => $this->plannedMaintenanceDescription($asset, $forecast),
+            'prefillPrio'  => $this->plannedMaintenancePriority($forecast),
+            'prefillDate'  => $this->plannedMaintenanceSchedule($forecast)
+                ? date('Y-m-d', strtotime((string) $this->plannedMaintenanceSchedule($forecast)))
+                : date('Y-m-d', strtotime('+7 days')),
+        ]);
+    }
+
+    public function planMaintenance()
+    {
+        if (! auth()->loggedIn() || ! auth()->user()->inGroup('manager')) {
+            return redirect()->to('/dashboard')->with('error', 'Access denied.');
+        }
+
+        $user = auth()->user();
+        $assetId = (int) $this->request->getPost('asset_id');
+        if ($assetId <= 0) {
+            return redirect()->to('/dashboard/manager')->with('error', 'Selected equipment was not provided.');
+        }
+
+        $rules = [
+            'asset_id'        => 'required|integer',
+            'title'           => 'required|min_length[3]|max_length[255]',
+            'priority'        => 'required|in_list[low,medium,high,critical]',
+            'description'     => 'required|min_length[10]',
+            'scheduled_for'   => 'permit_empty|valid_date[Y-m-d]',
+            'unit_reference'  => 'permit_empty|max_length[120]',
+        ];
+
+        if (! $this->validate($rules)) {
+            return redirect()->to('/dashboard/manager/plan-maintenance/' . $assetId)
+                ->withInput()
+                ->with('error', implode(' ', $this->validator->getErrors()));
+        }
+
+        $asset = $this->assetModel
+            ->select('assets.*, laboratories.name AS lab_name')
+            ->join('laboratories', 'laboratories.id = assets.lab_id', 'left')
+            ->where('assets.id', $assetId)
+            ->first();
+
+        if (! $asset) {
+            return redirect()->to('/dashboard/manager')->with('error', 'Selected equipment was not found.');
+        }
+
+        if (in_array($asset['status'] ?? '', $this->assetModel->permanentStatuses(), true)) {
+            return redirect()->to('/dashboard/manager')->with('error', 'This asset has been decommissioned and cannot have maintenance planned.');
+        }
+
+        $existingOpenCase = $this->maintenanceModel
+            ->where('asset_id', $assetId)
+            ->whereIn('status', $this->maintenanceModel->openStatuses())
+            ->first();
+
+        if ($existingOpenCase) {
+            return redirect()->to('/dashboard/manager')->with('error', 'An open maintenance case already exists for this equipment.');
+        }
+
+        $scheduledRaw  = trim((string) $this->request->getPost('scheduled_for'));
+        $scheduledFor  = $scheduledRaw !== '' ? $scheduledRaw . ' 09:00:00' : null;
+        $unitReference = trim((string) $this->request->getPost('unit_reference'));
 
         $db = \Config\Database::connect();
         $db->transStart();
 
         $maintenanceId = $this->maintenanceModel->insert([
-            'asset_id' => $assetId,
-            'quantity_affected' => 1,
-            'unit_reference' => null,
-            'reported_by' => $user->id,
+            'asset_id'               => $assetId,
+            'quantity_affected'      => 1,
+            'unit_reference'         => $unitReference !== '' ? $unitReference : null,
+            'reported_by'            => $user->id,
             'assigned_technician_id' => null,
-            'title' => $title,
-            'issue_type' => 'preventive',
-            'priority' => $priority,
-            'description' => $description,
-            'report_photo_path' => null,
-            'status' => 'reported',
-            'asset_status_before' => $asset['status'] ?? 'available',
-            'asset_status_after' => null,
-            'scheduled_for' => $scheduledFor,
-            'accepted_at' => null,
-            'diagnosis_notes' => null,
-            'started_at' => null,
-            'work_notes' => null,
-            'tested_at' => null,
-            'test_notes' => null,
-            'completed_at' => null,
-            'resolution_notes' => null,
-            'completion_photo_path' => null,
+            'title'                  => trim((string) $this->request->getPost('title')),
+            'issue_type'             => 'preventive',
+            'priority'               => $this->request->getPost('priority'),
+            'description'            => trim((string) $this->request->getPost('description')),
+            'report_photo_path'      => null,
+            'status'                 => 'reported',
+            'asset_status_before'    => $asset['status'] ?? 'available',
+            'asset_status_after'     => null,
+            'scheduled_for'          => $scheduledFor,
+            'accepted_at'            => null,
+            'diagnosis_notes'        => null,
+            'started_at'             => null,
+            'work_notes'             => null,
+            'tested_at'              => null,
+            'test_notes'             => null,
+            'completed_at'           => null,
+            'resolution_notes'       => null,
+            'completion_photo_path'  => null,
         ], true);
 
         $this->maintenanceLogModel->insert([
             'maintenance_id' => $maintenanceId,
-            'changed_by' => $user->id,
-            'from_status' => null,
-            'to_status' => 'reported',
-            'notes' => 'Lab manager requested planned maintenance for this asset based on predictive maintenance risk.',
-            'created_at' => date('Y-m-d H:i:s'),
+            'changed_by'     => $user->id,
+            'from_status'    => null,
+            'to_status'      => 'reported',
+            'notes'          => 'Planned maintenance requested by lab manager.',
+            'created_at'     => date('Y-m-d H:i:s'),
         ]);
 
         $this->assetModel->syncManagedAvailability($assetId);
         $db->transComplete();
 
         if (! $db->transStatus()) {
-            return redirect()->to('/dashboard/manager')->with('error', 'Unable to create the planned maintenance case right now.');
+            return redirect()->to('/dashboard/manager/plan-maintenance/' . $assetId)
+                ->with('error', 'Unable to create the planned maintenance case right now.');
         }
 
         NotificationService::dispatchSafely(
@@ -195,7 +257,7 @@ class ManagerDashboard extends BaseController
             'planned maintenance requested'
         );
 
-        return redirect()->to('/dashboard/manager')->with('success', 'Planned maintenance case created and sent to the responsible PIC.');
+        return redirect()->to('/dashboard/manager')->with('success', 'Planned maintenance case created and the responsible PIC has been notified.');
     }
 
     /**
