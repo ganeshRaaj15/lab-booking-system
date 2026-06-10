@@ -190,6 +190,10 @@ class NativeMaintenanceController extends WebMaintenanceController
             return $this->unprocessable('Selected asset was not found.');
         }
 
+        if (in_array($asset['status'] ?? '', $this->assetModel->permanentStatuses(), true)) {
+            return $this->unprocessable('This asset has been decommissioned and cannot have maintenance planned.');
+        }
+
         if ($message = $this->validatePreMaintenanceInput($input, $asset, null)) {
             return $this->unprocessable($message);
         }

@@ -127,6 +127,10 @@ class ManagerDashboard extends BaseController
             return redirect()->to('/dashboard/manager')->with('error', 'Selected equipment was not found.');
         }
 
+        if (in_array($asset['status'] ?? '', $this->assetModel->permanentStatuses(), true)) {
+            return redirect()->to('/dashboard/manager')->with('error', 'This asset has been decommissioned and cannot have maintenance planned.');
+        }
+
         $existingOpenCase = $this->maintenanceModel
             ->where('asset_id', $assetId)
             ->whereIn('status', $this->maintenanceModel->openStatuses())

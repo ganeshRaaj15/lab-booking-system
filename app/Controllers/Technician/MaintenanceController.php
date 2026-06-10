@@ -161,6 +161,10 @@ class MaintenanceController extends BaseController
             return redirect()->back()->withInput()->with('error', 'Selected asset was not found.');
         }
 
+        if (in_array($asset['status'] ?? '', $this->assetModel->permanentStatuses(), true)) {
+            return redirect()->back()->withInput()->with('error', 'This asset has been decommissioned and cannot have maintenance planned.');
+        }
+
         if ($message = $this->validatePreMaintenanceInput($input, $asset, null)) {
             return redirect()->back()->withInput()->with('error', $message);
         }

@@ -125,6 +125,10 @@ class NativeIssueReportController extends WebIssueReportController
             return $this->unprocessable('Selected asset was not found.');
         }
 
+        if (in_array($asset['status'] ?? '', $this->assetModel->permanentStatuses(), true)) {
+            return $this->unprocessable('This asset has been decommissioned and can no longer be reported.');
+        }
+
         $allowedAsset = null;
         foreach ($this->availableAssetsForReporter($user) as $option) {
             if ((int) $option['id'] === $assetId) {
