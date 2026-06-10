@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace App\Libraries;
 
@@ -37,6 +37,7 @@ class NotificationService
     {
         $context = $this->bookingContext((int) ($booking['id'] ?? 0), $booking);
         if (! $context) {
+            log_message('error', 'notifyBookingSubmitted skipped: booking context missing for booking id ' . (int) ($booking['id'] ?? 0));
             return;
         }
 
@@ -799,6 +800,7 @@ class NotificationService
             $row = $fallback;
         }
         if (! $row) {
+            log_message('error', 'NotificationService::bookingContext could not resolve booking ' . $bookingId);
             return null;
         }
 

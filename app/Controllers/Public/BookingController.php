@@ -692,7 +692,9 @@ class BookingController extends BaseController
         }
 
         NotificationService::dispatchSafely(
-            fn(NotificationService $notifications) => $notifications->notifyBookingSubmitted($bookingModel->find($bookingId) ?: []),
+            fn(NotificationService $notifications) => $notifications->notifyBookingSubmitted([
+                'id' => (int) $bookingId,
+            ]),
             'booking submitted'
         );
 
