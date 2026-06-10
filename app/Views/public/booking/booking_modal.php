@@ -341,6 +341,21 @@ document.addEventListener("DOMContentLoaded", () => {
     let slotConflict = null;
     let currentServiceContext = null;
 
+    function applyCsrfToken(name, value) {
+        if (!name || !value) return;
+
+        const csrfInput = form.querySelector(`input[name="${csrfTokenName}"]`)
+            || form.querySelector(`input[name="${name}"]`);
+
+        csrfTokenName = name;
+        csrfTokenValue = value;
+
+        if (csrfInput) {
+            csrfInput.name = csrfTokenName;
+            csrfInput.value = csrfTokenValue;
+        }
+    }
+
     function shouldShowRecommendations() {
         return (!dateField.value && !startField.value && !endField.value);
     }
@@ -547,13 +562,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // CI4 with tokenRandomize=true regenerates both the token name and value on
             // every validated POST. The response carries the fresh pair under fixed keys.
             if (data.csrf_name && data.csrf_hash) {
-                const csrfInput = form.querySelector(`input[name="${csrfTokenName}"]`);
-                csrfTokenName = data.csrf_name;
-                csrfTokenValue = data.csrf_hash;
-                if (csrfInput) {
-                    csrfInput.name = csrfTokenName;
-                    csrfInput.value = csrfTokenValue;
-                }
+                applyCsrfToken(data.csrf_name, data.csrf_hash);
             }
 
             slotConflict = !!data.conflict;
@@ -973,11 +982,26 @@ document.addEventListener("DOMContentLoaded", () => {
             headers: {"X-Requested-With": "XMLHttpRequest"},
             body  : fd
         })
-        .then(r => r.json())
+        .then(async (r) => {
+            const text = await r.text();
+            let data = null;
+
+            try {
+                data = JSON.parse(text);
+            } catch {
+                data = {
+                    status: "error",
+                    message: r.ok
+                        ? "The server returned an unexpected response."
+                        : `Request failed with HTTP ${r.status}.`,
+                };
+            }
+
+            return data;
+        })
         .then(data => {
             if (data.csrf_name && data.csrf_hash) {
-                csrfTokenName  = data.csrf_name;
-                csrfTokenValue = data.csrf_hash;
+                applyCsrfToken(data.csrf_name, data.csrf_hash);
             }
             if (data.status === "success") {
                 errorArea.innerHTML = `
@@ -994,8 +1018,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     form.reset();
                     // Re-apply current CSRF token after reset() wipes the hidden field
-                    const csrfInput = form.querySelector('input[name="' + csrfTokenName + '"]');
-                    if (csrfInput) csrfInput.value = csrfTokenValue;
+                    applyCsrfToken(csrfTokenName, csrfTokenValue);
                     window.resetBookingWizard();
                 }, 1200);
 
@@ -1003,8 +1026,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 showError(data.message || "Failed to submit booking.");
             }
         })
-        .catch(() => {
-            showError("Unexpected error submitting booking.");
+        .catch((error) => {
+            showError(error?.message || "Unexpected error submitting booking.");
         });
     });
 

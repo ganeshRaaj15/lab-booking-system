@@ -79,7 +79,7 @@ class UserSeeder extends Seeder
         };
 
         $createUser('admin', 'admin@fkmp.uthm.edu.my', 'Admin@12345', 'admin');
-        $c`reateUser('piclab01', 'pic.lab01@fkmp.uthm.edu.my', 'Pic@12345', 'pic');
+        $createUser('piclab01', 'pic.lab01@fkmp.uthm.edu.my', 'Pic@12345', 'pic');
         $createUser('manager01', 'manager01@fkmp.uthm.edu.my', 'Manager@12345', 'manager');
         $createUser('tech01', 'tech01@fkmp.uthm.edu.my', 'Tech@12345', 'pic');
         $createUser('d1230042', 'd1230042@student.uthm.edu.my', 'Student@12345', 'student');

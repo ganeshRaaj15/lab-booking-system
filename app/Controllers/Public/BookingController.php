@@ -194,35 +194,45 @@ class BookingController extends BaseController
     public function calendarWithAssets(int $labId): ResponseInterface
     {
         $serviceId = (int) $this->request->getGet('service_id');
+        $rangeStart = $this->request->getGet('start');
+        $rangeEnd = $this->request->getGet('end');
         $selected = $this->resolveSelectedAssets($labId, $serviceId, (string) $this->request->getGet('assets'));
 
         return $this->response->setJSON([
-            'unavailableDates' => $this->calendarAssetsInternal($labId, $selected)
+            'unavailableDates' => $this->calendarAssetsInternal(
+                $labId,
+                $selected,
+                is_string($rangeStart) ? $rangeStart : null,
+                is_string($rangeEnd) ? $rangeEnd : null
+            )
         ]);
     }
 
-    protected function calendarAssetsInternal(int $labId, array $selected): array
+    protected function calendarAssetsInternal(int $labId, array $selected, ?string $rangeStart = null, ?string $rangeEnd = null): array
     {
         if (empty($selected)) return [];
 
-        $db               = \Config\Database::connect();
         $bookingModel     = new BookingModel();
         $reservationModel = new LabReservationModel();
         $today = date('Y-m-d');
         $slotDefs = $this->getSlotDefinitions();
-
-        $dates = $db->table('bookings')
-            ->select('date')
-            ->distinct()
-            ->where('lab_id', $labId)
-            ->where('date >=', $today)
-            ->whereIn('status', ['PENDING', 'APPROVED'])
-            ->get()->getResultArray();
-
-        $dates = array_column($dates, 'date');
         $unavailable = [];
+        $startDate = $this->validCalendarDate($rangeStart) ? $rangeStart : $today;
+        $endDate = $this->validCalendarDate($rangeEnd) ? $rangeEnd : date('Y-m-t', strtotime($startDate));
 
-        foreach ($dates as $date) {
+        if ($endDate < $startDate) {
+            $endDate = $startDate;
+        }
+
+        $cursor = new \DateTimeImmutable($startDate);
+        $end = new \DateTimeImmutable($endDate);
+
+        while ($cursor <= $end) {
+            $date = $cursor->format('Y-m-d');
+            if ($date < $today) {
+                $cursor = $cursor->modify('+1 day');
+                continue;
+            }
 
             $hasValidSlot = false;
 
@@ -257,6 +267,8 @@ class BookingController extends BaseController
             if (! $hasValidSlot) {
                 $unavailable[] = $date;
             }
+
+            $cursor = $cursor->modify('+1 day');
         }
 
         return $unavailable;
@@ -470,29 +482,21 @@ class BookingController extends BaseController
         ];
 
         if (! $this->validate($rules)) {
-            return $this->response->setJSON([
-                'status'  => 'error',
-                'message' => 'Validation failed.',
-                'errors'  => $this->validator->getErrors(),
+            return $this->errorJson('Validation failed.', [
+                'errors' => $this->validator->getErrors(),
             ]);
         }
 
         helper('auth');
 
         if (! auth()->loggedIn()) {
-            return $this->response->setJSON([
-                'status'  => 'error',
-                'message' => 'You must log in to submit a booking.'
-            ]);
+            return $this->errorJson('You must log in to submit a booking.');
         }
 
         $user = auth()->user();
 
         if ($user->inGroup('external')) {
-            return $this->response->setJSON([
-                'status'  => 'error',
-                'message' => 'External users cannot submit bookings directly. Please use the lab access request flow instead.'
-            ]);
+            return $this->errorJson('External users cannot submit bookings directly. Please use the lab access request flow instead.');
         }
 
         $userType = 'UTHM';
@@ -508,24 +512,15 @@ class BookingController extends BaseController
 
         $service = $this->findLabService($labId, $serviceId);
         if ($service === null) {
-            return $this->response->setJSON([
-                'status'  => 'error',
-                'message' => 'Please choose a valid service for this laboratory.'
-            ]);
+            return $this->errorJson('Please choose a valid service for this laboratory.');
         }
 
         if ($startTime >= $endTime) {
-            return $this->response->setJSON([
-                'status'  => 'error',
-                'message' => 'End time must be later than start time.'
-            ]);
+            return $this->errorJson('End time must be later than start time.');
         }
 
         if ($this->findMatchingSlotDefinition($startTime, $endTime) === null) {
-            return $this->response->setJSON([
-                'status'  => 'error',
-                'message' => 'Please choose one of the configured booking sessions for this laboratory.',
-            ]);
+            return $this->errorJson('Please choose one of the configured booking sessions for this laboratory.');
         }
 
         $names = $this->request->getPost('applicant_name') ?? [];
@@ -549,17 +544,11 @@ class BookingController extends BaseController
             }
 
             if ($name === '' || $matricId === '' || $email === '' || $phone === '' || $facultyValue === '') {
-                return $this->response->setJSON([
-                    'status'  => 'error',
-                    'message' => 'Each applicant must include name, ID, email, phone, and faculty.'
-                ]);
+                return $this->errorJson('Each applicant must include name, ID, email, phone, and faculty.');
             }
 
             if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                return $this->response->setJSON([
-                    'status'  => 'error',
-                    'message' => 'One or more applicant email addresses are invalid.'
-                ]);
+                return $this->errorJson('One or more applicant email addresses are invalid.');
             }
 
             $applicants[] = [
@@ -572,26 +561,17 @@ class BookingController extends BaseController
         }
 
         if ($applicants === []) {
-            return $this->response->setJSON([
-                'status'  => 'error',
-                'message' => 'Please add at least one applicant before submitting.'
-            ]);
+            return $this->errorJson('Please add at least one applicant before submitting.');
         }
 
         $facultyId = (int) $applicants[0]['faculty'];
         if ($facultyId <= 0) {
-            return $this->response->setJSON([
-                'status'  => 'error',
-                'message' => 'Please select a valid faculty for the primary applicant.'
-            ]);
+            return $this->errorJson('Please select a valid faculty for the primary applicant.');
         }
 
         $approvalFlow = (new ApprovalFlowResolver())->resolveForFacultyId($facultyId);
         if ($approvalFlow === null) {
-            return $this->response->setJSON([
-                'status'  => 'error',
-                'message' => 'The selected faculty is not recognized. Please refresh and try again.'
-            ]);
+            return $this->errorJson('The selected faculty is not recognized. Please refresh and try again.');
         }
         $selectedAssets = $this->resolveSelectedAssets(
             $labId,
@@ -600,36 +580,24 @@ class BookingController extends BaseController
         );
 
         if (empty($selectedAssets)) {
-            return $this->response->setJSON([
-                'status' => 'error',
-                'message' => 'No linked equipment is available for the selected service.'
-            ]);
+            return $this->errorJson('No linked equipment is available for the selected service.');
         }
 
         $bookingModel = new BookingModel();
         if ($bookingModel->hasLabConflict($labId, $date, $startTime, $endTime)) {
-            return $this->response->setJSON([
-                'status'  => 'error',
-                'message' => 'This laboratory is already booked for the selected date and time.'
-            ]);
+            return $this->errorJson('This laboratory is already booked for the selected date and time.');
         }
 
         $reservation = (new LabReservationModel())->conflictsWithSlot($labId, $date, $startTime, $endTime);
         if ($reservation) {
-            return $this->response->setJSON([
-                'status'  => 'error',
-                'message' => 'This time slot is reserved: ' . $reservation['title'],
-            ]);
+            return $this->errorJson('This time slot is reserved: ' . $reservation['title']);
         }
 
         $remaining = $this->computeRemainingForSlot($labId, $date, $startTime, $endTime, $selectedAssets);
 
         foreach ($selectedAssets as $assetId => $qtyNeeded) {
             if (($remaining[$assetId] ?? 0) < $qtyNeeded) {
-                return $this->response->setJSON([
-                    'status'  => 'error',
-                    'message' => 'Selected assets are not available for that slot.'
-                ]);
+                return $this->errorJson('Selected assets are not available for that slot.');
             }
         }
 
@@ -717,7 +685,9 @@ class BookingController extends BaseController
                 'status'  => 'error',
                 'message' => $e instanceof \DomainException
                     ? $e->getMessage()
-                    : 'Failed to save booking. Please try again.'
+                    : 'Failed to save booking. Please try again.',
+                'csrf_name' => csrf_token(),
+                'csrf_hash' => csrf_hash(),
             ]);
         }
 
@@ -732,6 +702,23 @@ class BookingController extends BaseController
             'csrf_name'  => csrf_token(),
             'csrf_hash'  => csrf_hash(),
         ]);
+    }
+
+    protected function validCalendarDate(?string $date): bool
+    {
+        return is_string($date)
+            && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) === 1
+            && strtotime($date) !== false;
+    }
+
+    protected function errorJson(string $message, array $extra = []): ResponseInterface
+    {
+        return $this->response->setJSON(array_merge([
+            'status' => 'error',
+            'message' => $message,
+            'csrf_name' => csrf_token(),
+            'csrf_hash' => csrf_hash(),
+        ], $extra));
     }
 }
 

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace App\Controllers\Dashboard;
 
@@ -61,8 +61,19 @@ class ManagerDashboard extends BaseController
         // ------------------------------------------------------------
         // 2. PENDING MANAGER APPROVALS (Non-FKMP bookings + external requests)
         // ------------------------------------------------------------
-        $pendingMgr         = $this->getPendingManagerApprovals($labIds);
-        $pendingExternalMgr = $this->getPendingExternalApprovals();
+        try {
+            $pendingMgr = $this->getPendingManagerApprovals($labIds);
+        } catch (\Throwable $e) {
+            log_message('error', 'ManagerDashboard::getPendingManagerApprovals failed: ' . $e->getMessage());
+            $pendingMgr = [];
+        }
+
+        try {
+            $pendingExternalMgr = $this->getPendingExternalApprovals();
+        } catch (\Throwable $e) {
+            log_message('error', 'ManagerDashboard::getPendingExternalApprovals failed: ' . $e->getMessage());
+            $pendingExternalMgr = [];
+        }
 
         // ------------------------------------------------------------
         // 3. COMPREHENSIVE STATISTICS
@@ -244,6 +255,11 @@ class ManagerDashboard extends BaseController
 
     private function getPendingExternalApprovals(): array
     {
+        $db = \Config\Database::connect();
+        if (! $db->tableExists('external_requests')) {
+            return [];
+        }
+
         $externalRequestModel = new ExternalRequestModel();
 
         return $externalRequestModel

@@ -79,6 +79,7 @@ use App\Controllers\Admin\LaboratoryAdminController;
 use App\Controllers\Admin\UserManagementController;
 use App\Controllers\Auth\PasswordRecoveryController;
 use App\Controllers\Technician\MaintenanceController;
+use CodeIgniter\Shield\Controllers\ActionController;
 
 
 // ====================================================================
@@ -645,6 +646,13 @@ $routes->group('technician', ['filter' => 'group:pic,admin'], function ($routes)
 $routes->get('login/magic-link', [PasswordRecoveryController::class, 'loginView'], ['as' => 'magic-link']);
 $routes->post('login/magic-link', [PasswordRecoveryController::class, 'loginAction']);
 $routes->get('login/verify-magic-link', [PasswordRecoveryController::class, 'verify'], ['as' => 'verify-magic-link']);
+
+// Graceful redirect when user refreshes the OTP pages (Shield only defines POST for these)
+$routes->get('auth/a/handle', static function () { return redirect()->route('auth-action-show'); });
+$routes->get('auth/a/verify', static function () { return redirect()->route('auth-action-show'); });
+$routes->get('auth/a/show', [ActionController::class, 'show'], ['as' => 'auth-action-show']);
+$routes->post('auth/a/handle', [ActionController::class, 'handle'], ['as' => 'auth-action-handle']);
+$routes->post('auth/a/verify', [ActionController::class, 'verify'], ['as' => 'auth-action-verify']);
 
 service('auth')->routes($routes, ['except' => ['magic-link']]);
 

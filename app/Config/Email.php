@@ -3,6 +3,7 @@
 namespace Config;
 
 use CodeIgniter\Config\BaseConfig;
+use Config\App as AppConfig;
 
 class Email extends BaseConfig
 {
@@ -36,7 +37,7 @@ class Email extends BaseConfig
     {
         parent::__construct();
 
-        $this->fromEmail = trim((string) env('email.fromEmail', $this->fromEmail));
+        $this->fromEmail = trim((string) env('email.fromEmail', $this->resolvedFallbackFromEmail()));
         $this->fromName = trim((string) env('email.fromName', $this->fromName));
         $this->protocol = trim((string) env('email.protocol', $this->protocol));
         $this->SMTPHost = trim((string) env('email.SMTPHost', $this->SMTPHost));
@@ -46,6 +47,21 @@ class Email extends BaseConfig
         $this->SMTPCrypto = trim((string) env('email.SMTPCrypto', $this->SMTPCrypto));
         $this->SMTPHeloHost = trim((string) env('email.SMTPHeloHost', $this->SMTPHeloHost));
         $this->mailType = trim((string) env('email.mailType', $this->mailType));
+    }
+
+    private function resolvedFallbackFromEmail(): string
+    {
+        $configured = trim($this->fromEmail);
+        if ($configured !== '' && ! str_ends_with(strtolower($configured), '.local')) {
+            return $configured;
+        }
+
+        $host = parse_url((string) config(AppConfig::class)->baseURL, PHP_URL_HOST);
+        if (is_string($host) && $host !== '') {
+            return 'no-reply@' . preg_replace('/^www\./i', '', strtolower($host));
+        }
+
+        return $this->fromEmail;
     }
 
     private function normalizeSmtpPassword(string $password, string $host): string

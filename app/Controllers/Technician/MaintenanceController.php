@@ -716,13 +716,17 @@ class MaintenanceController extends BaseController
         $now = date('Y-m-d H:i:s');
         $bookingIds = array_column($affected, 'id');
 
-        $db->table('bookings')->whereIn('id', $bookingIds)->update([
-            'status'              => 'CANCELLED',
-            'approved_by_pic'     => 0,
+        $cancelData = [
+            'status'          => 'CANCELLED',
+            'approved_by_pic' => 0,
             'approved_by_manager' => 0,
-            'cancellation_reason' => $reason,
-            'updated_at'          => $now,
-        ]);
+            'updated_at'      => $now,
+        ];
+        $bookingFields = $db->getFieldNames('bookings');
+        if (is_array($bookingFields) && in_array('cancellation_reason', $bookingFields, true)) {
+            $cancelData['cancellation_reason'] = $reason;
+        }
+        $db->table('bookings')->whereIn('id', $bookingIds)->update($cancelData);
 
         $ctx = $this->maintenanceContext($maintenanceId);
         if (! $ctx) {

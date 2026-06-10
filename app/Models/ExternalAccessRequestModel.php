@@ -27,9 +27,15 @@ class ExternalAccessRequestModel extends Model
         'created_user_id',
     ];
 
+    protected function tableReady(): bool
+    {
+        return $this->db->tableExists($this->table);
+    }
+
     /** True if a pending request already exists for this email. */
     public function hasPendingRequest(string $email): bool
     {
+        if (! $this->tableReady()) return false;
         return $this->where('LOWER(email) =', strtolower(trim($email)))
                     ->where('status', 'pending')
                     ->countAllResults() > 0;
@@ -38,6 +44,7 @@ class ExternalAccessRequestModel extends Model
     /** True if an approved request already exists for this email (account may already exist). */
     public function hasApprovedRequest(string $email): bool
     {
+        if (! $this->tableReady()) return false;
         return $this->where('LOWER(email) =', strtolower(trim($email)))
                     ->where('status', 'approved')
                     ->countAllResults() > 0;

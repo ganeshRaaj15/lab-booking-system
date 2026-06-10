@@ -733,6 +733,16 @@ document.addEventListener("DOMContentLoaded", function () {
             return `${y}-${this._pad(m + 1)}-${this._pad(d)}`;
         },
 
+        currentRange() {
+            const firstDay = new Date(this.year, this.month, 1);
+            const lastDay  = new Date(this.year, this.month + 1, 0);
+
+            return {
+                start: this._dateStr(firstDay.getFullYear(), firstDay.getMonth(), firstDay.getDate()),
+                end: this._dateStr(lastDay.getFullYear(), lastDay.getMonth(), lastDay.getDate()),
+            };
+        },
+
         render() {
             if (!this.el) return;
 
@@ -849,7 +859,18 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        fetch(`/api/calendar-with-assets/${LAB_ID}?service_id=${encodeURIComponent(serviceId)}&assets=${encodeURIComponent(assets)}`)
+        const range = typeof calendar.currentRange === "function"
+            ? calendar.currentRange()
+            : null;
+        const params = new URLSearchParams({
+            service_id: serviceId,
+            assets,
+        });
+
+        if (range?.start) params.set("start", range.start);
+        if (range?.end) params.set("end", range.end);
+
+        fetch(`/api/calendar-with-assets/${LAB_ID}?${params.toString()}`)
             .then(r => r.json())
             .then(data => {
                 calendar.setEvents(data.unavailableDates || []);

@@ -26,26 +26,36 @@ class LabReservationModel extends Model
      */
     public function conflictsWithSlot(int $labId, string $date, string $start, string $end): ?array
     {
-        $row = $this->db->query(
-            "SELECT id, title, type
-             FROM lab_reservations
-             WHERE lab_id = ?
-               AND (
-                     (recurrence = 'none'
-                      AND `date` = ?
-                      AND start_time < ?
-                      AND end_time > ?)
-                  OR
-                     (recurrence = 'weekly'
-                      AND day_of_week = WEEKDAY(?)
-                      AND start_time < ?
-                      AND end_time > ?
-                      AND (valid_from  IS NULL OR valid_from  <= ?)
-                      AND (valid_until IS NULL OR valid_until >= ?))
-               )
-             LIMIT 1",
-            [$labId, $date, $end, $start, $date, $end, $start, $date, $date]
-        )->getRowArray();
+        if (! $this->db->tableExists($this->table)) {
+            return null;
+        }
+
+        try {
+            $result = $this->db->query(
+                "SELECT id, title, type
+                 FROM lab_reservations
+                 WHERE lab_id = ?
+                   AND (
+                         (recurrence = 'none'
+                          AND `date` = ?
+                          AND start_time < ?
+                          AND end_time > ?)
+                      OR
+                         (recurrence = 'weekly'
+                          AND day_of_week = WEEKDAY(?)
+                          AND start_time < ?
+                          AND end_time > ?
+                          AND (valid_from  IS NULL OR valid_from  <= ?)
+                          AND (valid_until IS NULL OR valid_until >= ?))
+                   )
+                 LIMIT 1",
+                [$labId, $date, $end, $start, $date, $end, $start, $date, $date]
+            );
+            $row = $result ? $result->getRowArray() : null;
+        } catch (\Throwable $e) {
+            log_message('warning', 'lab_reservations conflict check failed: ' . $e->getMessage());
+            return null;
+        }
 
         return $row ?: null;
     }
@@ -53,6 +63,10 @@ class LabReservationModel extends Model
     /** All reservations for a specific lab, newest first. */
     public function getForLab(int $labId): array
     {
+        if (! $this->db->tableExists($this->table)) {
+            return [];
+        }
+
         return $this->where('lab_id', $labId)
                     ->orderBy('created_at', 'DESC')
                     ->findAll();
@@ -61,6 +75,10 @@ class LabReservationModel extends Model
     /** All reservations with optional lab/type filters, newest first. */
     public function getAll(array $filters = []): array
     {
+        if (! $this->db->tableExists($this->table)) {
+            return [];
+        }
+
         $builder = $this->select('lab_reservations.*, laboratories.name AS lab_name')
                         ->join('laboratories', 'laboratories.id = lab_reservations.lab_id', 'left')
                         ->orderBy('lab_reservations.created_at', 'DESC');
