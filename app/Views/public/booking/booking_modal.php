@@ -402,6 +402,39 @@ document.addEventListener("DOMContentLoaded", () => {
         errorArea.innerHTML = "";
     }
 
+    function parseBookingSubmitResponse(text, response) {
+        const candidates = [];
+        const trimmed = (text || "").trim();
+
+        if (trimmed !== "") {
+            candidates.push(trimmed);
+
+            const firstBrace = trimmed.indexOf("{");
+            const lastBrace = trimmed.lastIndexOf("}");
+            if (firstBrace !== -1 && lastBrace > firstBrace) {
+                const extracted = trimmed.slice(firstBrace, lastBrace + 1).trim();
+                if (extracted !== trimmed) {
+                    candidates.push(extracted);
+                }
+            }
+        }
+
+        for (const candidate of candidates) {
+            try {
+                return JSON.parse(candidate);
+            } catch {
+                // Try the next candidate.
+            }
+        }
+
+        return {
+            status: "error",
+            message: response.ok
+                ? "The server returned an unexpected response."
+                : `Request failed with HTTP ${response.status}.`,
+        };
+    }
+
     function renderConflictWarning(message, type = "warning") {
         if (!conflictEl) return;
         if (!message) {
@@ -984,20 +1017,7 @@ document.addEventListener("DOMContentLoaded", () => {
         })
         .then(async (r) => {
             const text = await r.text();
-            let data = null;
-
-            try {
-                data = JSON.parse(text);
-            } catch {
-                data = {
-                    status: "error",
-                    message: r.ok
-                        ? "The server returned an unexpected response."
-                        : `Request failed with HTTP ${r.status}.`,
-                };
-            }
-
-            return data;
+            return parseBookingSubmitResponse(text, r);
         })
         .then(data => {
             if (data.csrf_name && data.csrf_hash) {
