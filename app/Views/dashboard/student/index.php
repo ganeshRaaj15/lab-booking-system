@@ -433,7 +433,7 @@ $filters           = $filters ?? ['q' => '', 'status' => '', 'date_from' => '', 
                         <tbody>
 
                             <?php foreach ($bookings as $b): ?>
-                                <tr class="booking-row" data-id="<?= $b['id'] ?>">
+                                <tr class="booking-row" data-id="<?= $b['id'] ?>" data-status="<?= esc($b['status']) ?>">
                                     <td class="fw-semibold"><?= esc($b['date']) ?></td>
                                     <td><?= esc($b['start_time']) ?> - <?= esc($b['end_time']) ?></td>
                                     <td>
@@ -751,7 +751,7 @@ document.getElementById("applyFilters").addEventListener("click", function () {
 
     document.querySelectorAll(".booking-row").forEach(row => {
 
-        const rowStatus = row.querySelector("td:nth-child(5)").innerText.trim();
+        const rowStatus = row.dataset.status || "";
         const rowDate   = row.querySelector("td:nth-child(1)").innerText.trim();
         const rowText   = row.innerText.toLowerCase();
 

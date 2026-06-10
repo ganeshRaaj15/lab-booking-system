@@ -881,7 +881,11 @@ $topAtRisk = $equipmentHealth['topAtRisk'] ?? [];
 let currentBookingId = null;
 let trendChart = null;
 const csrfHeaderName = "X-CSRF-TOKEN";
-const csrfTokenValue = "<?= csrf_hash() ?>";
+let csrfTokenValue = "<?= csrf_hash() ?>";
+
+function refreshCsrf(data) {
+    if (data && data.csrf_hash) csrfTokenValue = data.csrf_hash;
+}
 
 function bookingDetailsSkeleton() {
     return `
@@ -1238,8 +1242,10 @@ function viewBookingDetails(id) {
     }
     const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
     
+    // Show modal immediately with skeleton for instant feedback
     document.getElementById('bookingDetails').innerHTML = bookingDetailsSkeleton();
-    
+    modal.show();
+
     fetch(`/dashboard/manager/booking/${id}`, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
         })
@@ -1247,11 +1253,12 @@ function viewBookingDetails(id) {
         .then(data => {
             if (data.status === 'success') {
                 displayBookingDetails(data.booking);
-                modal.show();
             } else {
-                alert(data.message);
-                modal.hide();
+                document.getElementById('bookingDetails').innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
             }
+        })
+        .catch(() => {
+            document.getElementById('bookingDetails').innerHTML = '<div class="alert alert-danger">Failed to load booking details.</div>';
         });
 }
 
@@ -1382,10 +1389,10 @@ function approveBooking(id) {
     })
     .then(r => r.json())
     .then(data => {
+        refreshCsrf(data);
         if (data.status === "success") {
-            document.getElementById(`row-mgr-${id}`).remove();
-            
-            // Update badge count
+            document.getElementById(`row-mgr-${id}`)?.remove();
+
             const badge = document.querySelector('#approvals-tab .badge');
             if (badge) {
                 const currentCount = parseInt(badge.textContent);
@@ -1395,8 +1402,7 @@ function approveBooking(id) {
                     badge.remove();
                 }
             }
-            
-            // If no more pending, show message
+
             if (document.querySelectorAll('#approvals tbody tr').length === 0) {
                 document.querySelector('#approvals').innerHTML = `
                     <div class="text-center py-5 px-4">
@@ -1414,7 +1420,8 @@ function approveBooking(id) {
         } else {
             alert(data.message);
         }
-    });
+    })
+    .catch(() => alert("Request failed. Please refresh the page and try again."));
 }
 
 function rejectBooking(id) {
@@ -1429,10 +1436,10 @@ function rejectBooking(id) {
     })
     .then(r => r.json())
     .then(data => {
+        refreshCsrf(data);
         if (data.status === "success") {
-            document.getElementById(`row-mgr-${id}`).remove();
-            
-            // Update badge count
+            document.getElementById(`row-mgr-${id}`)?.remove();
+
             const badge = document.querySelector('#approvals-tab .badge');
             if (badge) {
                 const currentCount = parseInt(badge.textContent);
@@ -1442,8 +1449,7 @@ function rejectBooking(id) {
                     badge.remove();
                 }
             }
-            
-            // If no more pending, show message
+
             if (document.querySelectorAll('#approvals tbody tr').length === 0) {
                 document.querySelector('#approvals').innerHTML = `
                     <div class="text-center py-5 px-4">
@@ -1461,7 +1467,8 @@ function rejectBooking(id) {
         } else {
             alert(data.message);
         }
-    });
+    })
+    .catch(() => alert("Request failed. Please refresh the page and try again."));
 }
 </script>
 

@@ -727,8 +727,10 @@ class BookingController extends BaseController
         );
 
         return $this->response->setJSON([
-            'status'  => 'success',
-            'message' => 'Booking submitted successfully and is pending approval.',
+            'status'     => 'success',
+            'message'    => 'Booking submitted successfully and is pending approval.',
+            'csrf_name'  => csrf_token(),
+            'csrf_hash'  => csrf_hash(),
         ]);
     }
 }

@@ -367,7 +367,7 @@ class BookingApprovalController extends BaseController
     protected function respondNotFound(string $msg)
     {
         if ($this->shouldReturnJson()) {
-            return $this->response->setStatusCode(404)->setJSON(['status' => 'error', 'message' => $msg]);
+            return $this->response->setStatusCode(404)->setJSON(['status' => 'error', 'message' => $msg, 'csrf_name' => csrf_token(), 'csrf_hash' => csrf_hash()]);
         }
         return redirect()->back()->with('error', $msg);
     }
@@ -375,7 +375,7 @@ class BookingApprovalController extends BaseController
     protected function respondForbidden(string $msg)
     {
         if ($this->shouldReturnJson()) {
-            return $this->response->setStatusCode(403)->setJSON(['status' => 'error', 'message' => $msg]);
+            return $this->response->setStatusCode(403)->setJSON(['status' => 'error', 'message' => $msg, 'csrf_name' => csrf_token(), 'csrf_hash' => csrf_hash()]);
         }
         return redirect()->back()->with('error', $msg);
     }
@@ -383,7 +383,7 @@ class BookingApprovalController extends BaseController
     protected function successResponse(string $msg, string $status)
     {
         if ($this->shouldReturnJson()) {
-            return $this->response->setJSON(['status' => 'success', 'newStatus' => $status, 'message' => $msg]);
+            return $this->response->setJSON(['status' => 'success', 'newStatus' => $status, 'message' => $msg, 'csrf_name' => csrf_token(), 'csrf_hash' => csrf_hash()]);
         }
         return redirect()->back()->with('message', $msg);
     }

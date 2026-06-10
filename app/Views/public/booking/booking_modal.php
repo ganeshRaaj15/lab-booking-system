@@ -14,13 +14,13 @@ $picEmail = trim((string)($lab['pic_email'] ?? ''));
 $picPhone = trim((string)($lab['pic_phone'] ?? ''));
 
 if ($picName === '') {
-    $picName = 'null';
+    $picName = 'Not Assigned';
 }
 if ($picEmail === '') {
-    $picEmail = 'null';
+    $picEmail = '';
 }
 if ($picPhone === '') {
-    $picPhone = 'null';
+    $picPhone = '';
 }
 ?>
 
@@ -975,6 +975,10 @@ document.addEventListener("DOMContentLoaded", () => {
         })
         .then(r => r.json())
         .then(data => {
+            if (data.csrf_name && data.csrf_hash) {
+                csrfTokenName  = data.csrf_name;
+                csrfTokenValue = data.csrf_hash;
+            }
             if (data.status === "success") {
                 errorArea.innerHTML = `
                     <div class="alert alert-success small mb-2">
@@ -989,6 +993,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (modalInstance) modalInstance.hide();
 
                     form.reset();
+                    // Re-apply current CSRF token after reset() wipes the hidden field
+                    const csrfInput = form.querySelector('input[name="' + csrfTokenName + '"]');
+                    if (csrfInput) csrfInput.value = csrfTokenValue;
                     window.resetBookingWizard();
                 }, 1200);
 

@@ -8,13 +8,13 @@ $picPhone = trim((string)($lab['pic_phone'] ?? ''));
 $services = is_array($services ?? null) ? $services : [];
 
 if ($picName === '') {
-    $picName = 'null';
+    $picName = 'Not Assigned';
 }
 if ($picEmail === '') {
-    $picEmail = 'null';
+    $picEmail = '';
 }
 if ($picPhone === '') {
-    $picPhone = 'null';
+    $picPhone = '';
 }
 ?>
 

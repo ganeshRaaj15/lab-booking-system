@@ -67,8 +67,13 @@ class ManagerDashboard extends BaseController
         // ------------------------------------------------------------
         // 3. COMPREHENSIVE STATISTICS
         // ------------------------------------------------------------
-        $stats = $this->getComprehensiveStats($labIds);
-        
+        try {
+            $stats = $this->getComprehensiveStats($labIds);
+        } catch (\Throwable $e) {
+            log_message('error', 'ManagerDashboard::getComprehensiveStats failed: ' . $e->getMessage());
+            $stats = $this->emptyStats();
+        }
+
         // ------------------------------------------------------------
         // 4. EQUIPMENT HEALTH WIDGET
         // ------------------------------------------------------------
@@ -77,18 +82,23 @@ class ManagerDashboard extends BaseController
         // ------------------------------------------------------------
         // 5. DETAILED ANALYTICS DATA FOR METRICS TAB
         // ------------------------------------------------------------
-        $analytics = [
-            'weeklyUtilization' => $this->getWeeklyUtilization($labIds, 8), // Last 8 weeks
-            'peakHours' => $this->getPeakHoursAnalysis($labIds),
-            'labPerformance' => $this->getLabPerformance($labs),
-            'monthlyTrends' => $this->getMonthlyTrends($labIds, 6),
-            'facultyDistribution' => $this->getFacultyDistribution($labIds),
-            'assetUsage' => $this->getAssetUsageStats($labIds),
-            'demandInsights' => $this->getDemandInsights(
-                $labIds,
-                $this->parseInsightWeeks($this->request->getGet('insight_period'))
-            ),
-        ];
+        try {
+            $analytics = [
+                'weeklyUtilization' => $this->getWeeklyUtilization($labIds, 8),
+                'peakHours'         => $this->getPeakHoursAnalysis($labIds),
+                'labPerformance'    => $this->getLabPerformance($labs),
+                'monthlyTrends'     => $this->getMonthlyTrends($labIds, 6),
+                'facultyDistribution' => $this->getFacultyDistribution($labIds),
+                'assetUsage'        => $this->getAssetUsageStats($labIds),
+                'demandInsights'    => $this->getDemandInsights(
+                    $labIds,
+                    $this->parseInsightWeeks($this->request->getGet('insight_period'))
+                ),
+            ];
+        } catch (\Throwable $e) {
+            log_message('error', 'ManagerDashboard analytics failed: ' . $e->getMessage());
+            $analytics = $this->emptyAnalytics();
+        }
 
         // ------------------------------------------------------------
         // 6. RENDER VIEW
@@ -386,7 +396,7 @@ private function getWeeklyUtilization(array $labIds, int $weeks = 8): array
     
     $db = \Config\Database::connect();
     
-    $result = $db->table('bookings')
+    $q = $db->table('bookings')
         ->select("
             YEARWEEK(date, 1) as week,
             COUNT(*) as total_bookings,
@@ -395,10 +405,10 @@ private function getWeeklyUtilization(array $labIds, int $weeks = 8): array
         ->whereIn('lab_id', $labIds)
         ->where('status', 'APPROVED')
         ->where('date >=', date('Y-m-d', strtotime("-$weeks weeks")))
-        ->groupBy('YEARWEEK(date, 1)')  // Group by the same expression
+        ->groupBy('YEARWEEK(date, 1)')
         ->orderBy('week', 'DESC')
-        ->get()
-        ->getResultArray();
+        ->get();
+    $result = $q ? $q->getResultArray() : [];
         
     // Process results and add calculated fields
     $processed = [];
@@ -433,7 +443,7 @@ private function getPeakHoursAnalysis(array $labIds): array
     $db = \Config\Database::connect();
     
     // Peak hours by time slot - FIXED
-    $timeSlots = $db->table('bookings')
+    $qSlots = $db->table('bookings')
         ->select("
             HOUR(start_time) as hour,
             COUNT(*) as booking_count
@@ -442,10 +452,10 @@ private function getPeakHoursAnalysis(array $labIds): array
         ->where('status', 'APPROVED')
         ->where('start_time >=', '08:00:00')
         ->where('start_time <=', '17:00:00')
-        ->groupBy('hour')  // Group by the alias or expression
+        ->groupBy('hour')
         ->orderBy('hour', 'ASC')
-        ->get()
-        ->getResultArray();
+        ->get();
+    $timeSlots = $qSlots ? $qSlots->getResultArray() : [];
         
     // Add hour labels
     foreach ($timeSlots as &$slot) {
@@ -459,17 +469,17 @@ private function getPeakHoursAnalysis(array $labIds): array
         ->where('status', 'APPROVED')
         ->countAllResults();
     
-    $busyDays = $db->table('bookings')
+    $qDays = $db->table('bookings')
         ->select("
             DAYNAME(date) as day,
             COUNT(*) as booking_count
         ")
         ->whereIn('lab_id', $labIds)
         ->where('status', 'APPROVED')
-        ->groupBy('day')  // Group by the alias
+        ->groupBy('day')
         ->orderBy('booking_count', 'DESC')
-        ->get()
-        ->getResultArray();
+        ->get();
+    $busyDays = $qDays ? $qDays->getResultArray() : [];
         
     // Calculate percentages
     foreach ($busyDays as &$day) {
@@ -494,7 +504,7 @@ private function getPeakHoursAnalysis(array $labIds): array
         
         foreach ($labs as $lab) {
             // Last 30 days stats
-            $stats = $db->table('bookings')
+            $qStats = $db->table('bookings')
                 ->select("
                     COUNT(*) as total,
                     SUM(CASE WHEN status = 'APPROVED' THEN 1 ELSE 0 END) as approved,
@@ -505,8 +515,8 @@ private function getPeakHoursAnalysis(array $labIds): array
                 ->where('lab_id', $lab['id'])
                 ->whereIn('status', BookingModel::CORE_STATUSES)
                 ->where('created_at >=', date('Y-m-d', strtotime('-30 days')))
-                ->get()
-                ->getRowArray();
+                ->get();
+            $stats = ($qStats ? $qStats->getRowArray() : null) ?? [];
                 
             // Utilization for last 7 days
             $weeklyBookings = $db->table('bookings')
@@ -547,15 +557,15 @@ private function getPeakHoursAnalysis(array $labIds): array
     {
         $db = \Config\Database::connect();
         
-        $result = $db->table('bookings')
+        $qTrends = $db->table('bookings')
             ->select("DATE_FORMAT(date, '%Y-%m') as month, COUNT(*) as total")
             ->whereIn('lab_id', $labIds)
             ->whereIn('status', BookingModel::CORE_STATUSES)
             ->where('date >=', date('Y-m-01', strtotime("-$months months")))
             ->groupBy('month')
             ->orderBy('month', 'ASC')
-            ->get()
-            ->getResultArray();
+            ->get();
+        $result = $qTrends ? $qTrends->getResultArray() : [];
             
         $data = [];
         foreach ($result as $row) {
@@ -575,7 +585,7 @@ private function getFacultyDistribution(array $labIds): array
 {
     $db = \Config\Database::connect();
     
-    $result = $db->table('bookings b')
+    $qFaculty = $db->table('bookings b')
         ->select('f.name_en as faculty, f.is_fkmp, COUNT(*) as count')
         ->join('faculties f', 'f.id = b.faculty_id', 'inner')
         ->whereIn('b.lab_id', $labIds)
@@ -585,10 +595,9 @@ private function getFacultyDistribution(array $labIds): array
         ->groupBy('b.faculty_id, f.name_en, f.is_fkmp')
         ->orderBy('count', 'DESC')
         ->limit(5)
-        ->get()
-        ->getResultArray();
+        ->get();
 
-    return $result;
+    return $qFaculty ? $qFaculty->getResultArray() : [];
 }
     
     /**
@@ -599,18 +608,18 @@ private function getFacultyDistribution(array $labIds): array
         $db = \Config\Database::connect();
     
     // Most used assets in last 30 days - FIXED
-    $mostUsed = $db->table('booking_assets ba')
+    $qAssets = $db->table('booking_assets ba')
         ->select('a.name, SUM(ba.quantity_used) as total_used')
         ->join('assets a', 'a.id = ba.asset_id')
         ->join('bookings b', 'b.id = ba.booking_id')
         ->whereIn('b.lab_id', $labIds)
         ->where('b.status', 'APPROVED')
         ->where('b.date >=', date('Y-m-d', strtotime('-30 days')))
-        ->groupBy('ba.asset_id, a.name')  // Include asset name in GROUP BY
+        ->groupBy('ba.asset_id, a.name')
         ->orderBy('total_used', 'DESC')
         ->limit(5)
-        ->get()
-        ->getResultArray();
+        ->get();
+    $mostUsed = $qAssets ? $qAssets->getResultArray() : [];
         
         return [
             'mostUsed' => $mostUsed
@@ -647,13 +656,13 @@ private function getFacultyDistribution(array $labIds): array
         $db = \Config\Database::connect();
         $since = date('Y-m-d', strtotime("-$weeks weeks"));
 
-        $rows = $db->table('bookings')
+        $qRows = $db->table('bookings')
             ->select('date, start_time')
             ->whereIn('lab_id', $labIds)
             ->where('status', 'APPROVED')
             ->where('date >=', $since)
-            ->get()
-            ->getResultArray();
+            ->get();
+        $rows = $qRows ? $qRows->getResultArray() : [];
 
         $counts = [];
         foreach ($rows as $row) {

@@ -584,7 +584,11 @@ $pendingExternalPic = $pendingExternalPic ?? [];
 <script>
 let currentBookingId = null;
 const csrfHeaderName = "X-CSRF-TOKEN";
-const csrfTokenValue = "<?= csrf_hash() ?>";
+let csrfTokenValue = "<?= csrf_hash() ?>";
+
+function refreshCsrf(data) {
+    if (data && data.csrf_hash) csrfTokenValue = data.csrf_hash;
+}
 
 function bookingDetailsSkeleton() {
     return `
@@ -639,11 +643,11 @@ function viewBookingDetails(id) {
         document.body.appendChild(modalElement);
     }
     const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
-    
-    // Show loading
+
+    // Show modal immediately with skeleton so user gets instant feedback
     document.getElementById('bookingDetails').innerHTML = bookingDetailsSkeleton();
-    
-    // Fetch booking details
+    modal.show();
+
     fetch(`/dashboard/pic/booking/${id}`, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
         })
@@ -651,10 +655,12 @@ function viewBookingDetails(id) {
         .then(data => {
             if (data.status === 'success') {
                 displayBookingDetails(data.booking);
-                modal.show();
             } else {
-                alert(data.message);
+                document.getElementById('bookingDetails').innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
             }
+        })
+        .catch(() => {
+            document.getElementById('bookingDetails').innerHTML = '<div class="alert alert-danger">Failed to load booking details.</div>';
         });
 }
 
@@ -790,11 +796,13 @@ function approveBooking(id) {
     })
     .then(r => r.json())
     .then(data => {
+        refreshCsrf(data);
         if (data.status === "success") {
-            document.getElementById(`row-${id}`).remove();
-            location.reload(); // Reload to update charts
+            document.getElementById(`row-${id}`)?.remove();
+            location.reload();
         } else alert(data.message);
-    });
+    })
+    .catch(() => alert("Request failed. Please refresh the page and try again."));
 }
 
 function rejectBooking(id) {
@@ -809,11 +817,13 @@ function rejectBooking(id) {
     })
     .then(r => r.json())
     .then(data => {
+        refreshCsrf(data);
         if (data.status === "success") {
-            document.getElementById(`row-${id}`).remove();
-            location.reload(); // Reload to update charts
+            document.getElementById(`row-${id}`)?.remove();
+            location.reload();
         } else alert(data.message);
-    });
+    })
+    .catch(() => alert("Request failed. Please refresh the page and try again."));
 }
 
 function initializeCharts() {

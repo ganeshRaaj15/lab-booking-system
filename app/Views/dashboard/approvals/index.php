@@ -125,7 +125,11 @@
 
 <script>
 const csrfHeaderName = "X-CSRF-TOKEN";
-const csrfTokenValue = "<?= csrf_hash() ?>";
+let csrfTokenValue = "<?= csrf_hash() ?>";
+
+function refreshCsrf(data) {
+    if (data && data.csrf_hash) csrfTokenValue = data.csrf_hash;
+}
 
 document.querySelectorAll(".approveBtn").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -140,10 +144,12 @@ document.querySelectorAll(".approveBtn").forEach(btn => {
         })
         .then(r => r.json())
         .then(data => {
+            refreshCsrf(data);
             if (data.status === "success") {
-                document.getElementById(`row-${id}`).remove();
+                document.getElementById(`row-${id}`)?.remove();
             } else alert(data.message);
-        });
+        })
+        .catch(() => alert("Request failed. Please refresh the page and try again."));
     });
 });
 
@@ -160,10 +166,12 @@ document.querySelectorAll(".rejectBtn").forEach(btn => {
         })
         .then(r => r.json())
         .then(data => {
+            refreshCsrf(data);
             if (data.status === "success") {
-                document.getElementById(`row-${id}`).remove();
+                document.getElementById(`row-${id}`)?.remove();
             } else alert(data.message);
-        });
+        })
+        .catch(() => alert("Request failed. Please refresh the page and try again."));
     });
 });
 </script>
