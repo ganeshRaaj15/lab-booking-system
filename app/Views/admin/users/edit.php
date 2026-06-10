@@ -283,12 +283,9 @@
                             <button type="submit" class="btn btn-primary-glass px-4">
                                 <i class="bi bi-save me-2"></i> Save Changes
                             </button>
-                            <button type="submit"
+                            <button type="button"
                                     class="btn btn-warning-glass ms-2"
-                                    formaction="/admin/users/send-recovery/<?= $user->id ?>"
-                                    formmethod="post"
-                                    formnovalidate
-                                    onclick="return confirm('Send a secure sign-in link to this user\\'s registered email?');">
+                                    onclick="if(confirm('Send a secure sign-in link to this user\'s registered email?')){var f=this.closest('form'),a=f.action;f.action='/admin/users/send-recovery/<?= (int) $user->id ?>';f.noValidate=true;f.submit();f.action=a;}">
                                 <i class="bi bi-envelope-paper me-2"></i> Send Recovery Link
                             </button>
                         </div>

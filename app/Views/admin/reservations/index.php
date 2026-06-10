@@ -116,8 +116,8 @@ $dayNames  = $dayNames  ?? [];
                                         </a>
                                         <form action="/admin/reservations/delete/<?= esc($r['id']) ?>" method="post" class="d-inline">
                                             <?= csrf_field() ?>
-                                            <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                    onclick="return confirm('Delete this reservation?')">
+                                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                                    onclick="if(confirm('Delete this reservation?')){this.closest('form').submit();}">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </form>

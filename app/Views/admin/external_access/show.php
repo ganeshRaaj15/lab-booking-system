@@ -79,8 +79,8 @@ $statusBadge = ['pending' => 'warning', 'approved' => 'success', 'rejected' => '
                     </p>
                     <form method="post" action="/admin/external-access/<?= (int) $req['id'] ?>/approve">
                         <?= csrf_field() ?>
-                        <button type="submit" class="btn btn-success"
-                                onclick="return confirm('Approve this request and create an external account for <?= esc(addslashes($req['email'])) ?>?')">
+                        <button type="button" class="btn btn-success"
+                                onclick="if(confirm('Approve this request and create an external account for <?= esc(addslashes($req['email'])) ?>?')){this.closest('form').submit();}">
                             <i class="bi bi-person-plus me-1"></i>Approve &amp; Create Account
                         </button>
                     </form>
@@ -98,8 +98,8 @@ $statusBadge = ['pending' => 'warning', 'approved' => 'success', 'rejected' => '
                             <textarea name="rejection_reason" class="form-control form-control-sm" rows="3"
                                       placeholder="Briefly explain why this request is being declined…"></textarea>
                         </div>
-                        <button type="submit" class="btn btn-danger btn-sm"
-                                onclick="return confirm('Reject this access request?')">
+                        <button type="button" class="btn btn-danger btn-sm"
+                                onclick="if(confirm('Reject this access request?')){this.closest('form').submit();}">
                             <i class="bi bi-x-circle me-1"></i>Reject Request
                         </button>
                     </form>

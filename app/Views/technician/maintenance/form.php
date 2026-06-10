@@ -355,7 +355,7 @@ $stageChecklist = match ($stageMode) {
                             <div class="col-12 d-flex justify-content-end gap-2">
                                 <a href="/technician/maintenance" class="btn btn-outline-secondary">Back</a>
                                 <?php if ($isEdit && in_array($stageMode, ['reported', 'scheduled', 'in_progress'], true)): ?>
-                                    <button type="submit" name="transition" value="cancelled" class="btn btn-outline-danger" onclick="return confirm('Cancel this maintenance case?')">Cancel Case</button>
+                                    <button type="button" class="btn btn-outline-danger" onclick="if(confirm('Cancel this maintenance case?')){var i=document.createElement('input');i.type='hidden';i.name='transition';i.value='cancelled';this.closest('form').appendChild(i);this.closest('form').submit();}">Cancel Case</button>
                                 <?php endif; ?>
                                 <?php if ($isEdit && $stageMode === 'testing'): ?>
                                     <button type="submit" name="transition" value="in_progress" class="btn btn-outline-warning">Return To Repair</button>

@@ -92,7 +92,7 @@
                                         <a href="/admin/labs/edit/<?= esc($lab['id']) ?>" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
                                         <form method="post" action="/admin/labs/delete/<?= esc($lab['id']) ?>" class="d-inline">
                                             <?= csrf_field() ?>
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this laboratory?')"><i class="bi bi-trash"></i></button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="if(confirm('Delete this laboratory?')){this.closest('form').submit();}"><i class="bi bi-trash"></i></button>
                                         </form>
                                     </td>
                                 </tr>

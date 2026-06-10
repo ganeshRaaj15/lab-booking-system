@@ -139,8 +139,8 @@ $statusBadge = [
                                         <form method="post" action="/dashboard/pic/assets/decommission/<?= (int) $asset['id'] ?>" class="d-inline">
                                             <?= csrf_field() ?>
                                             <input type="hidden" name="action" value="decommission">
-                                            <button type="submit" class="btn btn-sm btn-outline-secondary" title="Decommission asset"
-                                                    onclick="return confirm('Decommission this asset? It will be removed from public views.')"><i class="bi bi-x-octagon"></i></button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" title="Decommission asset"
+                                                    onclick="if(confirm('Decommission this asset? It will be removed from public views.')){this.closest('form').submit();}"><i class="bi bi-x-octagon"></i></button>
                                         </form>
                                     <?php endif; ?>
                                     <button type="button" class="btn btn-sm btn-outline-danger"
