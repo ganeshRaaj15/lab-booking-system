@@ -452,6 +452,16 @@ class BookingController extends BaseController
         ]));
     }
 
+    // Same pattern for submit responses — client updates its stored CSRF token so
+    // a retry after an error does not hit a 403 due to the consumed token.
+    private function submitJson(array $data): ResponseInterface
+    {
+        return $this->response->setJSON(array_merge($data, [
+            'csrf_name' => csrf_token(),
+            'csrf_hash' => csrf_hash(),
+        ]));
+    }
+
     /*
     |--------------------------------------------------------------------------
     | BOOKING SUBMISSION (UTHM ONLY)
@@ -608,29 +618,10 @@ class BookingController extends BaseController
 
         $bookingModel = new BookingModel();
         if ($bookingModel->hasLabConflict($labId, $date, $startTime, $endTime)) {
-            return $this->response->setJSON([
+            return $this->submitJson([
                 'status'  => 'error',
-                'message' => 'This laboratory is already booked for the selected date and time.'
+                'message' => 'This laboratory is already booked for the selected date and time.',
             ]);
-        }
-
-        $reservation = (new LabReservationModel())->conflictsWithSlot($labId, $date, $startTime, $endTime);
-        if ($reservation) {
-            return $this->response->setJSON([
-                'status'  => 'error',
-                'message' => 'This time slot is reserved: ' . $reservation['title'],
-            ]);
-        }
-
-        $remaining = $this->computeRemainingForSlot($labId, $date, $startTime, $endTime, $selectedAssets);
-
-        foreach ($selectedAssets as $assetId => $qtyNeeded) {
-            if (($remaining[$assetId] ?? 0) < $qtyNeeded) {
-                return $this->response->setJSON([
-                    'status'  => 'error',
-                    'message' => 'Selected assets are not available for that slot.'
-                ]);
-            }
         }
 
         $pdfFile = $this->request->getFile('pdf');
@@ -649,8 +640,9 @@ class BookingController extends BaseController
                 throw new \DomainException('This laboratory slot was just taken. Please choose another time.');
             }
 
-            if ((new LabReservationModel())->conflictsWithSlot($labId, $date, $startTime, $endTime)) {
-                throw new \DomainException('This time slot is reserved and cannot be booked.');
+            $reservation = (new LabReservationModel())->conflictsWithSlot($labId, $date, $startTime, $endTime);
+            if ($reservation) {
+                throw new \DomainException('This time slot is reserved: ' . $reservation['title']);
             }
 
             $remaining = $this->computeRemainingForSlot($labId, $date, $startTime, $endTime, $selectedAssets);
@@ -713,11 +705,11 @@ class BookingController extends BaseController
             }
             log_message('error', 'Booking submission failed: ' . $e->getMessage());
 
-            return $this->response->setJSON([
+            return $this->submitJson([
                 'status'  => 'error',
                 'message' => $e instanceof \DomainException
                     ? $e->getMessage()
-                    : 'Failed to save booking. Please try again.'
+                    : 'Failed to save booking. Please try again.',
             ]);
         }
 
@@ -726,7 +718,7 @@ class BookingController extends BaseController
             'booking submitted'
         );
 
-        return $this->response->setJSON([
+        return $this->submitJson([
             'status'  => 'success',
             'message' => 'Booking submitted successfully and is pending approval.',
         ]);

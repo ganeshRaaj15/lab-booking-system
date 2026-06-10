@@ -975,6 +975,18 @@ document.addEventListener("DOMContentLoaded", () => {
         })
         .then(r => r.json())
         .then(data => {
+            // Refresh CSRF token from every submit response (success or error) so
+            // a retry after a server-side error doesn't hit 403.
+            if (data.csrf_name && data.csrf_hash) {
+                const csrfInput = form.querySelector(`input[name="${csrfTokenName}"]`);
+                csrfTokenName = data.csrf_name;
+                csrfTokenValue = data.csrf_hash;
+                if (csrfInput) {
+                    csrfInput.name = csrfTokenName;
+                    csrfInput.value = csrfTokenValue;
+                }
+            }
+
             if (data.status === "success") {
                 errorArea.innerHTML = `
                     <div class="alert alert-success small mb-2">
