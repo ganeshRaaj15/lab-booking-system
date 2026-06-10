@@ -90,17 +90,17 @@ class NotificationService
         $approvalLink = '/dashboard/approvals?focus_booking=' . (int) $context['id'];
         $managerPendingCount = $this->pendingManagerCount();
 
-        $studentMessage = 'Your booking request for ' . $this->bookingDescriptor($context) . ' has been approved by the PIC and is now pending Lab Manager approval.';
+        $studentMessage = 'Your booking request for ' . $this->bookingDescriptor($context) . ' has been approved by the PIC and sent to the Lab Manager for final approval.';
         $managerMessage = 'A booking request for ' . $this->bookingDescriptor($context) . ' has been approved by the PIC and now needs Lab Manager approval. There are currently ' . $managerPendingCount . ' booking request(s) requiring Lab Manager attention.';
 
-        $this->createUserNotifications($this->compactIds([(int) ($context['user_id'] ?? 0)]), 'booking', 'Booking Pending Lab Manager Approval', $studentMessage, $studentLink, 'booking', (int) $context['id']);
+        $this->createUserNotifications($this->compactIds([(int) ($context['user_id'] ?? 0)]), 'booking', 'Booking Request Sent To Lab Manager', $studentMessage, $studentLink, 'booking', (int) $context['id']);
         $this->createUserNotifications($this->groupUserIds('manager'), 'booking', 'Booking Needs Lab Manager Approval', $managerMessage, $approvalLink, 'booking', (int) $context['id']);
 
         $this->sendEmail(
             [$context['applicant_email'] ?? null],
-            'FKMP Smart Lab: PIC Approved - Pending Lab Manager Approval',
-            $this->emailTemplate('PIC Approved Your Booking', [
-                'Your booking request has been approved by the PIC and is now waiting for Lab Manager approval.',
+            'FKMP Smart Lab: Booking Request Sent To Lab Manager',
+            $this->emailTemplate('Booking Request Sent To Lab Manager', [
+                'Your booking request has been approved by the PIC and sent to the Lab Manager for final approval.',
                 $this->bookingDetailBlock($context),
             ], $studentActionUrl, 'Open Booking Details'),
             null,
@@ -131,7 +131,7 @@ class NotificationService
         $emailContext = $this->bookingEmailContext($context);
         $studentLink = $this->bookingDashboardLink((int) ($context['user_id'] ?? 0), (int) $context['id']);
         $calendarUrl = $this->googleCalendarLink($context);
-        $message = 'Your booking request for ' . $this->bookingDescriptor($context) . ' has been approved.';
+        $message = 'Your booking request for ' . $this->bookingDescriptor($context) . ' has been approved. A Google Calendar link and calendar invite have been sent to your email.';
 
         $this->createUserNotifications($this->compactIds([(int) ($context['user_id'] ?? 0)]), 'booking', 'Booking Approved', $message, $studentLink, 'booking', (int) $context['id']);
 
@@ -141,7 +141,7 @@ class NotificationService
             $this->emailTemplate('Booking Approved', [
                 'Your booking request has been approved.',
                 $this->bookingDetailBlock($context),
-                'You can add this booking to your calendar using the attached calendar invite, or use the Google Calendar button below.',
+                'A Google Calendar event creation link is included below, together with the attached calendar invite for your device calendar.',
             ], $calendarUrl, 'Add To Google Calendar'),
             $this->calendarAttachment($context),
             $emailContext
