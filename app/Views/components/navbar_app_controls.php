@@ -5,9 +5,11 @@ $appControlProfileHref = null;
 $appControlProfilePhoto = '';
 $appControlProfileAlt = 'Open profile';
 $appControlUser = function_exists('auth') && auth()->loggedIn() ? auth()->user() : null;
+$pushClientConfig = ['configured' => false, 'publicKey' => ''];
 
 if ($appControlUser) {
     $appControlProfileAlt = trim((string) ($appControlUser->full_name ?? $appControlUser->username ?? 'User'));
+    $pushClientConfig = (new \App\Libraries\WebPushConfiguration())->clientConfig();
 
     if (! ($appControlUser->inGroup('pic') || $appControlUser->inGroup('manager'))) {
         $appControlProfileHref = '/dashboard/profile';
@@ -20,6 +22,20 @@ if ($appControlUser) {
 ?>
 
 <div class="slams-navbar-app-actions" aria-label="App controls">
+    <?php if ($appControlUser && ! empty($pushClientConfig['configured']) && ! empty($pushClientConfig['publicKey'])): ?>
+        <button
+            type="button"
+            id="pushToggleBtn"
+            class="slams-navbar-app-btn"
+            data-push-configured="1"
+            data-push-public-key="<?= esc($pushClientConfig['publicKey']) ?>"
+            aria-pressed="false"
+            title="Enable push notifications"
+        >
+            <i class="bi bi-bell" data-push-icon></i>
+        </button>
+    <?php endif; ?>
+
     <?php if ($appControlProfileHref !== null): ?>
         <a
             href="<?= esc($appControlProfileHref) ?>"

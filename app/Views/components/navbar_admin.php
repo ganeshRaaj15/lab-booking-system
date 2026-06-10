@@ -33,13 +33,13 @@ if (function_exists('auth') && auth()->loggedIn()) {
                 <div class="dropdown">
                     <a href="#" class="notification-trigger" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications">
                         <i class="bi bi-bell"></i>
-                        <?php if ($navUnreadCount > 0): ?><span class="notification-badge"><?= esc($navUnreadCount > 99 ? '99+' : (string) $navUnreadCount) ?></span><?php endif; ?>
+                        <?php if ($navUnreadCount > 0): ?><span id="admin-nav-notif-bubble" class="notification-badge"><?= esc($navUnreadCount > 99 ? '99+' : (string) $navUnreadCount) ?></span><?php else: ?><span id="admin-nav-notif-bubble" class="notification-badge" style="display:none">0</span><?php endif; ?>
                     </a>
                     <div class="dropdown-menu dropdown-menu-end notification-menu p-0">
                         <div class="dropdown-header d-flex justify-content-between align-items-center">
                             <div>
                                 <div class="fw-semibold text-dark">Notifications</div>
-                                <div class="small text-muted"><?= esc((int) $navUnreadCount) ?> unread</div>
+                                <div class="small text-muted"><span id="admin-nav-notif-count"><?= esc((int) $navUnreadCount) ?></span> unread</div>
                             </div>
                             <a href="/dashboard/notifications" class="small text-decoration-none">View all</a>
                         </div>
@@ -77,3 +77,31 @@ if (function_exists('auth') && auth()->loggedIn()) {
         </div>
     </div>
 </nav>
+
+<?php if (function_exists('auth') && auth()->loggedIn()): ?>
+<script>
+(function () {
+    const bubble = document.getElementById('admin-nav-notif-bubble');
+    const countEl = document.getElementById('admin-nav-notif-count');
+    if (!bubble || !countEl) return;
+
+    function updateBadge(n) {
+        const label = n > 99 ? '99+' : String(n);
+        bubble.textContent = label;
+        countEl.textContent = String(n);
+        bubble.style.display = n > 0 ? '' : 'none';
+    }
+
+    function poll() {
+        fetch('/dashboard/notifications/count', { credentials: 'same-origin' })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) { if (data && typeof data.unread === 'number') updateBadge(data.unread); })
+            .catch(function () {});
+    }
+
+    window.slamsRefreshNotificationBadge = poll;
+    window.addEventListener('slams:notifications-refresh', poll);
+    setInterval(poll, 30000);
+}());
+</script>
+<?php endif; ?>

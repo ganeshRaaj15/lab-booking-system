@@ -122,6 +122,8 @@ if (function_exists('auth') && auth()->loggedIn()) {
             .catch(function () {});
     }
 
+    window.slamsRefreshNotificationBadge = poll;
+    window.addEventListener('slams:notifications-refresh', poll);
     setInterval(poll, 30000);
 }());
 </script>

@@ -1004,6 +1004,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 applyCsrfToken(data.csrf_name, data.csrf_hash);
             }
             if (data.status === "success") {
+                window.dispatchEvent(new CustomEvent("slams:notifications-refresh"));
                 errorArea.innerHTML = `
                     <div class="alert alert-success small mb-2">
                         <i class="bi bi-check-circle me-1"></i>${data.message}

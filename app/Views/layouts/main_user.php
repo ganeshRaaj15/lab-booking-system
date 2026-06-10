@@ -40,6 +40,7 @@ helper(['url', 'asset', 'auth']);
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="<?= slams_asset('js/mobile-app.js') ?>"></script>
+    <script src="<?= slams_asset('js/push-notifications.js') ?>"></script>
     <?= $this->renderSection('scripts') ?>
 </body>
 </html>

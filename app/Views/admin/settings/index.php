@@ -7,6 +7,36 @@ $settingMeta = [
         'label' => 'Direct Approval Faculty ID',
         'hint' => 'Faculty ID that completes approval at the PIC stage. The legacy setting key is kept for backward compatibility.',
     ],
+    'email_from_email' => [
+        'label' => 'Outgoing Email Address',
+    ],
+    'email_from_name' => [
+        'label' => 'Outgoing Email Name',
+    ],
+    'email_protocol' => [
+        'label' => 'Email Protocol',
+    ],
+    'email_mail_path' => [
+        'label' => 'Sendmail Path',
+    ],
+    'email_smtp_host' => [
+        'label' => 'SMTP Host',
+    ],
+    'email_smtp_user' => [
+        'label' => 'SMTP Username',
+    ],
+    'email_smtp_pass' => [
+        'label' => 'SMTP Password',
+    ],
+    'email_smtp_port' => [
+        'label' => 'SMTP Port',
+    ],
+    'email_smtp_crypto' => [
+        'label' => 'SMTP Encryption',
+    ],
+    'email_smtp_helo_host' => [
+        'label' => 'SMTP HELO Host',
+    ],
 ];
 ?>
 
@@ -101,13 +131,29 @@ $settingMeta = [
                                     <?= esc($settingLabel) ?>
                                 </label>
 
-                                <?php if ($row['type'] === 'integer'): ?>
+                                <?php if ($key === 'email_protocol'): ?>
+                                    <?php $currentProtocol = (string) old($key, $row['value']); ?>
+                                    <select name="<?= esc($key) ?>" id="<?= esc($key) ?>" class="form-control form-control-glass" required>
+                                        <option value="mail" <?= $currentProtocol === 'mail' ? 'selected' : '' ?>>mail</option>
+                                        <option value="smtp" <?= $currentProtocol === 'smtp' ? 'selected' : '' ?>>smtp</option>
+                                        <option value="sendmail" <?= $currentProtocol === 'sendmail' ? 'selected' : '' ?>>sendmail</option>
+                                    </select>
+
+                                <?php elseif ($key === 'email_smtp_crypto'): ?>
+                                    <?php $currentCrypto = (string) old($key, $row['value']); ?>
+                                    <select name="<?= esc($key) ?>" id="<?= esc($key) ?>" class="form-control form-control-glass">
+                                        <option value="" <?= $currentCrypto === '' ? 'selected' : '' ?>>None</option>
+                                        <option value="tls" <?= $currentCrypto === 'tls' ? 'selected' : '' ?>>tls</option>
+                                        <option value="ssl" <?= $currentCrypto === 'ssl' ? 'selected' : '' ?>>ssl</option>
+                                    </select>
+
+                                <?php elseif ($row['type'] === 'integer'): ?>
                                     <input type="number" 
                                            name="<?= esc($key) ?>" 
                                            id="<?= esc($key) ?>"
                                            value="<?= esc(old($key, $row['value'])) ?>"
                                            class="form-control form-control-glass" 
-                                           required>
+                                           <?= $key === 'email_smtp_port' ? '' : 'required' ?>>
 
                                 <?php elseif ($row['type'] === 'bool'): ?>
                                     <select name="<?= esc($key) ?>" 
@@ -119,12 +165,13 @@ $settingMeta = [
                                     </select>
 
                                 <?php else: ?>
-                                    <input type="text" 
-                                           name="<?= esc($key) ?>" 
+                                    <input name="<?= esc($key) ?>" 
                                            id="<?= esc($key) ?>"
                                            value="<?= esc(old($key, $row['value'])) ?>"
-                                           class="form-control form-control-glass" 
-                                           required>
+                                           class="form-control form-control-glass"
+                                           type="<?= $key === 'email_smtp_pass' ? 'password' : 'text' ?>"
+                                           <?= $key === 'email_smtp_pass' ? 'autocomplete="new-password"' : '' ?>
+                                           <?= in_array($key, ['email_from_email', 'email_from_name', 'email_mail_path', 'email_smtp_host', 'email_smtp_user', 'email_smtp_pass', 'email_smtp_helo_host'], true) ? '' : 'required' ?>>
                                 <?php endif; ?>
                                 
                                 <div class="form-hint">

@@ -33,7 +33,7 @@ class SettingsModel extends Model
         return match (strtolower((string) $row['type'])) {
             'int', 'integer'   => (int) $row['value'],
             'bool', 'boolean'  => filter_var($row['value'], FILTER_VALIDATE_BOOL),
-            default            => $row['value'],
+            default            => is_string($row['value']) ? trim($row['value']) : $row['value'],
         };
     }
 }

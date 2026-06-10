@@ -305,6 +305,66 @@ class SettingsController extends BaseController
                 'default' => StaffRoleService::DEFAULT_STAFF_EMAIL_DOMAIN,
                 'hint' => 'Emails ending with this domain are auto-assigned the Staff role when users register or log in.',
             ],
+            'email_from_email' => [
+                'type' => 'string',
+                'rules' => 'permit_empty|valid_email|max_length[255]',
+                'default' => '',
+                'hint' => 'Optional sender email for outgoing mail. Leave blank to use `.env` or the site domain fallback.',
+            ],
+            'email_from_name' => [
+                'type' => 'string',
+                'rules' => 'permit_empty|max_length[255]',
+                'default' => 'FKMP Smart Lab',
+                'hint' => 'Display name shown in outgoing emails.',
+            ],
+            'email_protocol' => [
+                'type' => 'string',
+                'rules' => 'required|in_list[mail,smtp,sendmail]',
+                'default' => 'mail',
+                'hint' => 'Use `smtp` on shared hosting when direct PHP mail delivery is unreliable.',
+            ],
+            'email_mail_path' => [
+                'type' => 'string',
+                'rules' => 'permit_empty|max_length[255]',
+                'default' => '/usr/sbin/sendmail',
+                'hint' => 'Sendmail path when the protocol is `sendmail`.',
+            ],
+            'email_smtp_host' => [
+                'type' => 'string',
+                'rules' => 'permit_empty|max_length[255]',
+                'default' => '',
+                'hint' => 'SMTP host name such as `mail.your-domain.com`.',
+            ],
+            'email_smtp_user' => [
+                'type' => 'string',
+                'rules' => 'permit_empty|max_length[255]',
+                'default' => '',
+                'hint' => 'SMTP username, usually the full mailbox address.',
+            ],
+            'email_smtp_pass' => [
+                'type' => 'string',
+                'rules' => 'permit_empty|max_length[255]',
+                'default' => '',
+                'hint' => 'SMTP password or app password.',
+            ],
+            'email_smtp_port' => [
+                'type' => 'integer',
+                'rules' => 'permit_empty|integer|greater_than[0]',
+                'default' => 25,
+                'hint' => 'Common ports are 465 for SSL and 587 for TLS.',
+            ],
+            'email_smtp_crypto' => [
+                'type' => 'string',
+                'rules' => 'permit_empty|in_list[tls,ssl]',
+                'default' => 'tls',
+                'hint' => 'Encryption for SMTP connections. Leave blank only if your provider explicitly requires it.',
+            ],
+            'email_smtp_helo_host' => [
+                'type' => 'string',
+                'rules' => 'permit_empty|max_length[255]',
+                'default' => '',
+                'hint' => 'Optional HELO host if your SMTP provider requires a specific hostname.',
+            ],
         ];
     }
 
