@@ -240,6 +240,13 @@ class MaintenanceController extends BaseController
         $stageMode = $isLocked ? 'locked' : $record['status'];
         $predictionService = new MaintenancePredictionService();
 
+        try {
+            $assetPrediction = $predictionService->predictAsset((int) ($record['asset_id'] ?? 0));
+        } catch (\Throwable $e) {
+            log_message('error', 'predictAsset failed in maintenance edit #' . $id . ': ' . $e->getMessage());
+            $assetPrediction = null;
+        }
+
         return view('technician/maintenance/form', [
             'title' => 'Update Maintenance | FKMP Smart Lab',
             'page' => 'Update Maintenance',
@@ -254,7 +261,7 @@ class MaintenanceController extends BaseController
             'statusLabels' => $this->maintenanceModel->workflowLabels(),
             'stageMode' => $stageMode,
             'isLocked' => $isLocked,
-            'assetPrediction' => $predictionService->predictAsset((int) ($record['asset_id'] ?? 0)),
+            'assetPrediction' => $assetPrediction,
             'modelSummary' => $predictionService->getModelSummary(),
         ]);
     }
@@ -316,22 +323,28 @@ class MaintenanceController extends BaseController
         $newAssetId = (int) $input['asset_id'];
 
         $db = \Config\Database::connect();
-        $db->transStart();
-        $this->maintenanceModel->update($id, $updateData);
-        $this->logModel->insert([
-            'maintenance_id' => $id,
-            'changed_by' => $user->id,
-            'from_status' => $record['status'],
-            'to_status' => $targetStatus,
-            'notes' => $this->transitionLogMessage((string) $record['status'], $targetStatus),
-            'created_at' => date('Y-m-d H:i:s'),
-        ]);
+        try {
+            $db->transStart();
+            $this->maintenanceModel->update($id, $updateData);
+            $this->logModel->insert([
+                'maintenance_id' => $id,
+                'changed_by' => $user->id,
+                'from_status' => $record['status'],
+                'to_status' => $targetStatus,
+                'notes' => $this->transitionLogMessage((string) $record['status'], $targetStatus),
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
 
-        if ($oldAssetId !== $newAssetId) {
-            $this->assetModel->syncManagedAvailability($oldAssetId);
+            if ($oldAssetId !== $newAssetId) {
+                $this->assetModel->syncManagedAvailability($oldAssetId);
+            }
+            $this->assetModel->syncManagedAvailability($newAssetId);
+            $db->transComplete();
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            log_message('error', 'Maintenance update transaction failed for record #' . $id . ': ' . $e->getMessage());
+            return redirect()->back()->withInput()->with('error', 'Unable to update maintenance record at the moment.');
         }
-        $this->assetModel->syncManagedAvailability($newAssetId);
-        $db->transComplete();
 
         if (! $db->transStatus()) {
             return redirect()->back()->withInput()->with('error', 'Unable to update maintenance record at the moment.');
@@ -343,7 +356,11 @@ class MaintenanceController extends BaseController
                 'maintenance rescheduled'
             );
         } elseif ($targetStatus === 'in_progress') {
-            $this->cancelBookingsForMaintenance($id, $newAssetId, $updateData['title'] ?? '');
+            try {
+                $this->cancelBookingsForMaintenance($id, $newAssetId, $updateData['title'] ?? '');
+            } catch (\Throwable $e) {
+                log_message('error', 'cancelBookingsForMaintenance failed for maintenance #' . $id . ': ' . $e->getMessage());
+            }
             NotificationService::dispatchSafely(
                 fn(NotificationService $notifications) => $notifications->notifyMaintenanceInProgress($id),
                 'maintenance in progress'
@@ -747,14 +764,19 @@ class MaintenanceController extends BaseController
      */
     private function maintenanceContext(int $id): ?array
     {
-        $row = \Config\Database::connect()
-            ->table('maintenance_records mr')
-            ->select('mr.*, a.name AS asset_name, a.lab_id, l.name AS lab_name, l.pic_name, l.pic_email')
-            ->join('assets a', 'a.id = mr.asset_id', 'left')
-            ->join('laboratories l', 'l.id = a.lab_id', 'left')
-            ->where('mr.id', $id)
-            ->get()
-            ->getRowArray();
+        try {
+            $result = \Config\Database::connect()
+                ->table('maintenance_records mr')
+                ->select('mr.*, a.name AS asset_name, a.lab_id, l.name AS lab_name, l.pic_name, l.pic_email')
+                ->join('assets a', 'a.id = mr.asset_id', 'left')
+                ->join('laboratories l', 'l.id = a.lab_id', 'left')
+                ->where('mr.id', $id)
+                ->get();
+            $row = $result ? $result->getRowArray() : null;
+        } catch (\Throwable $e) {
+            log_message('error', 'maintenanceContext failed for #' . $id . ': ' . $e->getMessage());
+            return null;
+        }
 
         return $row ?: null;
     }
