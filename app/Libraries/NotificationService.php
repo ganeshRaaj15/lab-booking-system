@@ -88,12 +88,16 @@ class NotificationService
         $studentLink = $this->bookingDashboardLink((int) ($context['user_id'] ?? 0), (int) $context['id']);
         $studentActionUrl = $this->studentBookingActionUrl((int) $context['id']);
         $approvalLink = '/dashboard/approvals?focus_booking=' . (int) $context['id'];
+        $picEmail = $this->picEmailForBooking($context);
+        $picUserId = $this->picUserIdForBooking($context);
         $managerPendingCount = $this->pendingManagerCount();
 
         $studentMessage = 'Your booking request for ' . $this->bookingDescriptor($context) . ' has been approved by the PIC and sent to the Lab Manager for final approval.';
+        $picMessage = 'Your PIC approval for ' . $this->bookingDescriptor($context) . ' has been recorded. The request is now waiting for Lab Manager approval.';
         $managerMessage = 'A booking request for ' . $this->bookingDescriptor($context) . ' has been approved by the PIC and now needs Lab Manager approval. There are currently ' . $managerPendingCount . ' booking request(s) requiring Lab Manager attention.';
 
         $this->createUserNotifications($this->compactIds([(int) ($context['user_id'] ?? 0)]), 'booking', 'Booking Request Sent To Lab Manager', $studentMessage, $studentLink, 'booking', (int) $context['id']);
+        $this->createUserNotifications($this->compactIds([$picUserId]), 'booking', 'Booking Sent To Lab Manager', $picMessage, $approvalLink, 'booking', (int) $context['id']);
         $this->createUserNotifications($this->groupUserIds('manager'), 'booking', 'Booking Needs Lab Manager Approval', $managerMessage, $approvalLink, 'booking', (int) $context['id']);
 
         $this->sendEmail(
@@ -107,7 +111,18 @@ class NotificationService
             $emailContext
         );
 
-        $managerEmails = array_merge([$this->settingValue('system.lab_manager_email')], $this->emailsForUserIds($this->groupUserIds('manager')));
+        $this->sendEmail(
+            [$picEmail],
+            'FKMP Smart Lab: Booking Sent To Lab Manager',
+            $this->emailTemplate('Booking Sent To Lab Manager', [
+                $picMessage,
+                $this->bookingDetailBlock($context),
+            ], site_url($approvalLink), 'Open Approval Queue'),
+            null,
+            $emailContext
+        );
+
+        $managerEmails = $this->managerEmails();
         $this->sendEmail(
             $managerEmails,
             'FKMP Smart Lab: Booking Awaiting Lab Manager Approval',
@@ -131,9 +146,19 @@ class NotificationService
         $emailContext = $this->bookingEmailContext($context);
         $studentLink = $this->bookingDashboardLink((int) ($context['user_id'] ?? 0), (int) $context['id']);
         $calendarUrl = $this->googleCalendarLink($context);
+        $approvalLink = '/dashboard/approvals?focus_booking=' . (int) $context['id'];
+        $picEmail = $this->picEmailForBooking($context);
+        $picUserId = $this->picUserIdForBooking($context);
+        $managerIds = $this->groupUserIds('manager');
+        $managerEmails = $this->managerEmails();
         $message = 'Your booking request for ' . $this->bookingDescriptor($context) . ' has been approved. A Google Calendar link and calendar invite have been sent to your email.';
+        $oversightMessage = 'Booking for ' . $this->bookingDescriptor($context) . ' is now fully approved. The applicant has been sent the final confirmation and calendar invite.';
 
         $this->createUserNotifications($this->compactIds([(int) ($context['user_id'] ?? 0)]), 'booking', 'Booking Approved', $message, $studentLink, 'booking', (int) $context['id']);
+        $this->createUserNotifications($this->compactIds([$picUserId]), 'booking', 'Booking Fully Approved', $oversightMessage, $approvalLink, 'booking', (int) $context['id']);
+        if (($context['approval_flow'] ?? '') !== 'FKMP_APPROVAL') {
+            $this->createUserNotifications($managerIds, 'booking', 'Booking Fully Approved', $oversightMessage, $approvalLink, 'booking', (int) $context['id']);
+        }
 
         $this->sendEmail(
             [$context['applicant_email'] ?? null],
@@ -146,6 +171,31 @@ class NotificationService
             $this->calendarAttachment($context),
             $emailContext
         );
+
+        $this->sendEmail(
+            [$picEmail],
+            'FKMP Smart Lab: Booking Fully Approved',
+            $this->emailTemplate('Booking Fully Approved', [
+                $oversightMessage,
+                $this->bookingDetailBlock($context),
+            ], site_url($approvalLink), 'Open Approval Queue'),
+            null,
+            $emailContext
+        );
+
+        if (($context['approval_flow'] ?? '') !== 'FKMP_APPROVAL') {
+            $this->sendEmail(
+                $managerEmails,
+                'FKMP Smart Lab: Booking Fully Approved',
+                $this->emailTemplate('Booking Fully Approved', [
+                    $oversightMessage,
+                    $this->bookingDetailBlock($context),
+                ], site_url($approvalLink), 'Open Approval Queue'),
+                null,
+                $emailContext
+            );
+        }
+
     }
 
     public function notifyBookingRejected(array $booking, string $rejectedBy = ''): void
@@ -158,10 +208,20 @@ class NotificationService
         $emailContext = $this->bookingEmailContext($context);
         $studentLink = $this->bookingDashboardLink((int) ($context['user_id'] ?? 0), (int) $context['id']);
         $studentActionUrl = $this->studentBookingActionUrl((int) $context['id']);
+        $approvalLink = '/dashboard/approvals?focus_booking=' . (int) $context['id'];
+        $picEmail = $this->picEmailForBooking($context);
+        $picUserId = $this->picUserIdForBooking($context);
+        $managerIds = $this->groupUserIds('manager');
+        $managerEmails = $this->managerEmails();
         $label = $rejectedBy !== '' ? ' by ' . $rejectedBy : '';
         $message = 'Your booking request for ' . $this->bookingDescriptor($context) . ' has been rejected' . $label . '.';
+        $oversightMessage = 'Booking for ' . $this->bookingDescriptor($context) . ' was rejected' . $label . '. The applicant has been informed.';
 
         $this->createUserNotifications($this->compactIds([(int) ($context['user_id'] ?? 0)]), 'booking', 'Booking Rejected', $message, $studentLink, 'booking', (int) $context['id']);
+        $this->createUserNotifications($this->compactIds([$picUserId]), 'booking', 'Booking Rejected', $oversightMessage, $approvalLink, 'booking', (int) $context['id']);
+        if (($context['approval_flow'] ?? '') !== 'FKMP_APPROVAL') {
+            $this->createUserNotifications($managerIds, 'booking', 'Booking Rejected', $oversightMessage, $approvalLink, 'booking', (int) $context['id']);
+        }
 
         $this->sendEmail(
             [$context['applicant_email'] ?? null],
@@ -173,6 +233,31 @@ class NotificationService
             null,
             $emailContext
         );
+
+        $this->sendEmail(
+            [$picEmail],
+            'FKMP Smart Lab: Booking Rejected',
+            $this->emailTemplate('Booking Rejected', [
+                $oversightMessage,
+                $this->bookingDetailBlock($context),
+            ], site_url($approvalLink), 'Open Approval Queue'),
+            null,
+            $emailContext
+        );
+
+        if (($context['approval_flow'] ?? '') !== 'FKMP_APPROVAL') {
+            $this->sendEmail(
+                $managerEmails,
+                'FKMP Smart Lab: Booking Rejected',
+                $this->emailTemplate('Booking Rejected', [
+                    $oversightMessage,
+                    $this->bookingDetailBlock($context),
+                ], site_url($approvalLink), 'Open Approval Queue'),
+                null,
+                $emailContext
+            );
+        }
+
     }
 
     public function notifyUpcomingBookingReminder(array $booking): void
@@ -244,15 +329,20 @@ class NotificationService
 
         $picEmail = $context['pic_email'] ?? '';
         $picUserId = $this->findUserIdByEmail($picEmail);
+        $managerIds = $this->groupUserIds('manager');
+        $managerEmails = $this->managerEmails();
 
         $technicianLink = '/technician/maintenance/edit/' . $maintenanceId;
         $reporterLink = '/dashboard/report-issue';
+        $managerLink = '/dashboard/manager';
         $unitText = ! empty($context['unit_reference']) ? ' Unit: ' . $context['unit_reference'] . '.' : '';
         $picMessage = 'A maintenance issue was reported for ' . $context['asset_name'] . ' in ' . $context['lab_name'] . '.' . $unitText;
         $reporterMessage = 'Your issue report for ' . $context['asset_name'] . ' in ' . $context['lab_name'] . ' has been submitted and is awaiting review.';
+        $managerMessage = 'A maintenance issue was reported for ' . $context['asset_name'] . ' in ' . $context['lab_name'] . '.';
 
         $this->createUserNotifications($this->compactIds([$picUserId]), 'maintenance', 'New Maintenance Issue Reported', $picMessage, $technicianLink, 'maintenance', $maintenanceId);
         $this->createUserNotifications($this->compactIds([(int) ($context['reported_by'] ?? 0)]), 'maintenance', 'Issue Report Submitted', $reporterMessage, $reporterLink, 'maintenance', $maintenanceId);
+        $this->createUserNotifications($managerIds, 'maintenance', 'Maintenance Issue Reported', $managerMessage, $managerLink, 'maintenance', $maintenanceId);
 
         $this->sendEmail(
             [$picEmail ?: null],
@@ -275,6 +365,17 @@ class NotificationService
                 'Laboratory: ' . ($context['lab_name'] ?? '-'),
                 'Equipment: ' . ($context['asset_name'] ?? '-'),
             ], site_url($reporterLink), 'View Your Reports')
+        );
+
+        $this->sendEmail(
+            $managerEmails,
+            'FKMP Smart Lab: Maintenance Issue Reported',
+            $this->emailTemplate('Maintenance Issue Reported', [
+                $managerMessage,
+                'Case: ' . ($context['title'] ?? 'Maintenance Issue'),
+                'Laboratory: ' . ($context['lab_name'] ?? '-'),
+                'Equipment: ' . ($context['asset_name'] ?? '-'),
+            ], site_url($managerLink), 'Open Manager Dashboard')
         );
     }
 
@@ -376,6 +477,7 @@ class NotificationService
                 ['entity_type' => 'maintenance', 'entity_id' => $maintenanceId, 'notification_type' => 'maintenance']
             );
         }
+
     }
 
     public function notifyMaintenanceScheduled(int $maintenanceId): void
@@ -386,13 +488,23 @@ class NotificationService
         }
 
         $reporterLink = '/dashboard/report-issue';
+        $picLink = '/dashboard/pic';
+        $managerLink = '/dashboard/manager';
+        $picEmail = strtolower(trim((string) ($context['pic_email'] ?? '')));
+        $picUserId = $this->findUserIdByEmail($picEmail);
+        $managerIds = $this->groupUserIds('manager');
+        $managerEmails = $this->managerEmails();
         $message = 'Maintenance for ' . $context['asset_name'] . ' in ' . $context['lab_name'] . ' has been accepted and scheduled.';
         if (! empty($context['scheduled_for'])) {
             $message .= ' Scheduled for ' . date('d-m-Y H:i', strtotime($context['scheduled_for'])) . '.';
         }
 
         $this->createUserNotifications($this->compactIds([(int) ($context['reported_by'] ?? 0)]), 'maintenance', 'Maintenance Scheduled', $message, $reporterLink, 'maintenance', $maintenanceId);
+        $this->createUserNotifications($this->compactIds([$picUserId]), 'maintenance', 'Maintenance Scheduled', $message, $picLink, 'maintenance', $maintenanceId);
+        $this->createUserNotifications($managerIds, 'maintenance', 'Maintenance Scheduled', $message, $managerLink, 'maintenance', $maintenanceId);
         $this->sendEmail([$context['reporter_email'] ?? null], 'FKMP Smart Lab: Maintenance Scheduled', $this->emailTemplate('Maintenance Scheduled', [$message], site_url($reporterLink), 'View Your Reports'), null, ['entity_type' => 'maintenance', 'entity_id' => (int) $maintenanceId, 'notification_type' => 'maintenance']);
+        $this->sendEmail([$picEmail], 'FKMP Smart Lab: Maintenance Scheduled', $this->emailTemplate('Maintenance Scheduled', [$message], site_url($picLink), 'Open PIC Dashboard'), null, ['entity_type' => 'maintenance', 'entity_id' => (int) $maintenanceId, 'notification_type' => 'maintenance']);
+        $this->sendEmail($managerEmails, 'FKMP Smart Lab: Maintenance Scheduled', $this->emailTemplate('Maintenance Scheduled', [$message], site_url($managerLink), 'Open Manager Dashboard'), null, ['entity_type' => 'maintenance', 'entity_id' => (int) $maintenanceId, 'notification_type' => 'maintenance']);
     }
 
     public function notifyMaintenanceInProgress(int $maintenanceId): void
@@ -411,9 +523,12 @@ class NotificationService
 
         $picEmail  = strtolower(trim((string) ($context['pic_email'] ?? '')));
         $picUserId = $this->findUserIdByEmail($picEmail);
+        $managerIds = $this->groupUserIds('manager');
+        $managerEmails = $this->managerEmails();
 
         $technicianLink = '/technician/maintenance/edit/' . $maintenanceId;
         $reporterLink   = '/dashboard/report-issue';
+        $managerLink    = '/dashboard/manager';
         $emailContext   = ['entity_type' => 'maintenance', 'entity_id' => $maintenanceId, 'notification_type' => 'maintenance'];
 
         // Both sets prevent duplicate in-app notifications and duplicate emails respectively.
@@ -464,6 +579,37 @@ class NotificationService
                 $emailContext
             );
             $sentEmails[$picEmail] = true;
+        }
+
+        $managerMessage = 'Maintenance work for ' . $assetName . ' in ' . $labName . ' is now in progress.';
+        foreach ($managerIds as $managerId) {
+            $managerId = (int) $managerId;
+            if ($managerId <= 0 || isset($notifiedUserIds[$managerId])) {
+                continue;
+            }
+
+            $this->createUserNotifications([$managerId], 'maintenance', 'Maintenance Now In Progress', $managerMessage, $managerLink, 'maintenance', $maintenanceId);
+            $notifiedUserIds[$managerId] = true;
+        }
+        foreach ($managerEmails as $managerEmail) {
+            $managerEmail = strtolower(trim((string) $managerEmail));
+            if ($managerEmail === '' || isset($sentEmails[$managerEmail])) {
+                continue;
+            }
+
+            $this->sendEmail(
+                [$managerEmail],
+                'FKMP Smart Lab: Maintenance In Progress',
+                $this->emailTemplate('Maintenance In Progress', [
+                    $managerMessage,
+                    'Case: ' . $caseTitle,
+                    'Laboratory: ' . $labName,
+                    'Equipment: ' . $assetName,
+                ], site_url($managerLink), 'Open Manager Dashboard'),
+                null,
+                $emailContext
+            );
+            $sentEmails[$managerEmail] = true;
         }
 
         // C. Users with PENDING or APPROVED bookings for the same asset on the maintenance date.
@@ -528,10 +674,15 @@ class NotificationService
             return;
         }
 
+        $emailContext = ['entity_type' => 'booking', 'entity_id' => (int) ($booking['id'] ?? 0), 'notification_type' => 'booking'];
+
         $assetName = $ctx['asset_name'] ?? 'equipment';
         $labName   = $ctx['lab_name']   ?? 'the laboratory';
         $picName   = $ctx['pic_name']   ?? '';
         $picEmail  = $ctx['pic_email']  ?? '';
+        $picUserId = $this->findUserIdByEmail((string) $picEmail);
+        $managerIds = $this->groupUserIds('manager');
+        $managerEmails = $this->managerEmails();
 
         $date  = isset($booking['date'])       ? date('d-m-Y', strtotime((string) $booking['date']))       : '';
         $start = isset($booking['start_time']) ? substr((string) $booking['start_time'], 0, 5) : '';
@@ -546,6 +697,10 @@ class NotificationService
             . ' is now under active maintenance.' . $contactLine;
 
         $bookingLink = $this->bookingDashboardLink($uid, (int) $booking['id']);
+        $oversightMessage = 'Booking on ' . $date . ' (' . $start . '-' . $end . ') for ' . $labName
+            . ' was automatically cancelled because ' . $assetName . ' is under active maintenance.';
+        $picLink = '/dashboard/pic';
+        $managerLink = '/dashboard/manager';
 
         $this->createUserNotifications(
             [$uid],
@@ -556,6 +711,8 @@ class NotificationService
             'booking',
             (int) $booking['id']
         );
+        $this->createUserNotifications($this->compactIds([$picUserId]), 'booking', 'Booking Cancelled Due To Maintenance', $oversightMessage, $picLink, 'booking', (int) $booking['id']);
+        $this->createUserNotifications($managerIds, 'booking', 'Booking Cancelled Due To Maintenance', $oversightMessage, $managerLink, 'booking', (int) $booking['id']);
 
         $userEmail = strtolower(trim((string) ($this->emailForUserId($uid) ?? '')));
         if ($userEmail !== '') {
@@ -569,9 +726,31 @@ class NotificationService
                     'Reason: ' . $assetName . ' is under active maintenance.',
                 ], site_url($bookingLink), 'View My Bookings'),
                 null,
-                ['entity_type' => 'booking', 'entity_id' => (int) $booking['id'], 'notification_type' => 'booking']
+                $emailContext
             );
         }
+
+        $this->sendEmail(
+            [$picEmail],
+            'FKMP Smart Lab: Booking Cancelled Due To Maintenance',
+            $this->emailTemplate('Booking Cancelled Due To Maintenance', [
+                $oversightMessage,
+                'Applicant email: ' . ($userEmail !== '' ? $userEmail : '-'),
+            ], site_url($picLink), 'Open PIC Dashboard'),
+            null,
+            $emailContext
+        );
+
+        $this->sendEmail(
+            $managerEmails,
+            'FKMP Smart Lab: Booking Cancelled Due To Maintenance',
+            $this->emailTemplate('Booking Cancelled Due To Maintenance', [
+                $oversightMessage,
+                'Applicant email: ' . ($userEmail !== '' ? $userEmail : '-'),
+            ], site_url($managerLink), 'Open Manager Dashboard'),
+            null,
+            $emailContext
+        );
     }
 
     public function notifyMaintenanceCompleted(int $maintenanceId): void
@@ -582,9 +761,12 @@ class NotificationService
         }
 
         $message = 'Maintenance for ' . $context['asset_name'] . ' in ' . $context['lab_name'] . ' has been completed and the equipment is available again.';
+        $managerIds = $this->groupUserIds('manager');
+        $managerEmails = $this->managerEmails();
         $this->createUserNotifications($this->compactIds([(int) ($context['reported_by'] ?? 0)]), 'maintenance', 'Maintenance Completed', $message, '/dashboard/report-issue', 'maintenance', $maintenanceId);
         $this->createUserNotifications($this->compactIds([$this->findUserIdByEmail($context['pic_email'] ?? '')]), 'maintenance', 'Equipment Available Again', $message, '/dashboard/pic', 'maintenance', $maintenanceId);
-        $this->sendEmail([$context['reporter_email'] ?? null, $context['pic_email'] ?? null], 'FKMP Smart Lab: Maintenance Completed', $this->emailTemplate('Maintenance Completed', [$message]), null, ['entity_type' => 'maintenance', 'entity_id' => (int) $maintenanceId, 'notification_type' => 'maintenance']);
+        $this->createUserNotifications($managerIds, 'maintenance', 'Maintenance Completed', $message, '/dashboard/manager', 'maintenance', $maintenanceId);
+        $this->sendEmail(array_merge([$context['reporter_email'] ?? null, $context['pic_email'] ?? null], $managerEmails), 'FKMP Smart Lab: Maintenance Completed', $this->emailTemplate('Maintenance Completed', [$message]), null, ['entity_type' => 'maintenance', 'entity_id' => (int) $maintenanceId, 'notification_type' => 'maintenance']);
     }
 
     public function notifyMaintenanceDue(array $context): void
@@ -646,6 +828,8 @@ class NotificationService
 
         $picEmail = $this->picEmailForAsset($assetId);
         $picUserId = $picEmail !== '' ? $this->findUserIdByEmail($picEmail) : 0;
+        $managerIds = $this->groupUserIds('manager');
+        $managerEmails = $this->managerEmails();
 
         $link = '/technician/maintenance?asset_id=' . $assetId;
         if ($picUserId > 0) {
@@ -655,6 +839,17 @@ class NotificationService
                 'Maintenance Due Soon',
                 $message,
                 $link,
+                'asset',
+                $assetId
+            );
+        }
+        if ($managerIds !== []) {
+            $this->createUserNotifications(
+                $managerIds,
+                'maintenance_due',
+                'Maintenance Due Soon',
+                $message,
+                '/dashboard/manager',
                 'asset',
                 $assetId
             );
@@ -672,6 +867,19 @@ class NotificationService
                 ['entity_type' => 'asset', 'entity_id' => $assetId, 'notification_type' => 'maintenance_due']
             );
         }
+        if ($managerEmails !== []) {
+            $this->sendEmail(
+                $managerEmails,
+                'FKMP Smart Lab: Preventive Maintenance Due Soon',
+                $this->emailTemplate('Maintenance Due Soon', [
+                    $message,
+                    'Open the manager dashboard to coordinate the maintenance plan.',
+                ], site_url('/dashboard/manager'), 'Open Manager Dashboard'),
+                null,
+                ['entity_type' => 'asset', 'entity_id' => $assetId, 'notification_type' => 'maintenance_due']
+            );
+        }
+
     }
 
     public function notifyExternalAccessSubmitted(int $requestId): void
@@ -1237,6 +1445,25 @@ class NotificationService
             ->getRowArray();
 
         return strtolower(trim((string) ($row['pic_email'] ?? '')));
+    }
+
+    protected function picUserIdForBooking(array $context): int
+    {
+        return $this->findUserIdByEmail((string) ($context['pic_email'] ?? ''));
+    }
+
+    protected function picEmailForBooking(array $context): ?string
+    {
+        $email = strtolower(trim((string) ($context['pic_email'] ?? '')));
+        return $email !== '' ? $email : null;
+    }
+
+    protected function managerEmails(): array
+    {
+        return array_values(array_unique(array_filter(array_merge(
+            [$this->settingValue('system.lab_manager_email')],
+            $this->emailsForUserIds($this->groupUserIds('manager'))
+        ))));
     }
 
     protected function compactIds(array $ids): array

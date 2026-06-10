@@ -189,6 +189,35 @@ class ExternalRequestNotificationService
                 $this->emailTemplate('External Request Approved', $paragraphs, site_url($requesterLink), 'Open External Request Dashboard'),
                 ['entity_type' => 'external_request', 'entity_id' => $requestId, 'notification_type' => 'external_request']
             );
+
+            $picUserId = $this->picUserIdForLab((int) ($context['lab_id'] ?? 0));
+            $managerIds = $this->managerUserIds();
+            $internalMessage = 'External request for ' . $descriptor . ' has been approved for scheduling and the requester has been informed.';
+
+            $this->createNotifications($this->compactIds([$picUserId]), 'External Request Approved For Scheduling', $internalMessage, $reviewLink, $requestId);
+            $this->createNotifications($managerIds, 'External Request Approved For Scheduling', $internalMessage, $reviewLink, $requestId);
+
+            $internalEmails = array_values(array_unique(array_filter(array_merge(
+                [$context['pic_email'] ?? null],
+                $this->managerEmails()
+            ))));
+            $this->sendEmail(
+                $internalEmails,
+                'FKMP Smart Lab: External Request Approved For Scheduling',
+                $this->emailTemplate('External Request Approved For Scheduling', [
+                    $internalMessage,
+                    $this->requestDetailBlock($context),
+                ], site_url($reviewLink), 'Open External Request Queue'),
+                ['entity_type' => 'external_request', 'entity_id' => $requestId, 'notification_type' => 'external_request']
+            );
+
+            $bookingId = (int) ($context['booking_id'] ?? 0);
+            if ($bookingId > 0) {
+                NotificationService::dispatchSafely(
+                    fn(NotificationService $notifications) => $notifications->notifyBookingApproved(['id' => $bookingId]),
+                    'external request booking approved'
+                );
+            }
         }
     }
 
