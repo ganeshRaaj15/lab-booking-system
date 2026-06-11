@@ -565,6 +565,7 @@ class BookingController extends BaseController
         $pdfPath = null;
         $storedPdfName = null;
 
+        $bookingModel = new BookingModel();
         $bookingApplicantModel = new BookingApplicantModel();
         $bookingAssetModel = new BookingAssetModel();
         $db = \Config\Database::connect();
