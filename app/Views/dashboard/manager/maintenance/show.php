@@ -7,6 +7,8 @@ $record       = $record       ?? [];
 $logs         = $logs         ?? [];
 $asset        = $asset        ?? null;
 $statusLabels = $statusLabels ?? [];
+$roleLabel    = $roleLabel    ?? 'Lab Manager';
+$backUrl      = $backUrl      ?? '/dashboard/manager/maintenance';
 
 $priorityBadge = ['low' => 'secondary', 'medium' => 'primary', 'high' => 'warning', 'critical' => 'danger'];
 $statusBadge   = ['reported' => 'info', 'scheduled' => 'primary', 'in_progress' => 'warning', 'testing' => 'secondary', 'completed' => 'success', 'cancelled' => 'danger'];
@@ -22,7 +24,7 @@ $statusLabel   = $statusLabels[$record['status'] ?? ''] ?? ucfirst((string) ($re
             <h2 class="fw-bold text-primary">Maintenance #<?= (int) $record['id'] ?></h2>
             <p class="text-muted small mb-0"><?= esc($record['title'] ?? '') ?></p>
         </div>
-        <a href="/dashboard/manager/maintenance" class="btn btn-outline-secondary">
+        <a href="<?= esc($backUrl) ?>" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left me-1"></i> Back to List
         </a>
     </div>
@@ -185,7 +187,7 @@ $statusLabel   = $statusLabels[$record['status'] ?? ''] ?? ucfirst((string) ($re
             <div class="card border-0 shadow-sm">
                 <div class="card-body small text-muted">
                     <i class="bi bi-info-circle me-1"></i>
-                    This is a read-only view. Only the assigned PIC or administrator can modify maintenance records.
+                    This is a read-only view for <?= esc($roleLabel) ?>. Only the assigned PIC can modify maintenance records.
                 </div>
             </div>
         </div>

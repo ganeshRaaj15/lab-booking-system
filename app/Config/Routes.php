@@ -528,6 +528,8 @@ $routes->group('dashboard', ['filter' => 'session'], function ($routes) {
     // ADMIN DASHBOARD
     $routes->get('admin', [AdminDashboard::class, 'index'], ['filter' => 'group:admin']);
     $routes->get('admin/booking-details/(:num)', [AdminDashboard::class, 'bookingDetails/$1'], ['filter' => 'group:admin']);
+    $routes->get('admin/maintenance', [ManagerMaintenanceController::class, 'index'], ['filter' => 'group:admin']);
+    $routes->get('admin/maintenance/(:num)', [ManagerMaintenanceController::class, 'show/$1'], ['filter' => 'group:admin']);
 
     // ISSUE REPORTING (student, staff, pic, external)
     $routes->get('report-issue', [IssueReportController::class, 'create'], ['filter' => 'group:student,staff,pic,external']);
@@ -650,7 +652,7 @@ $routes->group('admin', ['filter' => 'group:pic,admin'], function ($routes) {
 // TECHNICIAN ROUTES
 // ====================================================================
 
-$routes->group('technician', ['filter' => 'group:pic,admin'], function ($routes) {
+$routes->group('technician', ['filter' => 'group:pic'], function ($routes) {
     $routes->get('maintenance', [MaintenanceController::class, 'index']);
     $routes->get('maintenance/create', [MaintenanceController::class, 'create']);
     $routes->get('maintenance/create/(:num)', [MaintenanceController::class, 'create/$1']);

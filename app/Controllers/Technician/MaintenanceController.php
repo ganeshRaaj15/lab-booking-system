@@ -382,7 +382,7 @@ class MaintenanceController extends BaseController
         if (! auth()->loggedIn()) {
             return redirect()->to('/login');
         }
-        if (! auth()->user()->inGroup('pic') && ! auth()->user()->inGroup('admin')) {
+        if (! auth()->user()->inGroup('pic')) {
             return redirect()->to('/dashboard')->with('error', 'Access denied.');
         }
         return null;

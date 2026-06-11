@@ -9,6 +9,9 @@ $statusLabels      = $statusLabels      ?? [];
 $filters           = $filters           ?? ['status' => '', 'asset_id' => 0];
 $upcomingForecasts = $upcomingForecasts ?? [];
 $modelSummary      = $modelSummary      ?? [];
+$roleLabel         = $roleLabel         ?? 'Lab Manager';
+$backUrl           = $backUrl           ?? '/dashboard/manager';
+$basePath          = $basePath          ?? '/dashboard/manager/maintenance';
 
 $priorityBadge = ['low' => 'secondary', 'medium' => 'primary', 'high' => 'warning', 'critical' => 'danger'];
 $statusBadge   = ['reported' => 'info', 'scheduled' => 'primary', 'in_progress' => 'warning', 'testing' => 'secondary', 'completed' => 'success', 'cancelled' => 'danger'];
@@ -21,10 +24,10 @@ $statusBadge   = ['reported' => 'info', 'scheduled' => 'primary', 'in_progress' 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold text-primary">Maintenance Records</h2>
-            <p class="text-muted small mb-0">Read-only view of all system maintenance activity.</p>
+            <p class="text-muted small mb-0">Read-only view of all system maintenance activity for <?= esc($roleLabel) ?>.</p>
         </div>
-        <a href="/dashboard/manager" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i> Manager Dashboard
+        <a href="<?= esc($backUrl) ?>" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> <?= esc($roleLabel) ?> Dashboard
         </a>
     </div>
 
@@ -33,7 +36,7 @@ $statusBadge   = ['reported' => 'info', 'scheduled' => 'primary', 'in_progress' 
     <?php endif; ?>
 
     <!-- Filters -->
-    <form method="get" action="/dashboard/manager/maintenance" class="card border-0 shadow-sm mb-4">
+    <form method="get" action="<?= esc($basePath) ?>" class="card border-0 shadow-sm mb-4">
         <div class="card-body">
             <div class="row g-2 align-items-end">
                 <div class="col-md-4">
@@ -49,7 +52,7 @@ $statusBadge   = ['reported' => 'info', 'scheduled' => 'primary', 'in_progress' 
                 </div>
                 <div class="col-md-3 d-flex gap-2">
                     <button type="submit" class="btn btn-primary btn-sm">Filter</button>
-                    <a href="/dashboard/manager/maintenance" class="btn btn-outline-secondary btn-sm">Clear</a>
+                    <a href="<?= esc($basePath) ?>" class="btn btn-outline-secondary btn-sm">Clear</a>
                 </div>
             </div>
         </div>
@@ -218,7 +221,7 @@ $statusBadge   = ['reported' => 'info', 'scheduled' => 'primary', 'in_progress' 
                                 <?= $rec['created_at'] ? date('d-m-Y', strtotime((string) $rec['created_at'])) : '—' ?>
                             </td>
                             <td class="text-end">
-                                <a href="/dashboard/manager/maintenance/<?= (int) $rec['id'] ?>"
+                                <a href="<?= esc($basePath) ?>/<?= (int) $rec['id'] ?>"
                                    class="btn btn-sm btn-outline-primary">
                                     <i class="bi bi-eye"></i>
                                 </a>

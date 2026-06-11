@@ -5,6 +5,7 @@ $dashboardUrl = $isPicWorkspace ? '/dashboard/pic' : '/dashboard/admin';
 $dashboardLabel = $isPicWorkspace ? 'PIC Panel' : 'Admin Panel';
 $workspaceTitle = $isPicWorkspace ? 'PIC Workspace' : 'Admin Dashboard';
 $reservationUrl = $isPicWorkspace ? '/pic/reservations' : '/admin/reservations';
+$maintenanceUrl = $isPicWorkspace ? '/technician/maintenance' : '/dashboard/admin/maintenance';
 ?>
 
 <aside class="glass-sidebar d-flex flex-column">
@@ -42,7 +43,7 @@ $reservationUrl = $isPicWorkspace ? '/pic/reservations' : '/admin/reservations';
         <i class="bi bi-calendar-check"></i> Lab Reservations
     </a>
 
-    <a href="/technician/maintenance" class="sidebar-link <?= url_is('technician/maintenance*') ? 'active' : '' ?>">
+    <a href="<?= esc($maintenanceUrl) ?>" class="sidebar-link <?= url_is('technician/maintenance*') || url_is('dashboard/admin/maintenance*') ? 'active' : '' ?>">
         <i class="bi bi-wrench-adjustable"></i> Maintenance
     </a>
 

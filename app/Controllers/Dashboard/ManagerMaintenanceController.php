@@ -29,7 +29,7 @@ class ManagerMaintenanceController extends BaseController
      */
     public function index()
     {
-        if ($redirect = $this->ensureManager()) {
+        if ($redirect = $this->ensureViewer()) {
             return $redirect;
         }
 
@@ -64,6 +64,9 @@ class ManagerMaintenanceController extends BaseController
             'upcomingForecasts' => $upcomingForecasts,
             'modelSummary'      => $predictionService->getModelSummary(),
             'user'              => auth()->user(),
+            'roleLabel'         => $this->viewerRoleLabel(),
+            'backUrl'           => $this->viewerBackUrl(),
+            'basePath'          => $this->viewerBasePath(),
         ]);
     }
 
@@ -73,13 +76,13 @@ class ManagerMaintenanceController extends BaseController
      */
     public function show(int $id)
     {
-        if ($redirect = $this->ensureManager()) {
+        if ($redirect = $this->ensureViewer()) {
             return $redirect;
         }
 
         $record = $this->maintenanceModel->withRelations()->where('maintenance_records.id', $id)->first();
         if (! $record) {
-            return redirect()->to('/dashboard/manager/maintenance')->with('error', 'Maintenance record not found.');
+            return redirect()->to($this->viewerBasePath())->with('error', 'Maintenance record not found.');
         }
 
         $logs = $this->logModel
@@ -97,14 +100,40 @@ class ManagerMaintenanceController extends BaseController
             'asset'        => $asset,
             'statusLabels' => $this->maintenanceModel->workflowLabels(),
             'user'         => auth()->user(),
+            'roleLabel'    => $this->viewerRoleLabel(),
+            'backUrl'      => $this->viewerBasePath(),
         ]);
     }
 
-    protected function ensureManager()
+    protected function ensureViewer()
     {
-        if (! auth()->loggedIn() || ! auth()->user()->inGroup('manager')) {
+        if (! auth()->loggedIn()) {
             return redirect()->to('/dashboard')->with('error', 'Access denied.');
         }
+
+        $user = auth()->user();
+        if (! $user->inGroup('manager') && ! $user->inGroup('admin')) {
+            return redirect()->to('/dashboard')->with('error', 'Access denied.');
+        }
+
         return null;
+    }
+
+    protected function viewerRoleLabel(): string
+    {
+        $user = auth()->user();
+        return $user && $user->inGroup('admin') ? 'Administrator' : 'Lab Manager';
+    }
+
+    protected function viewerBackUrl(): string
+    {
+        $user = auth()->user();
+        return $user && $user->inGroup('admin') ? '/dashboard/admin' : '/dashboard/manager';
+    }
+
+    protected function viewerBasePath(): string
+    {
+        $user = auth()->user();
+        return $user && $user->inGroup('admin') ? '/dashboard/admin/maintenance' : '/dashboard/manager/maintenance';
     }
 }
