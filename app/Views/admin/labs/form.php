@@ -6,6 +6,7 @@ $isEdit = isset($lab) && !empty($lab);
 $title = $isEdit ? 'Edit Laboratory' : 'Add Laboratory';
 $action = $isEdit ? '/admin/labs/update/' . $lab['id'] : '/admin/labs/store';
 $errors = session()->getFlashdata('errors') ?? [];
+$canEditPicAssignment = $canEditPicAssignment ?? false;
 ?>
 
 <div class="container-fluid">
@@ -24,6 +25,9 @@ $errors = session()->getFlashdata('errors') ?? [];
     <?php endif; ?>
     <?php if (session()->getFlashdata('warning')): ?>
         <div class="alert alert-warning border-0 shadow-sm"><?= esc(session()->getFlashdata('warning')) ?></div>
+    <?php endif; ?>
+    <?php if (! $canEditPicAssignment): ?>
+        <div class="alert alert-info border-0 shadow-sm">PIC assignment is controlled by administrators. You can update the laboratory profile and image, but PIC ownership fields are read-only.</div>
     <?php endif; ?>
 
     <div class="row g-4">
@@ -59,16 +63,22 @@ $errors = session()->getFlashdata('errors') ?? [];
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">PIC Name</label>
-                            <input type="text" name="pic_name" class="form-control" value="<?= esc(old('pic_name', $lab['pic_name'] ?? '')) ?>" required>
+                            <input type="text" name="pic_name" class="form-control" value="<?= esc(old('pic_name', $lab['pic_name'] ?? '')) ?>" <?= $canEditPicAssignment ? '' : 'readonly' ?> required>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">PIC Email</label>
-                            <input type="email" name="pic_email" class="form-control" value="<?= esc(old('pic_email', $lab['pic_email'] ?? '')) ?>">
-                            <div class="form-text">Use the email address of an existing user with the PIC role so approvals and PIC dashboard scoping work correctly.</div>
+                            <input type="email" name="pic_email" class="form-control" value="<?= esc(old('pic_email', $lab['pic_email'] ?? '')) ?>" <?= $canEditPicAssignment ? '' : 'readonly' ?>>
+                            <div class="form-text">
+                                <?php if ($canEditPicAssignment): ?>
+                                    Use the email address of an existing user with the PIC role so approvals and PIC dashboard scoping work correctly.
+                                <?php else: ?>
+                                    Administrators manage PIC assignment and ownership changes.
+                                <?php endif; ?>
+                            </div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">PIC Phone</label>
-                            <input type="text" name="pic_phone" class="form-control" value="<?= esc(old('pic_phone', $lab['pic_phone'] ?? '')) ?>">
+                            <input type="text" name="pic_phone" class="form-control" value="<?= esc(old('pic_phone', $lab['pic_phone'] ?? '')) ?>" <?= $canEditPicAssignment ? '' : 'readonly' ?>>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Laboratory Image</label>
@@ -80,10 +90,16 @@ $errors = session()->getFlashdata('errors') ?? [];
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">PIC Image</label>
-                            <input type="file" name="pic_image" class="form-control">
+                            <?php if ($canEditPicAssignment): ?>
+                                <input type="file" name="pic_image" class="form-control">
+                            <?php else: ?>
+                                <input type="text" class="form-control" value="Administrators manage PIC profile images" readonly>
+                            <?php endif; ?>
                             <?php if ($isEdit && !empty($lab['pic_image_url'])): ?>
                                 <div class="mt-3"><img src="<?= esc($lab['pic_image_url']) ?>" alt="PIC image" style="width:120px;height:120px;object-fit:cover;border-radius:999px;"></div>
-                                <div class="form-check mt-2"><input class="form-check-input" type="checkbox" name="remove_pic_image" id="remove_pic_image"><label class="form-check-label text-danger small" for="remove_pic_image">Remove current PIC image</label></div>
+                                <?php if ($canEditPicAssignment): ?>
+                                    <div class="form-check mt-2"><input class="form-check-input" type="checkbox" name="remove_pic_image" id="remove_pic_image"><label class="form-check-label text-danger small" for="remove_pic_image">Remove current PIC image</label></div>
+                                <?php endif; ?>
                             <?php endif; ?>
                         </div>
                         <div class="col-12 d-flex justify-content-end gap-2">

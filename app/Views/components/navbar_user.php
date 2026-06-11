@@ -43,6 +43,9 @@ if (function_exists('auth') && auth()->loggedIn()) {
                         <li class="nav-item me-2"><a class="nav-link position-relative" href="/dashboard/external-requests"><i class="bi bi-clipboard-data me-1"></i> External Requests<span class="nav-indicator"></span></a></li>
                     <?php endif; ?>
                     <?php if ($user->inGroup('pic')): ?>
+                        <li class="nav-item me-2"><a class="nav-link position-relative" href="/admin/labs"><i class="bi bi-building-gear me-1"></i> Labs<span class="nav-indicator"></span></a></li>
+                        <li class="nav-item me-2"><a class="nav-link position-relative" href="/admin/assets"><i class="bi bi-boxes me-1"></i> Assets<span class="nav-indicator"></span></a></li>
+                        <li class="nav-item me-2"><a class="nav-link position-relative" href="/admin/services"><i class="bi bi-diagram-3 me-1"></i> Services<span class="nav-indicator"></span></a></li>
                         <li class="nav-item me-2 d-none d-lg-block"><a class="nav-link position-relative" href="/technician/maintenance"><i class="bi bi-wrench me-1"></i> Maintenance<span class="nav-indicator"></span></a></li>
                         <li class="nav-item me-2 d-none d-lg-block"><a class="nav-link position-relative" href="/pic/reservations"><i class="bi bi-calendar-check me-1"></i> Reservations<span class="nav-indicator"></span></a></li>
                     <?php endif; ?>

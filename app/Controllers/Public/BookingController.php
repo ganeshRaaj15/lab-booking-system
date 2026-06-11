@@ -6,6 +6,7 @@ use App\Controllers\BaseController;
 use App\Libraries\ApprovalFlowResolver;
 use App\Libraries\BookingSlotService;
 use App\Libraries\NotificationService;
+use App\Libraries\ServiceBundleService;
 use App\Models\BookingModel;
 use App\Models\BookingApplicantModel;
 use App\Models\BookingAssetModel;
@@ -18,10 +19,12 @@ use Config\Services;
 class BookingController extends BaseController
 {
     protected BookingSlotService $slotService;
+    protected ServiceBundleService $bundleService;
 
     public function __construct()
     {
         $this->slotService = new BookingSlotService();
+        $this->bundleService = new ServiceBundleService();
     }
 
     /*
@@ -84,19 +87,7 @@ class BookingController extends BaseController
             return [];
         }
 
-        $rows = (new AssetModel())
-            ->select('id')
-            ->where('lab_id', $labId)
-            ->where('lab_service_id', $serviceId)
-            ->orderBy('id', 'ASC')
-            ->findAll();
-
-        $selected = [];
-        foreach ($rows as $row) {
-            $selected[(int) $row['id']] = 1;
-        }
-
-        return $selected;
+        return $this->bundleService->requirementMapForService($labId, $serviceId);
     }
 
     protected function resolveSelectedAssets(int $labId, int $serviceId, ?string $assetsRaw): array
@@ -112,14 +103,7 @@ class BookingController extends BaseController
             return [];
         }
 
-        if ($parsed === []) {
-            return $serviceDefaults;
-        }
-
-        $allowedIds = array_fill_keys(array_keys($serviceDefaults), true);
-        $filtered = array_intersect_key($parsed, $allowedIds);
-
-        return $filtered === [] ? $serviceDefaults : $filtered;
+        return $serviceDefaults;
     }
 
     /*
@@ -237,10 +221,6 @@ class BookingController extends BaseController
             $hasValidSlot = false;
 
             foreach ($slotDefs as $slot) {
-                if ($bookingModel->hasLabConflict($labId, $date, $slot['start'], $slot['end'])) {
-                    continue;
-                }
-
                 if ($reservationModel->conflictsWithSlot($labId, $date, $slot['start'], $slot['end'])) {
                     continue;
                 }
@@ -317,17 +297,10 @@ class BookingController extends BaseController
             $slotOK     = true;
             $reason     = null;
 
-            if ($bookingModel->hasLabConflict($labId, $date, $slot['start'], $slot['end'], $excludeBookingId)) {
+            $res = $reservationModel->conflictsWithSlot($labId, $date, $slot['start'], $slot['end']);
+            if ($res) {
                 $slotOK = false;
-                $reason = 'Laboratory already booked for this slot.';
-            }
-
-            if ($slotOK) {
-                $res = $reservationModel->conflictsWithSlot($labId, $date, $slot['start'], $slot['end']);
-                if ($res) {
-                    $slotOK = false;
-                    $reason = $res['title'];
-                }
+                $reason = $res['title'];
             }
 
             if (! empty($selected)) {
@@ -420,14 +393,6 @@ class BookingController extends BaseController
             return $this->slotJson([
                 'conflict' => true,
                 'reason'   => 'Slot is already in the past.'
-            ]);
-        }
-
-        $bookingModel = new BookingModel();
-        if ($bookingModel->hasLabConflict($labId, $date, $start, $end)) {
-            return $this->slotJson([
-                'conflict' => true,
-                'reason'   => 'This laboratory already has an active booking for that time.'
             ]);
         }
 
@@ -583,11 +548,6 @@ class BookingController extends BaseController
             return $this->errorJson('No linked equipment is available for the selected service.');
         }
 
-        $bookingModel = new BookingModel();
-        if ($bookingModel->hasLabConflict($labId, $date, $startTime, $endTime)) {
-            return $this->errorJson('This laboratory is already booked for the selected date and time.');
-        }
-
         $reservation = (new LabReservationModel())->conflictsWithSlot($labId, $date, $startTime, $endTime);
         if ($reservation) {
             return $this->errorJson('This time slot is reserved: ' . $reservation['title']);
@@ -612,11 +572,6 @@ class BookingController extends BaseController
         $db->transBegin();
 
         try {
-            $conflicts = $bookingModel->activeLabConflictsForUpdate($labId, $date, $startTime, $endTime);
-            if ($conflicts !== []) {
-                throw new \DomainException('This laboratory slot was just taken. Please choose another time.');
-            }
-
             if ((new LabReservationModel())->conflictsWithSlot($labId, $date, $startTime, $endTime)) {
                 throw new \DomainException('This time slot is reserved and cannot be booked.');
             }

@@ -38,6 +38,7 @@ use App\Controllers\Api\NativeAdminSettingsController;
 use App\Controllers\Api\NativeAdminUserController;
 use App\Controllers\Api\NativeAdminLaboratoryController;
 use App\Controllers\Api\NativeAdminAssetController;
+use App\Controllers\Api\NativeAdminServiceController;
 
 // ---------------------------------------------------------
 // DASHBOARD CONTROLLERS
@@ -76,6 +77,7 @@ use App\Controllers\Admin\LabReservationController;
 use App\Controllers\Admin\SettingsController;
 use App\Controllers\Admin\AssetController;
 use App\Controllers\Admin\LaboratoryAdminController;
+use App\Controllers\Admin\LabServiceController;
 use App\Controllers\Admin\UserManagementController;
 use App\Controllers\Auth\PasswordRecoveryController;
 use App\Controllers\Technician\MaintenanceController;
@@ -175,6 +177,9 @@ $routes->group('api/native', ['filter' => ['tokens', 'group:admin']], static fun
     $routes->post('admin/users/(:num)', [NativeAdminUserController::class, 'update/$1']);
     $routes->post('admin/users/(:num)/send-recovery', [NativeAdminUserController::class, 'sendRecovery/$1']);
     $routes->post('admin/users/(:num)/delete', [NativeAdminUserController::class, 'delete/$1']);
+});
+
+$routes->group('api/native', ['filter' => 'tokens'], static function ($routes) {
     $routes->get('admin/labs', [NativeAdminLaboratoryController::class, 'index']);
     $routes->get('admin/labs/(:num)', [NativeAdminLaboratoryController::class, 'show/$1']);
     $routes->post('admin/labs', [NativeAdminLaboratoryController::class, 'store']);
@@ -185,6 +190,11 @@ $routes->group('api/native', ['filter' => ['tokens', 'group:admin']], static fun
     $routes->post('admin/assets', [NativeAdminAssetController::class, 'store']);
     $routes->post('admin/assets/(:num)', [NativeAdminAssetController::class, 'update/$1']);
     $routes->post('admin/assets/(:num)/delete', [NativeAdminAssetController::class, 'delete/$1']);
+    $routes->get('admin/services', [NativeAdminServiceController::class, 'index']);
+    $routes->get('admin/services/(:num)', [NativeAdminServiceController::class, 'show/$1']);
+    $routes->post('admin/services', [NativeAdminServiceController::class, 'store']);
+    $routes->post('admin/services/(:num)', [NativeAdminServiceController::class, 'update/$1']);
+    $routes->post('admin/services/(:num)/delete', [NativeAdminServiceController::class, 'delete/$1']);
 });
 
 // Laboratories
@@ -482,6 +492,7 @@ $routes->group('dashboard', ['filter' => 'session'], function ($routes) {
     $routes->get('external', [ExternalDashboard::class, 'index'], ['filter' => 'group:external']);
     $routes->get('external/request', [ExternalDashboard::class, 'createRequest'], ['filter' => 'group:external']);
     $routes->get('external/request/slots/(:num)/(:segment)', [ExternalDashboard::class, 'daySlots/$1/$2'], ['filter' => 'group:external']);
+    $routes->get('external/request/services/(:num)', [ExternalDashboard::class, 'services/$1'], ['filter' => 'group:external']);
     $routes->get('external/request/lab-services/(:num)', [ExternalDashboard::class, 'labServices/$1'], ['filter' => 'group:external']);
     $routes->get('external/request/service-assets/(:num)', [ExternalDashboard::class, 'serviceAssets/$1'], ['filter' => 'group:external']);
     $routes->post('external/request/store', [ExternalDashboard::class, 'storeRequest'], ['filter' => 'group:external']);
@@ -578,24 +589,6 @@ $routes->group('admin', ['filter' => 'group:admin'], function ($routes) {
     $routes->post('settings/save-slots', [SettingsController::class, 'saveSlots']);
     $routes->post('settings/run-scheduled-tasks', [SettingsController::class, 'runScheduledTasks']);
 
-    // Laboratories CRUD
-    $routes->get('labs', [LaboratoryAdminController::class, 'index']);
-    $routes->get('labs/create', [LaboratoryAdminController::class, 'create']);
-    $routes->post('labs/store', [LaboratoryAdminController::class, 'store']);
-    $routes->get('labs/edit/(:num)', [LaboratoryAdminController::class, 'edit/$1']);
-    $routes->post('labs/update/(:num)', [LaboratoryAdminController::class, 'update/$1']);
-    $routes->post('labs/delete/(:num)', [LaboratoryAdminController::class, 'delete/$1']);
-
-    // Assets CRUD - REORDERED (most specific first)
-    $routes->get('assets/create', [AssetController::class, 'create']);
-    $routes->post('assets/store', [AssetController::class, 'store']);
-    $routes->get('assets/edit/(:num)', [AssetController::class, 'edit/$1']);
-    $routes->post('assets/update/(:num)', [AssetController::class, 'update/$1']);
-    $routes->post('assets/delete/(:num)', [AssetController::class, 'delete/$1']);
-    $routes->post('assets/decommission/(:num)', [AssetController::class, 'decommission/$1']);
-    $routes->get('assets/qr-labels', [AssetController::class, 'qrLabels']);
-    $routes->get('assets', [AssetController::class, 'index']); // This should be LAST
-
     // External access request management
     $routes->get('external-access', [ExternalAccessAdminController::class, 'index']);
     $routes->get('external-access/(:num)', [ExternalAccessAdminController::class, 'show/$1']);
@@ -622,6 +615,34 @@ $routes->group('admin', ['filter' => 'group:admin'], function ($routes) {
     $routes->post('users/update/(:num)', [UserManagementController::class, 'update/$1']);
     $routes->post('users/send-recovery/(:num)', [UserManagementController::class, 'sendRecovery/$1']);
     $routes->post('users/delete/(:num)', [UserManagementController::class, 'delete/$1']);
+});
+
+$routes->group('admin', ['filter' => 'group:pic,admin'], function ($routes) {
+    // Laboratories CRUD
+    $routes->get('labs', [LaboratoryAdminController::class, 'index']);
+    $routes->get('labs/create', [LaboratoryAdminController::class, 'create']);
+    $routes->post('labs/store', [LaboratoryAdminController::class, 'store']);
+    $routes->get('labs/edit/(:num)', [LaboratoryAdminController::class, 'edit/$1']);
+    $routes->post('labs/update/(:num)', [LaboratoryAdminController::class, 'update/$1']);
+    $routes->post('labs/delete/(:num)', [LaboratoryAdminController::class, 'delete/$1']);
+
+    // Assets CRUD - most specific first
+    $routes->get('assets/create', [AssetController::class, 'create']);
+    $routes->post('assets/store', [AssetController::class, 'store']);
+    $routes->get('assets/edit/(:num)', [AssetController::class, 'edit/$1']);
+    $routes->post('assets/update/(:num)', [AssetController::class, 'update/$1']);
+    $routes->post('assets/delete/(:num)', [AssetController::class, 'delete/$1']);
+    $routes->post('assets/decommission/(:num)', [AssetController::class, 'decommission/$1']);
+    $routes->get('assets/qr-labels', [AssetController::class, 'qrLabels']);
+    $routes->get('assets', [AssetController::class, 'index']);
+
+    // Service bundle management
+    $routes->get('services', [LabServiceController::class, 'index']);
+    $routes->get('services/create', [LabServiceController::class, 'create']);
+    $routes->post('services/store', [LabServiceController::class, 'store']);
+    $routes->get('services/edit/(:num)', [LabServiceController::class, 'edit/$1']);
+    $routes->post('services/update/(:num)', [LabServiceController::class, 'update/$1']);
+    $routes->post('services/delete/(:num)', [LabServiceController::class, 'delete/$1']);
 });
 
 

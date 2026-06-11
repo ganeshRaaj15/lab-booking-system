@@ -3,6 +3,7 @@
 namespace App\Controllers\Api;
 
 use App\Controllers\BaseController;
+use App\Libraries\NotificationService;
 use App\Models\AssetModel;
 use App\Models\LaboratoryModel;
 use CodeIgniter\Shield\Entities\User;
@@ -27,7 +28,7 @@ class NativeAdminLaboratoryController extends BaseController
 
     public function index()
     {
-        $user = $this->authorizedAdmin();
+        $user = $this->authorizedUser();
         if (! $user instanceof User) {
             return $user;
         }
@@ -57,6 +58,9 @@ class NativeAdminLaboratoryController extends BaseController
                 ->orWhere('pic_email', '')
                 ->groupEnd();
         }
+        if ($this->isPicUser($user)) {
+            $builder = $builder->where('LOWER(TRIM(pic_email)) =', strtolower(trim((string) $user->email)));
+        }
 
         $labs = $builder->orderBy('name', 'ASC')->findAll();
         $assetRows = $this->dbAssetSummary();
@@ -72,16 +76,20 @@ class NativeAdminLaboratoryController extends BaseController
             'labs' => $labs,
             'filters' => $filters,
             'stats' => [
-                'total_labs' => (new LaboratoryModel())->countAllResults(),
+                'total_labs' => count($labs),
                 'assigned_pic' => count(array_filter($labs, static fn(array $lab): bool => (string) ($lab['pic_email'] ?? '') !== '')),
                 'unassigned_pic' => count(array_filter($labs, static fn(array $lab): bool => (string) ($lab['pic_email'] ?? '') === '')),
+            ],
+            'permissions' => [
+                'can_create' => $user->inGroup('admin'),
+                'scoped_to_pic_labs' => $this->isPicUser($user),
             ],
         ]);
     }
 
     public function show(int $id)
     {
-        $user = $this->authorizedAdmin();
+        $user = $this->authorizedUser();
         if (! $user instanceof User) {
             return $user;
         }
@@ -93,6 +101,12 @@ class NativeAdminLaboratoryController extends BaseController
                 'message' => 'Laboratory not found.',
             ]);
         }
+        if (! $this->canManageLab($lab, $user)) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'status' => 'error',
+                'message' => 'Unauthorized access.',
+            ]);
+        }
 
         $assetRows = $this->dbAssetSummary();
         $picAccountMap = $this->picAccountMap([$lab]);
@@ -100,14 +114,23 @@ class NativeAdminLaboratoryController extends BaseController
         return $this->response->setJSON([
             'status' => 'success',
             'lab' => $this->serializeLab($lab, $assetRows[$lab['id']] ?? null, $picAccountMap),
+            'permissions' => [
+                'can_edit_pic_assignment' => $user->inGroup('admin'),
+            ],
         ]);
     }
 
     public function store()
     {
-        $user = $this->authorizedAdmin();
+        $user = $this->authorizedUser();
         if (! $user instanceof User) {
             return $user;
+        }
+        if (! $user->inGroup('admin')) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'status' => 'error',
+                'message' => 'Only administrators can create laboratories.',
+            ]);
         }
 
         if (! $this->validate($this->rules())) {
@@ -119,11 +142,19 @@ class NativeAdminLaboratoryController extends BaseController
         }
 
         $payload = $this->collectPayload();
+        if ($conflict = $this->picAssignmentConflict($payload['pic_email'])) {
+            return $this->response->setStatusCode(422)->setJSON([
+                'status' => 'error',
+                'message' => $conflict,
+            ]);
+        }
+
         $picWarning = $this->picValidationWarning($payload['pic_email']);
         $payload['image'] = $this->handleUpload('image', 'images/labs');
         $payload['pic_image'] = $this->handleUpload('pic_image', 'images/pic');
 
         $labId = (int) $this->labModel->insert($payload, true);
+        $this->syncPicAccountRoleAndNotify($labId, $payload['pic_email']);
         $lab = $this->labModel->find($labId);
 
         return $this->response->setJSON([
@@ -136,7 +167,7 @@ class NativeAdminLaboratoryController extends BaseController
 
     public function update(int $id)
     {
-        $user = $this->authorizedAdmin();
+        $user = $this->authorizedUser();
         if (! $user instanceof User) {
             return $user;
         }
@@ -146,6 +177,12 @@ class NativeAdminLaboratoryController extends BaseController
             return $this->response->setStatusCode(404)->setJSON([
                 'status' => 'error',
                 'message' => 'Laboratory not found.',
+            ]);
+        }
+        if (! $this->canManageLab($lab, $user)) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'status' => 'error',
+                'message' => 'Unauthorized access.',
             ]);
         }
 
@@ -158,11 +195,29 @@ class NativeAdminLaboratoryController extends BaseController
         }
 
         $payload = $this->collectPayload();
+        if (! $user->inGroup('admin')) {
+            $payload['pic_name'] = (string) ($lab['pic_name'] ?? '');
+            $payload['pic_email'] = strtolower(trim((string) ($lab['pic_email'] ?? '')));
+            $payload['pic_phone'] = (string) ($lab['pic_phone'] ?? '');
+        }
+        if ($user->inGroup('admin') && ($conflict = $this->picAssignmentConflict($payload['pic_email'], $id))) {
+            return $this->response->setStatusCode(422)->setJSON([
+                'status' => 'error',
+                'message' => $conflict,
+            ]);
+        }
+
         $picWarning = $this->picValidationWarning($payload['pic_email']);
         $payload['image'] = $this->handleUpload('image', 'images/labs', $lab['image'] ?? null, (bool) $this->truthy($this->request->getPost('remove_image')));
-        $payload['pic_image'] = $this->handleUpload('pic_image', 'images/pic', $lab['pic_image'] ?? null, (bool) $this->truthy($this->request->getPost('remove_pic_image')));
+        $payload['pic_image'] = $user->inGroup('admin')
+            ? $this->handleUpload('pic_image', 'images/pic', $lab['pic_image'] ?? null, (bool) $this->truthy($this->request->getPost('remove_pic_image')))
+            : ($lab['pic_image'] ?? null);
 
         $this->labModel->update($id, $payload);
+        if ($user->inGroup('admin')) {
+            $this->syncPicAccountRoleAndNotify($id, $payload['pic_email']);
+        }
+
         $updatedLab = $this->labModel->find($id);
 
         return $this->response->setJSON([
@@ -175,9 +230,15 @@ class NativeAdminLaboratoryController extends BaseController
 
     public function delete(int $id)
     {
-        $user = $this->authorizedAdmin();
+        $user = $this->authorizedUser();
         if (! $user instanceof User) {
             return $user;
+        }
+        if (! $user->inGroup('admin')) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'status' => 'error',
+                'message' => 'Only administrators can delete laboratories.',
+            ]);
         }
 
         $lab = $this->labModel->find($id);
@@ -415,7 +476,7 @@ class NativeAdminLaboratoryController extends BaseController
         return in_array(strtolower(trim((string) $value)), ['1', 'true', 'yes', 'on'], true);
     }
 
-    protected function authorizedAdmin()
+    protected function authorizedUser()
     {
         $user = auth()->user();
         if (! $user instanceof User) {
@@ -425,7 +486,7 @@ class NativeAdminLaboratoryController extends BaseController
             ]);
         }
 
-        if (! $user->inGroup('admin')) {
+        if (! $user->inGroup('admin') && ! $user->inGroup('pic')) {
             return $this->response->setStatusCode(403)->setJSON([
                 'status' => 'error',
                 'message' => 'Unauthorized access.',
@@ -433,5 +494,79 @@ class NativeAdminLaboratoryController extends BaseController
         }
 
         return $user;
+    }
+
+    protected function isPicUser(User $user): bool
+    {
+        return $user->inGroup('pic') && ! $user->inGroup('admin');
+    }
+
+    protected function canManageLab(array $lab, User $user): bool
+    {
+        if ($user->inGroup('admin')) {
+            return true;
+        }
+
+        return strtolower(trim((string) ($lab['pic_email'] ?? ''))) === strtolower(trim((string) $user->email));
+    }
+
+    protected function picAssignmentConflict(string $email, int $ignoreLabId = 0): ?string
+    {
+        $email = strtolower(trim($email));
+        if ($email === '') {
+            return null;
+        }
+
+        $conflicts = $this->labModel
+            ->where('LOWER(TRIM(pic_email)) =', $email);
+
+        if ($ignoreLabId > 0) {
+            $conflicts->where('id !=', $ignoreLabId);
+        }
+
+        $labs = $conflicts->findAll();
+        if ($labs === []) {
+            return null;
+        }
+
+        $names = array_map(static fn(array $lab): string => trim(((string) ($lab['name'] ?? '')) . ' (' . ((string) ($lab['room'] ?? '-')) . ')'), $labs);
+        return 'This user is already assigned as PIC for ' . implode(', ', $names) . '. Reassign that laboratory first before using the same PIC here.';
+    }
+
+    protected function syncPicAccountRoleAndNotify(int $labId, string $email): void
+    {
+        $email = strtolower(trim($email));
+        if ($labId <= 0 || $email === '') {
+            return;
+        }
+
+        $account = $this->picAccountForEmail($email);
+        if ($account === null) {
+            return;
+        }
+
+        $db = db_connect();
+        $roles = $account['roles'] ?? [];
+        $promoted = false;
+        if (! in_array('pic', $roles, true)) {
+            $db->table('auth_groups_users')->insert([
+                'user_id' => (int) $account['user_id'],
+                'group' => 'pic',
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+            $db->table('auth_groups_users')
+                ->where('user_id', (int) $account['user_id'])
+                ->where('group', 'staff')
+                ->delete();
+            $promoted = true;
+        }
+
+        $lab = $this->labModel->find($labId);
+        if (is_array($lab)) {
+            NotificationService::dispatchSafely(
+                fn(NotificationService $notifications) => $notifications->notifyPicAssignedToLab($lab, $email, $promoted),
+                'pic assigned to lab'
+            );
+        }
     }
 }

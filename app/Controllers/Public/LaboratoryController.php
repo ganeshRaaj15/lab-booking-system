@@ -3,6 +3,7 @@
 namespace App\Controllers\Public;
 
 use App\Controllers\BaseController;
+use App\Libraries\ServiceBundleService;
 use App\Models\LaboratoryModel;
 use App\Models\AssetModel;
 use App\Models\FacultyModel;
@@ -13,12 +14,14 @@ class LaboratoryController extends BaseController
     protected $laboratories;
     protected $assets;
     protected $faculties;
+    protected ServiceBundleService $bundleService;
 
     public function __construct()
     {
         $this->laboratories = new LaboratoryModel();
         $this->assets       = new AssetModel();
         $this->faculties    = new FacultyModel();
+        $this->bundleService = new ServiceBundleService($this->assets);
         helper('auth');
     }
 
@@ -124,13 +127,26 @@ class LaboratoryController extends BaseController
 
         $assetsByService = [];
         $unlinkedAssets  = [];
+        foreach ($services as $service) {
+            $serviceId = (int) ($service['id'] ?? 0);
+            if ($serviceId > 0) {
+                $assetsByService[$serviceId] = array_map(static function (array $asset): array {
+                    $asset['id'] = (int) ($asset['asset_id'] ?? $asset['id'] ?? 0);
+                    $asset['quantity'] = (int) ($asset['available_quantity'] ?? $asset['quantity'] ?? 0);
+                    return $asset;
+                }, (array) ($service['required_assets'] ?? []));
+            }
+        }
+
+        $requiredAssetIds = [];
+        foreach ($assetsByService as $serviceAssets) {
+            foreach ($serviceAssets as $asset) {
+                $requiredAssetIds[(int) ($asset['id'] ?? 0)] = true;
+            }
+        }
+
         foreach ($assets as $asset) {
-            $sid = isset($asset['lab_service_id']) && $asset['lab_service_id'] !== null
-                ? (int) $asset['lab_service_id']
-                : null;
-            if ($sid !== null) {
-                $assetsByService[$sid][] = $asset;
-            } else {
+            if (! isset($requiredAssetIds[(int) ($asset['id'] ?? 0)])) {
                 $unlinkedAssets[] = $asset;
             }
         }
@@ -204,31 +220,6 @@ class LaboratoryController extends BaseController
      */
     protected function servicesForLab(int $labId): array
     {
-        $db = \Config\Database::connect();
-
-        if (! $db->tableExists('lab_services')) {
-            return [];
-        }
-
-        return $db->table('lab_services ls')
-            ->select("
-                ls.id,
-                ls.field_name,
-                ls.service_name,
-                ls.acceptance_criteria,
-                ls.calibration_status,
-                GROUP_CONCAT(
-                    DISTINCT NULLIF(TRIM(sem.equipment_model), '')
-                    ORDER BY sem.sort_order ASC
-                    SEPARATOR ' | '
-                ) AS equipment_models
-            ", false)
-            ->join('service_equipment_models sem', 'sem.lab_service_id = ls.id', 'left')
-            ->where('ls.laboratory_id', $labId)
-            ->where('ls.is_active', 1)
-            ->groupBy('ls.id')
-            ->orderBy('ls.service_name', 'ASC')
-            ->get()
-            ->getResultArray();
+        return $this->bundleService->serviceSummariesForLab($labId);
     }
 }

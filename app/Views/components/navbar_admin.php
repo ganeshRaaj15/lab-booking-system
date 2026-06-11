@@ -1,6 +1,10 @@
 <?php
 use App\Models\NotificationModel;
 
+$navUser = isset($user) && $user ? $user : ((function_exists('auth') && auth()->loggedIn()) ? auth()->user() : null);
+$isPicWorkspace = $navUser && $navUser->inGroup('pic') && ! $navUser->inGroup('admin');
+$dashboardLabel = $isPicWorkspace ? 'PIC Workspace' : 'Admin Dashboard';
+
 $navNotificationItems = [];
 $navUnreadCount = 0;
 if (function_exists('auth') && auth()->loggedIn()) {
@@ -18,7 +22,7 @@ if (function_exists('auth') && auth()->loggedIn()) {
             <div class="navbar-title">
                 <h4><?= esc($page ?? 'Dashboard') ?></h4>
                 <div class="breadcrumb-nav">
-                    <span class="breadcrumb-item"><i class="bi bi-house-door"></i> Dashboard</span>
+                    <span class="breadcrumb-item"><i class="bi bi-house-door"></i> <?= esc($dashboardLabel) ?></span>
                     <?php if (isset($page) && $page !== 'Dashboard'): ?>
                         <span class="breadcrumb-divider"><i class="bi bi-chevron-right"></i></span>
                         <span class="breadcrumb-item active"><?= esc($page) ?></span>
@@ -29,7 +33,7 @@ if (function_exists('auth') && auth()->loggedIn()) {
 
         <div class="navbar-actions">
             <?= $this->include('components/navbar_app_controls') ?>
-            <?php if (isset($user) && $user): ?>
+            <?php if ($navUser): ?>
                 <div class="dropdown">
                     <a href="#" class="notification-trigger" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications">
                         <i class="bi bi-bell"></i>
@@ -64,8 +68,8 @@ if (function_exists('auth') && auth()->loggedIn()) {
                 <a href="/dashboard/profile" class="user-profile-glass">
                     <div class="user-avatar"><i class="bi bi-person-circle"></i></div>
                     <div class="user-info">
-                        <div class="user-name"><?= esc($user->full_name ?? $user->username ?? 'User') ?></div>
-                        <div class="user-role"><?= esc($user->role ?? 'User') ?></div>
+                        <div class="user-name"><?= esc($navUser->full_name ?? $navUser->username ?? 'User') ?></div>
+                        <div class="user-role"><?= esc($isPicWorkspace ? 'PIC' : ($navUser->role ?? 'User')) ?></div>
                     </div>
                 </a>
             <?php endif; ?>

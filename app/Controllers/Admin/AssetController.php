@@ -18,7 +18,7 @@ class AssetController extends BaseController
     {
         helper(['auth', 'filesystem', 'qr']);
 
-        if (! auth()->loggedIn() || ! auth()->user()->inGroup('admin')) {
+        if (! auth()->loggedIn() || (! auth()->user()->inGroup('admin') && ! auth()->user()->inGroup('pic'))) {
             redirect()->to('/')->send();
             exit;
         }
@@ -65,6 +65,9 @@ class AssetController extends BaseController
         if ($filters['status'] !== '') {
             $builder = $builder->where('assets.status', $filters['status']);
         }
+        if ($this->isPicUser()) {
+            $builder = $builder->whereIn('assets.lab_id', $this->manageableLabIds());
+        }
 
         $assets = $builder
             ->orderBy('laboratories.name', 'ASC')
@@ -102,11 +105,11 @@ class AssetController extends BaseController
         unset($asset);
 
         return view('admin/assets/index', [
-            'assets'           => $assets,
-            'pager'            => $pager,
-            'labs'             => $this->labModel->orderBy('name', 'ASC')->findAll(),
-            'filters'          => $filters,
-            'statusOptions'    => ['available', 'maintenance', 'faulty', 'decommissioned'],
+            'assets' => $assets,
+            'pager' => $pager,
+            'labs' => $this->manageableLabs(),
+            'filters' => $filters,
+            'statusOptions' => ['available', 'maintenance', 'faulty', 'decommissioned'],
             'intelligenceStats' => $intelligenceService->stats($intelligenceMap),
         ]);
     }
@@ -118,6 +121,10 @@ class AssetController extends BaseController
         $builder = $this->assetModel
             ->select('assets.*, laboratories.name AS lab_name, laboratories.room AS lab_room')
             ->join('laboratories', 'laboratories.id = assets.lab_id', 'left');
+
+        if ($this->isPicUser()) {
+            $builder->whereIn('assets.lab_id', $this->manageableLabIds());
+        }
 
         if ($search !== '') {
             $builder->groupStart()
@@ -142,11 +149,12 @@ class AssetController extends BaseController
             'search' => $search,
         ]);
     }
+
     public function create()
     {
         return view('admin/assets/form', [
             'mode' => 'create',
-            'labs' => $this->labModel->orderBy('name', 'ASC')->findAll(),
+            'labs' => $this->manageableLabs(),
             'asset' => $this->applyLegacyDefaults([]),
             'maintenanceHistory' => [],
             'intelligence' => $this->emptyIntelligence(),
@@ -159,6 +167,9 @@ class AssetController extends BaseController
 
         if (! $this->validate($this->rules())) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+        }
+        if ($this->isPicUser() && ! in_array((int) $payload['lab_id'], $this->manageableLabIds(), true)) {
+            return redirect()->back()->withInput()->with('errors', ['lab_id' => 'You can only add assets to laboratories assigned to you.']);
         }
 
         if ($duplicateMessage = $this->duplicateMessage($payload)) {
@@ -179,6 +190,9 @@ class AssetController extends BaseController
         if (! $asset) {
             return redirect()->to('/admin/assets')->with('error', 'Asset not found.');
         }
+        if (! $this->canManageAsset($asset)) {
+            return redirect()->to('/admin/assets')->with('error', 'You are not allowed to edit this asset.');
+        }
 
         $asset = $this->applyLegacyDefaults($asset);
         $asset['maintenance_quantity'] = max($asset['total_quantity'] - $asset['quantity'], 0);
@@ -192,7 +206,7 @@ class AssetController extends BaseController
         return view('admin/assets/form', [
             'mode' => 'edit',
             'asset' => $asset,
-            'labs' => $this->labModel->orderBy('name', 'ASC')->findAll(),
+            'labs' => $this->manageableLabs(),
             'maintenanceHistory' => $maintenanceHistory,
             'intelligence' => $intelligence,
         ]);
@@ -204,6 +218,9 @@ class AssetController extends BaseController
         if (! $asset) {
             return redirect()->to('/admin/assets')->with('error', 'Asset not found.');
         }
+        if (! $this->canManageAsset($asset)) {
+            return redirect()->to('/admin/assets')->with('error', 'You are not allowed to update this asset.');
+        }
 
         $asset = $this->applyLegacyDefaults($asset);
         $payload = $this->collectPayload();
@@ -211,12 +228,14 @@ class AssetController extends BaseController
         if (! $this->validate($this->rules())) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
+        if ($this->isPicUser() && ! in_array((int) $payload['lab_id'], $this->manageableLabIds(), true)) {
+            return redirect()->back()->withInput()->with('errors', ['lab_id' => 'You can only assign assets to laboratories assigned to you.']);
+        }
 
         if ($duplicateMessage = $this->duplicateMessage($payload, (int) $id)) {
             return redirect()->back()->withInput()->with('errors', ['asset_code' => $duplicateMessage]);
         }
 
-        // Preserve decommissioned status — admin must use the explicit decommission action to change it.
         if (in_array($asset['status'] ?? '', $this->assetModel->permanentStatuses(), true)) {
             return redirect()->to('/admin/assets')->with('error', 'Decommissioned assets cannot be edited. Restore the asset status first if needed.');
         }
@@ -230,28 +249,24 @@ class AssetController extends BaseController
         return redirect()->to('/admin/assets')->with('message', 'Asset updated successfully.');
     }
 
-    /**
-     * POST /admin/assets/decommission/:id
-     * Mark an asset as decommissioned (non-destructive; sets quantity=0, status=decommissioned).
-     * Can also be used to restore a decommissioned asset back to available.
-     */
     public function decommission($id)
     {
         $asset = $this->assetModel->find($id);
         if (! $asset) {
             return redirect()->to('/admin/assets')->with('error', 'Asset not found.');
         }
+        if (! $this->canManageAsset($asset)) {
+            return redirect()->to('/admin/assets')->with('error', 'You are not allowed to update this asset.');
+        }
 
         $action = trim((string) $this->request->getPost('action'));
 
         if ($action === 'restore') {
-            // Restore: recalculate availability from open maintenance units.
             $this->assetModel->update($id, ['status' => 'available', 'quantity' => (int) ($asset['total_quantity'] ?? 1)]);
             $this->assetModel->syncManagedAvailability((int) $id);
             return redirect()->to('/admin/assets')->with('message', 'Asset restored to active status.');
         }
 
-        // Decommission: zero out quantity and mark permanently out of service.
         $this->assetModel->update($id, ['status' => 'decommissioned', 'quantity' => 0]);
         return redirect()->to('/admin/assets')->with('message', 'Asset marked as decommissioned.');
     }
@@ -261,6 +276,9 @@ class AssetController extends BaseController
         $asset = $this->assetModel->find($id);
         if (! $asset) {
             return redirect()->to('/admin/assets')->with('error', 'Asset not found.');
+        }
+        if (! $this->canManageAsset($asset)) {
+            return redirect()->to('/admin/assets')->with('error', 'You are not allowed to delete this asset.');
         }
 
         $hasMaintenance = $this->maintenanceModel->where('asset_id', $id)->countAllResults() > 0;
@@ -299,7 +317,7 @@ class AssetController extends BaseController
             'location_note' => 'permit_empty|max_length[255]',
             'purchase_date' => 'permit_empty|valid_date[Y-m-d]',
             'specifications' => 'permit_empty|string',
-            'image' => 'permit_empty|max_size[image,2048]|ext_in[image,jpg,jpeg,png,gif]',
+            'image' => 'permit_empty|max_size[image,2048]|ext_in[image,jpg,jpeg,png,gif,webp]',
         ];
     }
 
@@ -350,7 +368,7 @@ class AssetController extends BaseController
             return $currentImage;
         }
 
-        if (! in_array($file->getMimeType(), ['image/jpeg', 'image/png', 'image/gif'], true)) {
+        if (! in_array($file->getMimeType(), ['image/jpeg', 'image/png', 'image/gif', 'image/webp'], true)) {
             return $currentImage;
         }
 
@@ -364,6 +382,44 @@ class AssetController extends BaseController
         }
 
         return $currentImage;
+    }
+
+    protected function isPicUser(): bool
+    {
+        return auth()->loggedIn() && auth()->user()->inGroup('pic') && ! auth()->user()->inGroup('admin');
+    }
+
+    protected function manageableLabIds(): array
+    {
+        if (! auth()->loggedIn()) {
+            return [];
+        }
+
+        if (! $this->isPicUser()) {
+            return array_map(static fn(array $lab): int => (int) $lab['id'], $this->labModel->findAll());
+        }
+
+        return array_map(
+            static fn(array $lab): int => (int) $lab['id'],
+            $this->labModel
+                ->where('LOWER(TRIM(pic_email)) =', strtolower(trim((string) auth()->user()->email)))
+                ->findAll()
+        );
+    }
+
+    protected function manageableLabs(): array
+    {
+        $labIds = $this->manageableLabIds();
+        if ($labIds === []) {
+            return [];
+        }
+
+        return $this->labModel->whereIn('id', $labIds)->orderBy('name', 'ASC')->findAll();
+    }
+
+    protected function canManageAsset(array $asset): bool
+    {
+        return in_array((int) ($asset['lab_id'] ?? 0), $this->manageableLabIds(), true);
     }
 
     protected function applyLegacyDefaults(array $asset): array

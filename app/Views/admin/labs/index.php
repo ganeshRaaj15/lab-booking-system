@@ -1,7 +1,10 @@
 <?= $this->extend('layouts/main_admin') ?>
 <?= $this->section('content') ?>
 
-<?php $filters = $filters ?? ['q' => '', 'pic' => '']; ?>
+<?php
+$filters = $filters ?? ['q' => '', 'pic' => ''];
+$canCreateLabs = $canCreateLabs ?? false;
+?>
 
 <div class="container-fluid">
     <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
@@ -9,7 +12,9 @@
             <h1 class="h3 mb-1">Laboratory Management</h1>
             <p class="text-muted mb-0">Manage laboratory profiles, PIC ownership, capacity, and asset readiness.</p>
         </div>
-        <a href="/admin/labs/create" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Add Lab</a>
+        <?php if ($canCreateLabs): ?>
+            <a href="/admin/labs/create" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Add Lab</a>
+        <?php endif; ?>
     </div>
 
     <?php if (session()->getFlashdata('message')): ?>
@@ -89,11 +94,13 @@
                                         <div class="small text-muted"><?= esc($lab['faulty_assets']) ?> faulty</div>
                                     </td>
                                     <td class="text-center">
-                                        <a href="/admin/labs/edit/<?= esc($lab['id']) ?>" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
-                                        <form method="post" action="/admin/labs/delete/<?= esc($lab['id']) ?>" class="d-inline">
-                                            <?= csrf_field() ?>
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this laboratory?')"><i class="bi bi-trash"></i></button>
-                                        </form>
+                                        <a href="/admin/labs/edit/<?= esc($lab['id']) ?>" class="btn btn-sm btn-outline-primary" title="<?= $canCreateLabs ? 'Edit laboratory' : 'Manage assigned laboratory' ?>"><i class="bi bi-pencil"></i></a>
+                                        <?php if ($canCreateLabs): ?>
+                                            <form method="post" action="/admin/labs/delete/<?= esc($lab['id']) ?>" class="d-inline">
+                                                <?= csrf_field() ?>
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this laboratory?')"><i class="bi bi-trash"></i></button>
+                                            </form>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

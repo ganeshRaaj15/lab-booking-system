@@ -30,7 +30,7 @@ class NativeAdminAssetController extends BaseController
 
     public function index()
     {
-        $user = $this->authorizedAdmin();
+        $user = $this->authorizedUser();
         if (! $user instanceof User) {
             return $user;
         }
@@ -40,7 +40,7 @@ class NativeAdminAssetController extends BaseController
             'lab_id' => (int) $this->request->getGet('lab_id'),
             'status' => trim((string) $this->request->getGet('status')),
         ];
-        if (! in_array($filters['status'], ['available', 'maintenance', 'faulty'], true)) {
+        if (! in_array($filters['status'], ['available', 'maintenance', 'faulty', 'decommissioned'], true)) {
             $filters['status'] = '';
         }
 
@@ -65,6 +65,9 @@ class NativeAdminAssetController extends BaseController
         if ($filters['status'] !== '') {
             $builder = $builder->where('assets.status', $filters['status']);
         }
+        if ($this->isPicUser($user)) {
+            $builder = $builder->whereIn('assets.lab_id', $this->manageableLabIds($user));
+        }
 
         $assets = $builder
             ->orderBy('laboratories.name', 'ASC')
@@ -86,16 +89,19 @@ class NativeAdminAssetController extends BaseController
         return $this->response->setJSON([
             'status' => 'success',
             'assets' => $assets,
-            'labs' => array_map(fn(array $lab): array => $this->serializeLabOption($lab), $this->labModel->orderBy('name', 'ASC')->findAll()),
+            'labs' => array_map(fn(array $lab): array => $this->serializeLabOption($lab), $this->manageableLabs($user)),
             'filters' => $filters,
-            'status_options' => ['available', 'maintenance', 'faulty'],
+            'status_options' => ['available', 'maintenance', 'faulty', 'decommissioned'],
             'stats' => $intelligenceService->stats($intelligenceMap),
+            'permissions' => [
+                'scoped_to_pic_labs' => $this->isPicUser($user),
+            ],
         ]);
     }
 
     public function show(int $id)
     {
-        $user = $this->authorizedAdmin();
+        $user = $this->authorizedUser();
         if (! $user instanceof User) {
             return $user;
         }
@@ -112,6 +118,12 @@ class NativeAdminAssetController extends BaseController
                 'message' => 'Asset not found.',
             ]);
         }
+        if (! $this->canManageAsset($asset, $user)) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'status' => 'error',
+                'message' => 'Unauthorized access.',
+            ]);
+        }
 
         $maintenanceHistory = $this->maintenanceModel->withRelations()
             ->where('maintenance_records.asset_id', $id)
@@ -126,13 +138,13 @@ class NativeAdminAssetController extends BaseController
                 (new AssetIntelligenceService())->mapForAssets()[$id] ?? null
             ),
             'maintenance_history' => array_map(fn(array $record): array => $this->serializeMaintenanceHistory($record), $maintenanceHistory),
-            'labs' => array_map(fn(array $lab): array => $this->serializeLabOption($lab), $this->labModel->orderBy('name', 'ASC')->findAll()),
+            'labs' => array_map(fn(array $lab): array => $this->serializeLabOption($lab), $this->manageableLabs($user)),
         ]);
     }
 
     public function store()
     {
-        $user = $this->authorizedAdmin();
+        $user = $this->authorizedUser();
         if (! $user instanceof User) {
             return $user;
         }
@@ -143,6 +155,12 @@ class NativeAdminAssetController extends BaseController
                 'status' => 'error',
                 'message' => 'Invalid asset payload.',
                 'errors' => $this->validator->getErrors(),
+            ]);
+        }
+        if ($this->isPicUser($user) && ! in_array((int) $payload['lab_id'], $this->manageableLabIds($user), true)) {
+            return $this->response->setStatusCode(422)->setJSON([
+                'status' => 'error',
+                'message' => 'You can only add assets to laboratories assigned to you.',
             ]);
         }
 
@@ -173,7 +191,7 @@ class NativeAdminAssetController extends BaseController
 
     public function update(int $id)
     {
-        $user = $this->authorizedAdmin();
+        $user = $this->authorizedUser();
         if (! $user instanceof User) {
             return $user;
         }
@@ -185,6 +203,12 @@ class NativeAdminAssetController extends BaseController
                 'message' => 'Asset not found.',
             ]);
         }
+        if (! $this->canManageAsset($asset, $user)) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'status' => 'error',
+                'message' => 'Unauthorized access.',
+            ]);
+        }
 
         $payload = $this->collectPayload();
         if (! $this->validate($this->rules())) {
@@ -194,11 +218,24 @@ class NativeAdminAssetController extends BaseController
                 'errors' => $this->validator->getErrors(),
             ]);
         }
+        if ($this->isPicUser($user) && ! in_array((int) $payload['lab_id'], $this->manageableLabIds($user), true)) {
+            return $this->response->setStatusCode(422)->setJSON([
+                'status' => 'error',
+                'message' => 'You can only assign assets to laboratories assigned to you.',
+            ]);
+        }
 
         if ($duplicateMessage = $this->duplicateMessage($payload, $id)) {
             return $this->response->setStatusCode(422)->setJSON([
                 'status' => 'error',
                 'message' => $duplicateMessage,
+            ]);
+        }
+
+        if (in_array(($asset['status'] ?? ''), $this->assetModel->permanentStatuses(), true)) {
+            return $this->response->setStatusCode(422)->setJSON([
+                'status' => 'error',
+                'message' => 'Decommissioned assets cannot be edited. Restore the asset status first if needed.',
             ]);
         }
 
@@ -229,7 +266,7 @@ class NativeAdminAssetController extends BaseController
 
     public function delete(int $id)
     {
-        $user = $this->authorizedAdmin();
+        $user = $this->authorizedUser();
         if (! $user instanceof User) {
             return $user;
         }
@@ -239,6 +276,12 @@ class NativeAdminAssetController extends BaseController
             return $this->response->setStatusCode(404)->setJSON([
                 'status' => 'error',
                 'message' => 'Asset not found.',
+            ]);
+        }
+        if (! $this->canManageAsset($asset, $user)) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'status' => 'error',
+                'message' => 'Unauthorized access.',
             ]);
         }
 
@@ -463,7 +506,7 @@ class NativeAdminAssetController extends BaseController
         ];
     }
 
-    protected function authorizedAdmin()
+    protected function authorizedUser()
     {
         $user = auth()->user();
         if (! $user instanceof User) {
@@ -473,7 +516,7 @@ class NativeAdminAssetController extends BaseController
             ]);
         }
 
-        if (! $user->inGroup('admin')) {
+        if (! $user->inGroup('admin') && ! $user->inGroup('pic')) {
             return $this->response->setStatusCode(403)->setJSON([
                 'status' => 'error',
                 'message' => 'Unauthorized access.',
@@ -481,5 +524,39 @@ class NativeAdminAssetController extends BaseController
         }
 
         return $user;
+    }
+
+    protected function isPicUser(User $user): bool
+    {
+        return $user->inGroup('pic') && ! $user->inGroup('admin');
+    }
+
+    protected function manageableLabIds(User $user): array
+    {
+        if (! $this->isPicUser($user)) {
+            return array_map(static fn(array $lab): int => (int) $lab['id'], $this->labModel->findAll());
+        }
+
+        return array_map(
+            static fn(array $lab): int => (int) $lab['id'],
+            $this->labModel
+                ->where('LOWER(TRIM(pic_email)) =', strtolower(trim((string) $user->email)))
+                ->findAll()
+        );
+    }
+
+    protected function manageableLabs(User $user): array
+    {
+        $labIds = $this->manageableLabIds($user);
+        if ($labIds === []) {
+            return [];
+        }
+
+        return $this->labModel->whereIn('id', $labIds)->orderBy('name', 'ASC')->findAll();
+    }
+
+    protected function canManageAsset(array $asset, User $user): bool
+    {
+        return in_array((int) ($asset['lab_id'] ?? 0), $this->manageableLabIds($user), true);
     }
 }

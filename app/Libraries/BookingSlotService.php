@@ -3,17 +3,20 @@
 namespace App\Libraries;
 
 use App\Models\BookingModel;
+use App\Models\LabReservationModel;
 use App\Models\SettingsModel;
 
 class BookingSlotService
 {
     protected BookingModel $bookingModel;
     protected SettingsModel $settingsModel;
+    protected LabReservationModel $reservationModel;
 
-    public function __construct(?BookingModel $bookingModel = null, ?SettingsModel $settingsModel = null)
+    public function __construct(?BookingModel $bookingModel = null, ?SettingsModel $settingsModel = null, ?LabReservationModel $reservationModel = null)
     {
         $this->bookingModel = $bookingModel ?? new BookingModel();
         $this->settingsModel = $settingsModel ?? new SettingsModel();
+        $this->reservationModel = $reservationModel ?? new LabReservationModel();
     }
 
     public function getDefinitions(): array
@@ -176,10 +179,11 @@ class BookingSlotService
             ];
         }
 
-        if ($this->bookingModel->hasLabConflict($labId, $date, $start, $end, $ignoreBookingId)) {
+        $reservation = $this->reservationModel->conflictsWithSlot($labId, $date, $start, $end);
+        if ($reservation) {
             return [
                 'can_book' => false,
-                'reason' => 'Laboratory already booked for this slot.',
+                'reason' => (string) ($reservation['title'] ?? 'This lab is reserved for the selected slot.'),
             ];
         }
 

@@ -52,11 +52,11 @@ $currentStatus = (string) ($requestRecord['status'] ?? 'pending_pic_approval');
             </div>
 
             <div class="col-md-6">
-                <label class="form-label">Service / Field of Work <span class="text-muted fw-normal">(Optional)</span></label>
+                <label class="form-label">Service Bundle *</label>
                 <input type="hidden" name="service_id" id="externalServiceId" value="<?= esc(old('service_id', $requestRecord['service_id'] ?? '')) ?>">
                 <input type="hidden" name="selected_assets" id="externalSelectedAssets" value="<?= esc(old('selected_assets', $requestRecord['selected_assets'] ?? '')) ?>">
                 <div id="externalServiceChoices" class="d-flex flex-wrap gap-2 mt-1"></div>
-                <div id="externalServiceHint" class="small text-muted mt-1">Select a laboratory to see available services.</div>
+                <div id="externalServiceHint" class="small text-muted mt-1">Select a laboratory to see configured services. If the lab has services, choosing one is required.</div>
                 <div id="externalEquipmentInfo" class="mt-2"></div>
             </div>
 
@@ -320,15 +320,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let currentServiceId = serviceIdField.value || "";
 
-    function showEquipmentInfo(equipmentModels) {
+    function showEquipmentInfo(bundleSummary, equipmentModels, isBookable) {
         if (!equipmentInfoEl) return;
-        if (!equipmentModels) {
+        if (!bundleSummary && !equipmentModels) {
             equipmentInfoEl.innerHTML = "";
             return;
         }
+
+        const availabilityBadge = isBookable
+            ? '<span class="badge bg-success-subtle text-success border border-success-subtle">Bundle available</span>'
+            : '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Bundle unavailable</span>';
+
         equipmentInfoEl.innerHTML = `
             <div class="alert alert-secondary py-2 mb-0 small">
-                <span class="fw-semibold">Equipment:</span> ${equipmentModels}
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                    <span class="fw-semibold">Bundle:</span>
+                    ${availabilityBadge}
+                </div>
+                <div>${bundleSummary || equipmentModels}</div>
+                ${equipmentModels && bundleSummary !== equipmentModels ? `<div class="text-muted mt-1">Models: ${equipmentModels}</div>` : ""}
             </div>`;
     }
 
@@ -336,7 +346,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!services.length) {
             serviceChoicesEl.innerHTML = "";
             serviceHintEl.textContent = "No services configured for this laboratory.";
-            showEquipmentInfo("");
+            showEquipmentInfo("", "", false);
             return;
         }
         serviceHintEl.textContent = "";
@@ -346,13 +356,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 <button type="button"
                         class="btn btn-sm ${selected ? "btn-primary" : "btn-outline-secondary"} service-choice-btn"
                         data-id="${s.id}"
-                        data-equipment="${s.equipment_models || ""}">
+                        data-bundle-summary="${s.bundle_summary || ""}"
+                        data-equipment="${s.equipment_models || ""}"
+                        data-bookable="${s.is_bookable ? "1" : "0"}">
                     ${s.service_name}
                 </button>`;
         }).join("");
 
         const selectedBtn = serviceChoicesEl.querySelector(`.service-choice-btn[data-id="${currentServiceId}"]`);
-        showEquipmentInfo(selectedBtn ? (selectedBtn.dataset.equipment || "") : "");
+        showEquipmentInfo(
+            selectedBtn ? (selectedBtn.dataset.bundleSummary || "") : "",
+            selectedBtn ? (selectedBtn.dataset.equipment || "") : "",
+            selectedBtn ? selectedBtn.dataset.bookable === "1" : false
+        );
     }
 
     async function loadServices(labId, preserveService = false) {
@@ -364,7 +380,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 serviceIdField.value = "";
                 if (selectedAssetsField) selectedAssetsField.value = "";
             }
-            showEquipmentInfo("");
+            showEquipmentInfo("", "", false);
             return;
         }
 
@@ -401,7 +417,7 @@ document.addEventListener("DOMContentLoaded", () => {
         currentServiceId = isSame ? "" : clickedId;
         serviceIdField.value = currentServiceId;
         if (selectedAssetsField) {
-            selectedAssetsField.value = isSame ? "" : (btn.dataset.equipment || "");
+            selectedAssetsField.value = "";
         }
 
         serviceChoicesEl.querySelectorAll(".service-choice-btn").forEach((b) => {
@@ -410,7 +426,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 : "btn btn-sm btn-outline-secondary service-choice-btn";
         });
 
-        showEquipmentInfo(isSame ? "" : (btn.dataset.equipment || ""));
+        showEquipmentInfo(
+            isSame ? "" : (btn.dataset.bundleSummary || ""),
+            isSame ? "" : (btn.dataset.equipment || ""),
+            !isSame && btn.dataset.bookable === "1"
+        );
     });
 
     labField.addEventListener("change", () => {

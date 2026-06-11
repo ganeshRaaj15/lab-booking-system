@@ -164,6 +164,7 @@ if ($picPhone === '') {
                                         $assetStatus = strtolower(trim((string)($a['status'] ?? 'unknown')));
                                         $isAvailable = $assetStatus === 'available' && (int)($a['quantity'] ?? 0) > 0;
                                         $assetQty = (int)($a['quantity'] ?? 0);
+                                        $requiredQty = max((int)($a['quantity_required'] ?? 1), 1);
                                         ?>
                                         <div class="service-asset-card<?= !$isAvailable ? ' service-asset-card--unavailable' : '' ?>"
                                              data-asset-id="<?= esc((string)($a['id'] ?? '')) ?>"
@@ -207,11 +208,18 @@ if ($picPhone === '') {
                                                     <?php endif; ?>
                                                     <span class="service-asset-qty-text">&times;<?= $assetQty ?></span>
                                                 </div>
+                                                <div class="service-asset-meta">Required for service: <?= $requiredQty ?></div>
                                             </div>
 
                                             <?php if ($bookingMode === 'uthm'): ?>
                                                 <div class="service-asset-booking">
-                                                    <label class="service-asset-check-label<?= !$isAvailable ? ' opacity-50' : '' ?>">
+                                                    <div class="small text-muted <?= !$isAvailable ? 'opacity-50' : '' ?>">
+                                                        Included automatically when this service is selected
+                                                    </div>
+                                                    <div class="small fw-semibold <?= !$isAvailable ? 'opacity-50' : '' ?>">
+                                                        Bundle requires <?= $requiredQty ?> unit(s)
+                                                    </div>
+                                                    <label class="service-asset-check-label visually-hidden<?= !$isAvailable ? ' opacity-50' : '' ?>">
                                                         <input type="checkbox"
                                                                class="asset-checkbox"
                                                                data-asset-id="<?= esc((string)($a['id'] ?? '')) ?>"
@@ -219,12 +227,15 @@ if ($picPhone === '') {
                                                         <span class="small">Select</span>
                                                     </label>
                                                     <input type="number"
-                                                           class="asset-qty form-control form-control-sm"
+                                                           class="asset-qty form-control form-control-sm visually-hidden"
                                                            data-asset-id="<?= esc((string)($a['id'] ?? '')) ?>"
-                                                           min="1"
-                                                           max="<?= $assetQty ?: 1 ?>"
-                                                           value="<?= $isAvailable ? 1 : 0 ?>"
+                                                           min="<?= $requiredQty ?>"
+                                                           max="<?= $requiredQty ?>"
+                                                           value="<?= $requiredQty ?>"
                                                            style="width:64px;"
+                                                           readonly
+                                                           tabindex="-1"
+                                                           aria-hidden="true"
                                                            <?= !$isAvailable ? 'disabled' : '' ?>>
                                                 </div>
                                             <?php endif; ?>

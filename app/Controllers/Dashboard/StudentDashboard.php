@@ -9,6 +9,7 @@ use App\Models\BookingAssetModel;
 use App\Models\AssetModel;
 use App\Models\BookingModel;
 use App\Models\FacultyModel;
+use App\Models\LabReservationModel;
 
 class StudentDashboard extends BaseController
 {
@@ -302,8 +303,13 @@ class StudentDashboard extends BaseController
             return redirect()->back()->withInput()->with('error', 'Please choose one of the configured booking sessions for this laboratory.');
         }
 
-        if ($bookingModel->hasLabConflict((int) $booking['lab_id'], $date, $startTime, $endTime, $id)) {
-            return redirect()->back()->withInput()->with('error', 'This laboratory is already booked for the selected date and time.');
+        $reservation = (new LabReservationModel())->conflictsWithSlot((int) $booking['lab_id'], $date, $startTime, $endTime);
+        if ($reservation) {
+            return redirect()->back()->withInput()->with('error', 'This time slot is reserved: ' . ($reservation['title'] ?? 'Lab reservation'));
+        }
+
+        if (! $this->bookingAssetsStillAvailable($id, (int) $booking['lab_id'], $date, $startTime, $endTime)) {
+            return redirect()->back()->withInput()->with('error', 'One or more selected assets are no longer available for that slot.');
         }
 
         $names     = $this->request->getPost('applicant_name') ?? [];
@@ -379,6 +385,58 @@ class StudentDashboard extends BaseController
 
         $dashboardUrl = auth()->user()->inGroup('staff') ? '/dashboard/staff' : '/dashboard/student';
         return redirect()->to($dashboardUrl)->with('success', 'Booking updated successfully.');
+    }
+
+    private function bookingAssetsStillAvailable(int $bookingId, int $labId, string $date, string $startTime, string $endTime): bool
+    {
+        $bookingAssetModel = new BookingAssetModel();
+        $assetRows = $bookingAssetModel->where('booking_id', $bookingId)->findAll();
+        if ($assetRows === []) {
+            return true;
+        }
+
+        $requirements = [];
+        foreach ($assetRows as $row) {
+            $requirements[(int) $row['asset_id']] = (int) ($row['quantity_used'] ?? 0);
+        }
+
+        $assets = (new AssetModel())
+            ->where('lab_id', $labId)
+            ->whereIn('id', array_keys($requirements))
+            ->findAll();
+
+        $base = [];
+        foreach ($assets as $asset) {
+            $base[(int) $asset['id']] = (int) ($asset['quantity'] ?? 0);
+        }
+
+        $rows = db_connect()->table('booking_assets ba')
+            ->select('ba.asset_id, SUM(ba.quantity_used) AS used_qty')
+            ->join('bookings b', 'b.id = ba.booking_id')
+            ->where('b.lab_id', $labId)
+            ->where('b.date', $date)
+            ->whereIn('b.status', ['PENDING', 'APPROVED'])
+            ->where('b.id !=', $bookingId)
+            ->where('b.start_time <', $endTime)
+            ->where('b.end_time >', $startTime)
+            ->whereIn('ba.asset_id', array_keys($requirements))
+            ->groupBy('ba.asset_id')
+            ->get()
+            ->getResultArray();
+
+        $used = [];
+        foreach ($rows as $row) {
+            $used[(int) $row['asset_id']] = (int) ($row['used_qty'] ?? 0);
+        }
+
+        foreach ($requirements as $assetId => $requiredQty) {
+            $remaining = max(($base[$assetId] ?? 0) - ($used[$assetId] ?? 0), 0);
+            if ($remaining < $requiredQty) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     // =====================================================

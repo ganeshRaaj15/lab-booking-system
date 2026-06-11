@@ -172,6 +172,9 @@ class NativeLaboratoryController extends WebLaboratoryController
                     'acceptance_criteria' => (string) ($service['acceptance_criteria'] ?? ''),
                     'calibration_status' => (string) ($service['calibration_status'] ?? ''),
                     'equipment_models' => (string) ($service['equipment_models'] ?? ''),
+                    'bundle_summary' => (string) ($service['bundle_summary'] ?? ''),
+                    'is_bookable' => (bool) ($service['is_bookable'] ?? false),
+                    'required_assets' => array_values($service['required_assets'] ?? []),
                 ];
             }, $services),
         ]);

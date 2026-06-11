@@ -6,6 +6,7 @@ use App\Controllers\Public\BookingController as WebBookingController;
 use App\Models\BookingApplicantModel;
 use App\Models\BookingAssetModel;
 use App\Models\BookingModel;
+use App\Models\LabReservationModel;
 use CodeIgniter\Shield\Entities\User;
 
 class NativeBookingController extends WebBookingController
@@ -258,8 +259,13 @@ class NativeBookingController extends WebBookingController
             return $this->response->setStatusCode(422)->setJSON(['status' => 'error', 'message' => 'Please choose one of the configured booking sessions for this laboratory.']);
         }
 
-        if ($bookingModel->hasLabConflict((int) $booking['lab_id'], $date, $startTime, $endTime, $id)) {
-            return $this->response->setStatusCode(422)->setJSON(['status' => 'error', 'message' => 'This laboratory is already booked for the selected date and time.']);
+        $reservation = (new LabReservationModel())->conflictsWithSlot((int) $booking['lab_id'], $date, $startTime, $endTime);
+        if ($reservation) {
+            return $this->response->setStatusCode(422)->setJSON(['status' => 'error', 'message' => 'This time slot is reserved: ' . ($reservation['title'] ?? 'Lab reservation')]);
+        }
+
+        if (! $this->bookingAssetsStillAvailable($id, (int) $booking['lab_id'], $date, $startTime, $endTime)) {
+            return $this->response->setStatusCode(422)->setJSON(['status' => 'error', 'message' => 'One or more selected assets are no longer available for that slot.']);
         }
 
         $names    = $this->request->getPost('applicant_name') ?? [];
@@ -334,6 +340,60 @@ class NativeBookingController extends WebBookingController
         }
 
         return $this->response->setJSON(['status' => 'success', 'message' => 'Booking updated successfully.']);
+    }
+
+    protected function bookingAssetsStillAvailable(int $bookingId, int $labId, string $date, string $startTime, string $endTime): bool
+    {
+        $bookingAssetModel = new BookingAssetModel();
+        $assetRows = $bookingAssetModel->where('booking_id', $bookingId)->findAll();
+        if ($assetRows === []) {
+            return true;
+        }
+
+        $requirements = [];
+        foreach ($assetRows as $row) {
+            $requirements[(int) $row['asset_id']] = (int) ($row['quantity_used'] ?? 0);
+        }
+
+        $assets = db_connect()->table('assets')
+            ->select('id, quantity')
+            ->where('lab_id', $labId)
+            ->whereIn('id', array_keys($requirements))
+            ->get()
+            ->getResultArray();
+
+        $base = [];
+        foreach ($assets as $asset) {
+            $base[(int) $asset['id']] = (int) ($asset['quantity'] ?? 0);
+        }
+
+        $rows = db_connect()->table('booking_assets ba')
+            ->select('ba.asset_id, SUM(ba.quantity_used) AS used_qty')
+            ->join('bookings b', 'b.id = ba.booking_id')
+            ->where('b.lab_id', $labId)
+            ->where('b.date', $date)
+            ->whereIn('b.status', ['PENDING', 'APPROVED'])
+            ->where('b.id !=', $bookingId)
+            ->where('b.start_time <', $endTime)
+            ->where('b.end_time >', $startTime)
+            ->whereIn('ba.asset_id', array_keys($requirements))
+            ->groupBy('ba.asset_id')
+            ->get()
+            ->getResultArray();
+
+        $used = [];
+        foreach ($rows as $row) {
+            $used[(int) $row['asset_id']] = (int) ($row['used_qty'] ?? 0);
+        }
+
+        foreach ($requirements as $assetId => $requiredQty) {
+            $remaining = max(($base[$assetId] ?? 0) - ($used[$assetId] ?? 0), 0);
+            if ($remaining < $requiredQty) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     protected function serializeBookingSummary(array $booking): array

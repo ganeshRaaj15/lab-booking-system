@@ -293,17 +293,6 @@ class BookingApprovalController extends BaseController
     protected function ensureAssetsStillAvailable(array $booking): ?string
     {
         $db = Database::connect();
-        $bookingModel = new BookingModel();
-
-        if ($bookingModel->hasLabConflict(
-            (int) $booking['lab_id'],
-            (string) $booking['date'],
-            (string) $booking['start_time'],
-            (string) $booking['end_time'],
-            (int) $booking['id']
-        )) {
-            return 'This laboratory already has another active booking for the selected time slot.';
-        }
 
         $assetRows = $db->table('booking_assets')
             ->select('asset_id, quantity_used')
