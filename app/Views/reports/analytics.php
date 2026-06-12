@@ -10,181 +10,94 @@
         <div>
             <h2 class="fw-bold text-primary mb-1"><?= esc($pageTitle) ?></h2>
             <p class="text-muted"><?= esc($pageDescription) ?></p>
-            <div class="small text-muted mt-2">Scope: <?= esc($scopeLabel) ?></div>
+            <div class="small text-muted mt-2">Scope: <?= esc($report['scopeLabel'] ?? '') ?></div>
+            <div class="small text-muted">Generated: <?= esc($report['generatedAtDisplay'] ?? ($report['generatedAt'] ?? '')) ?></div>
         </div>
         <div class="reports-export-group">
             <a href="<?= esc($summaryExportUrls['pdf']) ?>" class="btn btn-outline-primary">
-                <i class="bi bi-file-earmark-pdf me-1"></i> Export Summary PDF
+                <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
             </a>
             <a href="<?= esc($summaryExportUrls['csv']) ?>" class="btn btn-outline-success">
-                <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export Summary CSV
+                <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
             </a>
         </div>
     </div>
 
-    <?= view('reports/partials/module_nav', ['navItems' => $navItems]) ?>
-    <?= view('reports/partials/filter_form', ['filterAction' => $filterAction, 'filterFields' => $filterFields, 'filters' => $filters]) ?>
-
-    <div class="reports-pill-row">
-        <?php foreach ($appliedFilters as $filter): ?>
-            <span class="reports-pill">
-                <span class="reports-pill-label"><?= esc($filter['label']) ?>:</span>
-                <span><?= esc($filter['value']) ?></span>
-            </span>
-        <?php endforeach; ?>
-    </div>
-
-    <?= view('reports/partials/summary_cards', ['summaryCards' => $summaryCards]) ?>
-
-    <div class="reports-chart-grid">
-        <?php foreach ($charts as $chart): ?>
-            <div class="card reports-chart-card">
-                <div class="card-body">
-                    <h3><?= esc($chart['title']) ?></h3>
-                    <div class="reports-canvas-wrap" style="height: <?= esc((string) ($chart['height'] ?? 300)) ?>px;">
-                        <canvas id="<?= esc($chart['id']) ?>"></canvas>
+    <?php if (! empty($report['uiProfile'])): ?>
+        <div class="card reports-role-card">
+            <div class="card-body">
+                <div class="reports-role-grid">
+                    <div>
+                        <div class="reports-role-kicker"><?= esc($report['roleDisplay'] ?? 'Report Role') ?></div>
+                        <h3><?= esc($report['uiProfile']['headline'] ?? '') ?></h3>
+                        <p class="text-muted mb-0"><?= esc($report['uiProfile']['subheadline'] ?? '') ?></p>
+                    </div>
+                    <div class="reports-focus-list">
+                        <?php foreach (($report['uiProfile']['focusAreas'] ?? []) as $area): ?>
+                            <span class="reports-pill"><?= esc($area) ?></span>
+                        <?php endforeach; ?>
                     </div>
                 </div>
-            </div>
-        <?php endforeach; ?>
-    </div>
 
-    <div class="reports-chart-grid">
-        <div class="card reports-table-card">
-            <div class="card-body">
-                <h3>Most Used Laboratories</h3>
-                <div class="table-responsive">
-                    <table class="table table-hover reports-mini-table">
-                        <thead>
-                            <tr>
-                                <th>Laboratory</th>
-                                <th>Bookings</th>
-                                <th>Used Hours</th>
-                                <th>Usage %</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if ($mostUsedLabs === []): ?>
-                                <tr><td colspan="4" class="text-center text-muted">No usage data available.</td></tr>
-                            <?php else: ?>
-                                <?php foreach ($mostUsedLabs as $lab): ?>
-                                    <tr>
-                                        <td><?= esc($lab['laboratory_name']) ?></td>
-                                        <td><?= esc((string) $lab['total_bookings']) ?></td>
-                                        <td><?= esc(number_format((float) $lab['total_used_hours'], 1)) ?></td>
-                                        <td><?= esc(number_format((float) $lab['usage_percentage'], 1)) ?>%</td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+                <?php if (($report['uiProfile']['highlights'] ?? []) !== []): ?>
+                    <div class="reports-role-highlight-grid">
+                        <?php foreach (($report['uiProfile']['highlights'] ?? []) as $item): ?>
+                            <div class="reports-summary-card reports-tone-<?= esc($item['tone'] ?? 'primary') ?>">
+                                <small><?= esc($item['label'] ?? 'Highlight') ?></small>
+                                <div class="reports-summary-value"><?= esc((string) ($item['value'] ?? '0')) ?></div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
 
-        <div class="card reports-table-card">
-            <div class="card-body">
-                <h3>Least Used Laboratories</h3>
-                <div class="table-responsive">
-                    <table class="table table-hover reports-mini-table">
-                        <thead>
-                            <tr>
-                                <th>Laboratory</th>
-                                <th>Bookings</th>
-                                <th>Used Hours</th>
-                                <th>Usage %</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if ($leastUsedLabs === []): ?>
-                                <tr><td colspan="4" class="text-center text-muted">No usage data available.</td></tr>
-                            <?php else: ?>
-                                <?php foreach ($leastUsedLabs as $lab): ?>
-                                    <tr>
-                                        <td><?= esc($lab['laboratory_name']) ?></td>
-                                        <td><?= esc((string) $lab['total_bookings']) ?></td>
-                                        <td><?= esc(number_format((float) $lab['total_used_hours'], 1)) ?></td>
-                                        <td><?= esc(number_format((float) $lab['usage_percentage'], 1)) ?>%</td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="reports-chart-grid">
-        <div class="card reports-table-card">
-            <div class="card-body">
-                <h3>Most Frequently Maintained Assets</h3>
-                <div class="table-responsive">
-                    <table class="table table-hover reports-mini-table">
-                        <thead>
-                            <tr>
-                                <th>Asset</th>
-                                <th>Total Cases</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if ($frequentMaintenanceAssets === []): ?>
-                                <tr><td colspan="2" class="text-center text-muted">No maintenance hotspots found.</td></tr>
-                            <?php else: ?>
-                                <?php foreach ($frequentMaintenanceAssets as $asset): ?>
-                                    <tr>
-                                        <td><?= esc($asset['asset_name'] ?? 'Unknown Asset') ?></td>
-                                        <td><?= esc((string) ($asset['total'] ?? 0)) ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="card reports-table-card">
-            <div class="card-body">
-                <h3>Recent Maintenance Activities</h3>
-                <?php if ($recentMaintenance === []): ?>
-                    <div class="reports-empty"><?= esc($emptyMaintenanceMessage) ?></div>
-                <?php else: ?>
-                    <div class="table-responsive">
-                        <table class="table table-hover reports-mini-table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Title</th>
-                                    <th>Asset</th>
-                                    <th>Laboratory</th>
-                                    <th>Status</th>
-                                    <th>Priority</th>
-                                    <th>Assigned To</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($recentMaintenance as $activity): ?>
-                                    <tr>
-                                        <td><?= esc((string) $activity['id']) ?></td>
-                                        <td><?= esc($activity['title'] ?? '-') ?></td>
-                                        <td><?= esc($activity['asset_name'] ?? '-') ?></td>
-                                        <td><?= esc($activity['laboratory_name'] ?? '-') ?></td>
-                                        <td><?= esc(ucwords(str_replace('_', ' ', (string) ($activity['status'] ?? 'unknown')))) ?></td>
-                                        <td><?= esc(ucwords((string) ($activity['priority'] ?? 'medium'))) ?></td>
-                                        <td><?= esc($activity['technician_name'] ?? 'Unassigned') ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
+                <?php if (($report['uiProfile']['webCallout'] ?? []) !== []): ?>
+                    <div class="reports-callout-grid">
+                        <?php foreach (($report['uiProfile']['webCallout'] ?? []) as $callout): ?>
+                            <div class="reports-callout-box">
+                                <div class="reports-callout-label"><?= esc($callout['label'] ?? 'Reference') ?></div>
+                                <div class="reports-callout-value"><?= esc($callout['value'] ?? '-') ?></div>
+                            </div>
+                        <?php endforeach; ?>
                     </div>
                 <?php endif; ?>
             </div>
         </div>
-    </div>
+    <?php endif; ?>
+
+    <?= view('reports/partials/filter_form', [
+        'filterAction' => $filterAction,
+        'filterFields' => $filterFields,
+        'filters' => $report['filters'] ?? [],
+    ]) ?>
+
+    <?php if (($report['appliedFilters'] ?? []) !== []): ?>
+        <div class="reports-pill-row">
+            <?php foreach (($report['appliedFilters'] ?? []) as $filter): ?>
+                <span class="reports-pill">
+                    <span class="reports-pill-label"><?= esc($filter['label'] ?? 'Filter') ?>:</span>
+                    <span><?= esc($filter['value'] ?? '') ?></span>
+                </span>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+
+    <?= view('reports/roles/web_' . ($report['role'] ?? 'pic'), ['report' => $report]) ?>
+
+    <?php if (($report['limitations'] ?? []) !== []): ?>
+        <div class="card reports-limitations-card">
+            <div class="card-body">
+                <h3>Data Scope Notes</h3>
+                <ul class="mb-0">
+                    <?php foreach (($report['limitations'] ?? []) as $item): ?>
+                        <li><?= esc($item) ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        </div>
+    <?php endif; ?>
 </div>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<?= view('reports/partials/chart_scripts', ['charts' => $charts]) ?>
+<?= view('reports/partials/chart_scripts', ['charts' => $report['charts'] ?? []]) ?>
 <?= $this->endSection() ?>

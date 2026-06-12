@@ -42,6 +42,14 @@ if (function_exists('auth') && auth()->loggedIn()) {
                     <?php elseif ($user->inGroup('pic') || $user->inGroup('manager')): ?>
                         <li class="nav-item me-2"><a class="nav-link position-relative" href="/dashboard/external-requests"><i class="bi bi-clipboard-data me-1"></i> External Requests<span class="nav-indicator"></span></a></li>
                     <?php endif; ?>
+                    <?php if ($user->inGroup('pic') || $user->inGroup('manager') || $user->inGroup('admin')): ?>
+                        <?php
+                        $reportLabel = $user->inGroup('pic')
+                            ? 'Lab Report'
+                            : ($user->inGroup('manager') ? 'Lab Analytics' : 'System Analytics');
+                        ?>
+                        <li class="nav-item me-2"><a class="nav-link position-relative" href="/dashboard/reports/analytics"><i class="bi bi-bar-chart-line me-1"></i> <?= esc($reportLabel) ?><span class="nav-indicator"></span></a></li>
+                    <?php endif; ?>
                     <?php if ($user->inGroup('pic')): ?>
                         <li class="nav-item me-2"><a class="nav-link position-relative" href="/admin/labs"><i class="bi bi-building-gear me-1"></i> Labs<span class="nav-indicator"></span></a></li>
                         <li class="nav-item me-2"><a class="nav-link position-relative" href="/admin/assets"><i class="bi bi-boxes me-1"></i> Assets<span class="nav-indicator"></span></a></li>

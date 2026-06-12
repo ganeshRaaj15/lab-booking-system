@@ -54,7 +54,10 @@
 
     .reports-filter-card .card-body,
     .reports-table-card .card-body,
-    .reports-chart-card .card-body {
+    .reports-chart-card .card-body,
+    .reports-section-card .card-body,
+    .reports-scope-card .card-body,
+    .reports-limitations-card .card-body {
         padding: 1rem;
     }
 
@@ -138,14 +141,94 @@
         border-color: color-mix(in srgb, var(--slams-info) 38%, var(--slams-border));
     }
 
+    .reports-tone-accent {
+        border-color: color-mix(in srgb, var(--slams-primary) 48%, var(--slams-border));
+    }
+
     .reports-chart-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
         gap: 1rem;
     }
 
+    .reports-role-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+        gap: 1rem;
+        align-items: start;
+    }
+
+    .reports-role-kicker,
+    .reports-callout-label {
+        color: var(--slams-muted);
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .reports-role-highlight-grid,
+    .reports-callout-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 0.9rem;
+        margin-top: 1rem;
+    }
+
+    .reports-role-layout-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1rem;
+    }
+
+    .reports-item-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .reports-callout-box {
+        padding: 0.9rem 1rem;
+        border: 1px solid var(--slams-border);
+        border-radius: var(--slams-radius);
+        background: var(--slams-surface-soft);
+    }
+
+    .reports-callout-value {
+        margin-top: 0.35rem;
+        font-weight: 700;
+        color: var(--slams-heading);
+    }
+
+    .reports-scope-list,
+    .reports-table-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 0.9rem;
+    }
+
+    .reports-section-header {
+        margin-bottom: 1rem;
+    }
+
+    .reports-table-title-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.75rem;
+        align-items: baseline;
+        margin-bottom: 0.65rem;
+    }
+
+    .reports-table-title-row h4 {
+        margin: 0;
+        font-size: 0.98rem;
+    }
+
     .reports-chart-card h3,
-    .reports-table-card h3 {
+    .reports-table-card h3,
+    .reports-section-card h3,
+    .reports-scope-card h3,
+    .reports-limitations-card h3 {
         margin-bottom: 0.85rem;
         font-size: 1.05rem;
     }
@@ -177,6 +260,10 @@
     @media (max-width: 767.98px) {
         .reports-hero {
             flex-direction: column;
+        }
+
+        .reports-role-grid {
+            grid-template-columns: 1fr;
         }
 
         .reports-export-group {

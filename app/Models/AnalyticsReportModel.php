@@ -68,6 +68,23 @@ class AnalyticsReportModel extends Model
         )));
     }
 
+    public function availableAssets(array $scope, ?int $labId = null): array
+    {
+        $builder = $this->db->table('assets a')
+            ->select('a.id, a.name, a.asset_code, l.name AS laboratory_name', false)
+            ->join('laboratories l', 'l.id = a.lab_id', 'left')
+            ->orderBy('l.name', 'ASC')
+            ->orderBy('a.name', 'ASC');
+
+        $this->applyScopeToBuilder($builder, $scope, 'a.lab_id');
+
+        if ($labId !== null && $labId > 0) {
+            $builder->where('a.lab_id', $labId);
+        }
+
+        return $builder->get()->getResultArray();
+    }
+
     public function bookingStatusSummary(array $filters, array $scope): array
     {
         $builder = $this->db->table('bookings b')
@@ -126,6 +143,7 @@ class AnalyticsReportModel extends Model
                 COALESCE(NULLIF(u.full_name, ''), u.username, i.secret, 'External Request') AS requested_by,
                 i.secret AS requester_email,
                 f.name_en AS faculty_name,
+                b.user_type,
                 b.date,
                 b.start_time,
                 b.end_time,
@@ -469,6 +487,10 @@ class AnalyticsReportModel extends Model
         if (! empty($filters['lab_id'])) {
             $builder->where('b.lab_id', (int) $filters['lab_id']);
         }
+        if (! empty($filters['asset_id'])) {
+            $builder->join('booking_assets baf', 'baf.booking_id = b.id', 'inner');
+            $builder->where('baf.asset_id', (int) $filters['asset_id']);
+        }
         if (! empty($filters['faculty_id'])) {
             $builder->where('b.faculty_id', (int) $filters['faculty_id']);
         }
@@ -489,6 +511,9 @@ class AnalyticsReportModel extends Model
 
         if (! empty($filters['lab_id'])) {
             $builder->where('a.lab_id', (int) $filters['lab_id']);
+        }
+        if (! empty($filters['asset_id'])) {
+            $builder->where('a.id', (int) $filters['asset_id']);
         }
         if (! empty($filters['asset_category'])) {
             $builder->where('a.category', $filters['asset_category']);
@@ -525,6 +550,9 @@ class AnalyticsReportModel extends Model
         }
         if (! empty($filters['lab_id'])) {
             $builder->where('a.lab_id', (int) $filters['lab_id']);
+        }
+        if (! empty($filters['asset_id'])) {
+            $builder->where('a.id', (int) $filters['asset_id']);
         }
         if (! empty($filters['asset_category'])) {
             $builder->where('a.category', $filters['asset_category']);

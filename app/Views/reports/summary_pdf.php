@@ -1,163 +1,295 @@
+<?php $report = $report ?? []; ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title><?= esc($reportTitle) ?></title>
+    <title><?= esc($report['reportTitle'] ?? 'SLAMS Analytics Report') ?></title>
     <style>
-        body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 12px; color: #1f2937; margin: 0; padding: 24px; }
-        h1 { font-size: 20px; margin: 0 0 6px; }
-        h2 { font-size: 15px; margin: 18px 0 10px; color: #1e3a8a; }
-        .meta { font-size: 11px; color: #6b7280; margin-bottom: 16px; }
-        .kpi-grid { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-        .kpi-grid td { padding: 10px 12px; border: 1px solid #e5e7eb; }
-        .kpi-label { font-size: 10px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.08em; }
-        .kpi-value { font-size: 16px; font-weight: 700; color: #111827; }
-        .chart-row { margin: 6px 0; }
-        .chart-label { font-size: 11px; margin-bottom: 4px; }
-        .chart-bar { height: 10px; background: #e5e7eb; border-radius: 6px; overflow: hidden; }
-        .chart-fill { height: 100%; background: #2563eb; }
-        .chart-fill.secondary { background: #0ea5e9; }
-        .chart-fill.warning { background: #f59e0b; }
-        .chart-fill.success { background: #10b981; }
-        .chart-fill.danger { background: #ef4444; }
-        table.data { width: 100%; border-collapse: collapse; margin-top: 8px; }
-        table.data th, table.data td { border: 1px solid #e5e7eb; padding: 8px; font-size: 11px; }
-        table.data th { background: #f3f4f6; text-align: left; }
-        .two-column { width: 100%; }
-        .two-column td { vertical-align: top; width: 50%; padding-right: 12px; }
+        @page {
+            margin: 26px 28px 34px 28px;
+        }
+
+        body {
+            font-family: "DejaVu Sans", Arial, sans-serif;
+            color: #1f2937;
+            font-size: 11px;
+            line-height: 1.45;
+        }
+
+        h1, h2, h3, h4, p {
+            margin: 0;
+        }
+
+        .cover {
+            border: 1px solid #dbe3ee;
+            border-radius: 10px;
+            padding: 24px;
+            margin-bottom: 18px;
+            background: #f8fbff;
+        }
+
+        .system-name {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            color: #5b7088;
+            margin-bottom: 10px;
+        }
+
+        .report-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #0f2d52;
+            margin-bottom: 8px;
+        }
+
+        .report-subtitle {
+            font-size: 12px;
+            color: #445468;
+            margin-bottom: 14px;
+        }
+
+        .meta-grid,
+        .kpi-grid {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-bottom: 16px;
+        }
+
+        .meta-grid td,
+        .kpi-grid td {
+            border: 1px solid #dbe3ee;
+            padding: 10px 12px;
+            vertical-align: top;
+        }
+
+        .meta-grid td {
+            width: 50%;
+        }
+
+        .label {
+            display: block;
+            color: #708399;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            margin-bottom: 4px;
+        }
+
+        .value {
+            font-size: 11px;
+            color: #182433;
+        }
+
+        .kpi-card {
+            min-height: 64px;
+        }
+
+        .kpi-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #102847;
+            margin-top: 6px;
+        }
+
+        .section {
+            page-break-inside: avoid;
+            margin-bottom: 18px;
+        }
+
+        .section.page-break {
+            page-break-before: always;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #10335f;
+            margin-bottom: 4px;
+        }
+
+        .section-description {
+            color: #5d6f83;
+            margin-bottom: 10px;
+        }
+
+        .table-block {
+            margin-bottom: 14px;
+        }
+
+        .table-title {
+            font-size: 12px;
+            font-weight: bold;
+            color: #193a62;
+            margin-bottom: 6px;
+        }
+
+        table.data {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        table.data th,
+        table.data td {
+            border: 1px solid #dbe3ee;
+            padding: 7px 8px;
+            font-size: 10px;
+            vertical-align: top;
+            word-wrap: break-word;
+        }
+
+        table.data th {
+            background: #edf4fb;
+            text-align: left;
+            color: #183c64;
+        }
+
+        .muted {
+            color: #6b7c90;
+        }
+
+        .notes {
+            border: 1px solid #dbe3ee;
+            padding: 12px;
+            background: #fbfdff;
+        }
+
+        .notes ul {
+            margin: 8px 0 0 18px;
+            padding: 0;
+        }
     </style>
 </head>
 <body>
-    <h1><?= esc($reportTitle) ?></h1>
-    <div class="meta">
-        Scope: <?= esc($scopeLabel) ?><br>
-        Generated: <?= esc($generatedAt) ?>
+    <div class="cover">
+        <div class="system-name">SLAMS Laboratory And Asset Management System</div>
+        <div class="report-title"><?= esc($report['reportTitle'] ?? 'SLAMS Analytics Report') ?></div>
+        <div class="report-subtitle"><?= esc($report['scopeDescription'] ?? '') ?></div>
+        <?php if (! empty($report['uiProfile']['headline'])): ?>
+            <div class="report-subtitle"><strong><?= esc($report['uiProfile']['headline']) ?></strong></div>
+        <?php endif; ?>
+
+        <table class="meta-grid">
+            <tr>
+                <td>
+                    <span class="label">Report Scope</span>
+                    <span class="value"><?= esc($report['scopeLabel'] ?? '-') ?></span>
+                </td>
+                <td>
+                    <span class="label">User Role</span>
+                    <span class="value"><?= esc($report['roleDisplay'] ?? '-') ?></span>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <span class="label">Generated Date And Time</span>
+                    <span class="value"><?= esc($report['generatedAtDisplay'] ?? ($report['generatedAt'] ?? '-')) ?></span>
+                </td>
+                <td>
+                    <span class="label">Selected Filters</span>
+                    <span class="value">
+                        <?php if (($report['appliedFilters'] ?? []) === []): ?>
+                            No filters applied
+                        <?php else: ?>
+                            <?php foreach (($report['appliedFilters'] ?? []) as $index => $filter): ?>
+                                <?= $index > 0 ? ' | ' : '' ?><?= esc(($filter['label'] ?? 'Filter') . ': ' . ($filter['value'] ?? '')) ?>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </span>
+                </td>
+            </tr>
+        </table>
+
+        <table class="kpi-grid">
+            <?php $cards = array_values($report['summaryCards'] ?? []); ?>
+            <?php foreach (array_chunk($cards, 4) as $row): ?>
+                <tr>
+                    <?php foreach ($row as $card): ?>
+                        <td class="kpi-card">
+                            <span class="label"><?= esc($card['label'] ?? 'Metric') ?></span>
+                            <div class="kpi-value"><?= esc((string) ($card['value'] ?? '0')) ?></div>
+                        </td>
+                    <?php endforeach; ?>
+                    <?php for ($i = count($row); $i < 4; $i++): ?>
+                        <td class="kpi-card"></td>
+                    <?php endfor; ?>
+                </tr>
+            <?php endforeach; ?>
+        </table>
+
+        <?php if (($report['uiProfile']['focusAreas'] ?? []) !== []): ?>
+            <table class="meta-grid">
+                <tr>
+                    <td colspan="2">
+                        <span class="label">Presentation Focus</span>
+                        <span class="value">
+                            <?php foreach (($report['uiProfile']['focusAreas'] ?? []) as $index => $area): ?>
+                                <?= $index > 0 ? ' | ' : '' ?><?= esc($area) ?>
+                            <?php endforeach; ?>
+                        </span>
+                    </td>
+                </tr>
+            </table>
+        <?php endif; ?>
     </div>
 
-    <table class="kpi-grid">
-        <tr>
-            <td><div class="kpi-label">Total Bookings</div><div class="kpi-value"><?= esc($kpis['total_bookings']) ?></div></td>
-            <td><div class="kpi-label">Approved</div><div class="kpi-value"><?= esc($kpis['approved']) ?></div></td>
-            <td><div class="kpi-label">Pending</div><div class="kpi-value"><?= esc($kpis['pending']) ?></div></td>
-            <td><div class="kpi-label">Rejected</div><div class="kpi-value"><?= esc($kpis['rejected']) ?></div></td>
-        </tr>
-        <tr>
-            <td><div class="kpi-label">Cancelled</div><div class="kpi-value"><?= esc($kpis['cancelled'] ?? 0) ?></div></td>
-            <td><div class="kpi-label">Open Maintenance</div><div class="kpi-value"><?= esc($kpis['maintenance_open']) ?></div></td>
-            <td><div class="kpi-label">Completed Maintenance</div><div class="kpi-value"><?= esc($kpis['maintenance_completed']) ?></div></td>
-            <td><div class="kpi-label">Total Labs</div><div class="kpi-value"><?= esc($kpis['total_labs']) ?></div></td>
-        </tr>
-        <tr>
-            <td><div class="kpi-label">Total Assets</div><div class="kpi-value"><?= esc($kpis['total_assets']) ?></div></td>
-            <td><div class="kpi-label">Users</div><div class="kpi-value"><?= esc($kpis['users'] ?? '-') ?></div></td>
-            <td><div class="kpi-label">Maintenance Total</div><div class="kpi-value"><?= esc($kpis['maintenance_total'] ?? 0) ?></div></td>
-            <td><div class="kpi-label">Scope Labs</div><div class="kpi-value"><?= esc($kpis['total_labs']) ?></div></td>
-        </tr>
-    </table>
+    <?= view('reports/roles/pdf_' . ($report['role'] ?? 'pic'), ['report' => $report]) ?>
 
-    <table class="two-column">
-        <tr>
-            <td>
-                <h2>Booking Status Breakdown</h2>
-                <?php $totalStatus = max(1, array_sum($statusMap)); ?>
-                <?php foreach ($statusMap as $status => $count): ?>
-                    <?php $percent = round(($count / $totalStatus) * 100); $class = $status === 'APPROVED' ? 'success' : ($status === 'PENDING' ? 'warning' : ($status === 'CANCELLED' ? 'secondary' : 'danger')); ?>
-                    <div class="chart-row"><div class="chart-label"><?= esc($status) ?> (<?= esc($count) ?>)</div><div class="chart-bar"><div class="chart-fill <?= esc($class) ?>" style="width: <?= esc($percent) ?>%;"></div></div></div>
-                <?php endforeach; ?>
-            </td>
-            <td>
-                <h2>Maintenance Status Breakdown</h2>
-                <?php $totalMaintenance = max(1, array_sum($maintenanceStatus)); ?>
-                <?php foreach ($maintenanceStatus as $status => $count): ?>
-                    <?php $percent = round(($count / $totalMaintenance) * 100); ?>
-                    <div class="chart-row"><div class="chart-label"><?= esc(strtoupper($status)) ?> (<?= esc($count) ?>)</div><div class="chart-bar"><div class="chart-fill secondary" style="width: <?= esc($percent) ?>%;"></div></div></div>
-                <?php endforeach; ?>
-            </td>
-        </tr>
-    </table>
-
-    <h2>Top Labs by Bookings</h2>
-    <table class="data">
-        <thead><tr><th>Lab</th><th>Total Bookings</th></tr></thead>
-        <tbody>
-            <?php if (empty($topLabs)): ?>
-                <tr><td colspan="2">No bookings available.</td></tr>
-            <?php else: ?>
-                <?php foreach ($topLabs as $lab): ?><tr><td><?= esc($lab['lab_name'] ?? 'Unknown Lab') ?></td><td><?= esc($lab['total']) ?></td></tr><?php endforeach; ?>
+    <?php foreach (($report['sectionGroups'] ?? []) as $sectionIndex => $group): ?>
+        <div class="section <?= $sectionIndex > 0 ? 'page-break' : '' ?>">
+            <div class="section-title"><?= esc($group['title'] ?? 'Analytics Section') ?></div>
+            <?php if (! empty($group['description'])): ?>
+                <div class="section-description"><?= esc($group['description']) ?></div>
             <?php endif; ?>
-        </tbody>
-    </table>
 
-    <h2>Most Reported Assets For Maintenance</h2>
-    <table class="data">
-        <thead><tr><th>Asset</th><th>Total Maintenance Cases</th></tr></thead>
-        <tbody>
-            <?php if (empty($topMaintenanceAssets)): ?>
-                <tr><td colspan="2">No maintenance activity available.</td></tr>
-            <?php else: ?>
-                <?php foreach ($topMaintenanceAssets as $asset): ?><tr><td><?= esc($asset['asset_name'] ?? 'Unknown Asset') ?></td><td><?= esc($asset['total']) ?></td></tr><?php endforeach; ?>
-            <?php endif; ?>
-        </tbody>
-    </table>
+            <?php foreach (($group['tables'] ?? []) as $table): ?>
+                <div class="table-block">
+                    <div class="table-title"><?= esc($table['title'] ?? 'Table') ?></div>
+                    <table class="data">
+                        <thead>
+                            <tr>
+                                <?php foreach (($table['columns'] ?? []) as $column): ?>
+                                    <th><?= esc($column['label'] ?? $column['key'] ?? 'Column') ?></th>
+                                <?php endforeach; ?>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (($table['rows'] ?? []) === []): ?>
+                                <tr>
+                                    <td colspan="<?= esc((string) count($table['columns'] ?? [])) ?>" class="muted">
+                                        <?= esc($table['emptyMessage'] ?? 'No data available.') ?>
+                                    </td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach (($table['rows'] ?? []) as $row): ?>
+                                    <tr>
+                                        <?php foreach (($table['columns'] ?? []) as $column): ?>
+                                            <td><?= esc((string) ($row[$column['key']] ?? '')) ?></td>
+                                        <?php endforeach; ?>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    <?php endforeach; ?>
 
-    <h2>Faculty Distribution</h2>
-    <table class="data">
-        <thead><tr><th>Faculty</th><th>Total Bookings</th></tr></thead>
-        <tbody>
-            <?php if (empty($facultyCounts)): ?>
-                <tr><td colspan="2">No faculty data available.</td></tr>
-            <?php else: ?>
-                <?php foreach ($facultyCounts as $faculty): ?><tr><td><?= esc($faculty['faculty_name'] ?? 'Unknown Faculty') ?></td><td><?= esc($faculty['total']) ?></td></tr><?php endforeach; ?>
-            <?php endif; ?>
-        </tbody>
-    </table>
-
-    <h2>Monthly Booking Trend</h2>
-    <table class="data">
-        <thead><tr><th>Month</th><th>Total Bookings</th></tr></thead>
-        <tbody>
-            <?php if (empty($monthlyTrend)): ?>
-                <tr><td colspan="2">No bookings in this period.</td></tr>
-            <?php else: ?>
-                <?php foreach ($monthlyTrend as $month): ?><tr><td><?= esc($month['month']) ?></td><td><?= esc($month['total']) ?></td></tr><?php endforeach; ?>
-            <?php endif; ?>
-        </tbody>
-    </table>
-
-    <h2>Monthly Maintenance Trend</h2>
-    <table class="data">
-        <thead><tr><th>Month</th><th>Total Maintenance Cases</th></tr></thead>
-        <tbody>
-            <?php if (empty($maintenanceTrend)): ?>
-                <tr><td colspan="2">No maintenance cases in this period.</td></tr>
-            <?php else: ?>
-                <?php foreach ($maintenanceTrend as $month): ?><tr><td><?= esc($month['month']) ?></td><td><?= esc($month['total']) ?></td></tr><?php endforeach; ?>
-            <?php endif; ?>
-        </tbody>
-    </table>
-
-    <h2>Upcoming Booking Activity</h2>
-    <table class="data">
-        <thead><tr><th>Lab</th><th>Date</th><th>Time</th><th>Status</th></tr></thead>
-        <tbody>
-            <?php if (empty($upcomingBookings)): ?>
-                <tr><td colspan="4">No upcoming booking activity.</td></tr>
-            <?php else: ?>
-                <?php foreach ($upcomingBookings as $booking): ?><tr><td><?= esc($booking['lab_name'] ?? '-') ?></td><td><?= esc($booking['date'] ?? '-') ?></td><td><?= esc(($booking['start_time'] ?? '-') . ' - ' . ($booking['end_time'] ?? '-')) ?></td><td><?= esc($booking['status'] ?? '-') ?></td></tr><?php endforeach; ?>
-            <?php endif; ?>
-        </tbody>
-    </table>
-
-    <h2>Lab Summary</h2>
-    <table class="data">
-        <thead><tr><th>Lab Name</th><th>Room</th><th>PIC</th><th>PIC Email</th></tr></thead>
-        <tbody>
-            <?php if (empty($labs)): ?>
-                <tr><td colspan="4">No labs available.</td></tr>
-            <?php else: ?>
-                <?php foreach ($labs as $lab): ?><tr><td><?= esc($lab['name'] ?? '-') ?></td><td><?= esc($lab['room'] ?? '-') ?></td><td><?= esc($lab['pic_name'] ?? '-') ?></td><td><?= esc($lab['pic_email'] ?? '-') ?></td></tr><?php endforeach; ?>
-            <?php endif; ?>
-        </tbody>
-    </table>
+    <?php if (($report['limitations'] ?? []) !== []): ?>
+        <div class="section page-break">
+            <div class="section-title">Data Scope Notes</div>
+            <div class="notes">
+                <p class="muted">The following analytics areas depend on fields available in the current SLAMS database schema.</p>
+                <ul>
+                    <?php foreach (($report['limitations'] ?? []) as $item): ?>
+                        <li><?= esc($item) ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        </div>
+    <?php endif; ?>
 </body>
 </html>
