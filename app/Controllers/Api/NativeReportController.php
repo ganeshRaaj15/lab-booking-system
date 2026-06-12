@@ -3,18 +3,20 @@
 namespace App\Controllers\Api;
 
 use App\Controllers\BaseController;
-use App\Libraries\ReportSnapshotBuilder;
+use App\Services\ReportAnalyticsService;
 use CodeIgniter\Shield\Entities\User;
 use Dompdf\Dompdf;
+use InvalidArgumentException;
+use RuntimeException;
 
 class NativeReportController extends BaseController
 {
-    protected ReportSnapshotBuilder $builder;
+    protected ReportAnalyticsService $reports;
 
     public function __construct()
     {
         helper('auth');
-        $this->builder = new ReportSnapshotBuilder();
+        $this->reports = new ReportAnalyticsService();
     }
 
     public function show()
@@ -25,8 +27,15 @@ class NativeReportController extends BaseController
         }
 
         try {
-            $report = $this->builder->build($user);
-        } catch (\RuntimeException $e) {
+            $report = $this->reports->build($user, $this->request->getGet());
+        } catch (InvalidArgumentException $e) {
+            return $this->response
+                ->setStatusCode(422)
+                ->setJSON([
+                    'status' => 'error',
+                    'message' => $e->getMessage(),
+                ]);
+        } catch (RuntimeException $e) {
             return $this->response
                 ->setStatusCode(403)
                 ->setJSON([
@@ -39,8 +48,8 @@ class NativeReportController extends BaseController
             'status' => 'success',
             'report' => $report,
             'exports' => [
-                'pdf_url' => base_url('/api/native/reports/export/pdf'),
-                'csv_url' => base_url('/api/native/reports/export/csv'),
+                'pdf_url' => base_url('/api/native/reports/export/pdf') . $this->queryString(),
+                'csv_url' => base_url('/api/native/reports/export/csv') . $this->queryString(),
             ],
         ]);
     }
@@ -52,17 +61,36 @@ class NativeReportController extends BaseController
             return $user;
         }
 
-        $data = $this->builder->build($user);
+        try {
+            $report = $this->reports->build($user, $this->request->getGet());
+        } catch (InvalidArgumentException $e) {
+            return $this->response
+                ->setStatusCode(422)
+                ->setJSON([
+                    'status' => 'error',
+                    'message' => $e->getMessage(),
+                ]);
+        } catch (RuntimeException $e) {
+            return $this->response
+                ->setStatusCode(403)
+                ->setJSON([
+                    'status' => 'error',
+                    'message' => $e->getMessage(),
+                ]);
+        }
+
         $dompdf = new Dompdf(['isRemoteEnabled' => true]);
-        $dompdf->loadHtml(view('reports/summary_pdf', $data));
+        $dompdf->loadHtml(view('reports/summary_pdf', ['report' => $report]));
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
 
-        $filename = 'slams-report-' . $data['role'] . '-' . date('Ymd_His') . '.pdf';
+        $canvas = $dompdf->getCanvas();
+        $font = $dompdf->getFontMetrics()->getFont('Helvetica', 'normal');
+        $canvas->page_text(500, 820, 'Page {PAGE_NUM} of {PAGE_COUNT}', $font, 9, [0.4, 0.45, 0.55]);
 
         return $this->response
             ->setHeader('Content-Type', 'application/pdf')
-            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $this->reports->pdfFilename($report) . '"')
             ->setBody($dompdf->output());
     }
 
@@ -73,13 +101,28 @@ class NativeReportController extends BaseController
             return $user;
         }
 
-        $data = $this->builder->build($user);
-        $filename = 'slams-report-' . $data['role'] . '-' . date('Ymd_His') . '.csv';
+        try {
+            $report = $this->reports->build($user, $this->request->getGet());
+        } catch (InvalidArgumentException $e) {
+            return $this->response
+                ->setStatusCode(422)
+                ->setJSON([
+                    'status' => 'error',
+                    'message' => $e->getMessage(),
+                ]);
+        } catch (RuntimeException $e) {
+            return $this->response
+                ->setStatusCode(403)
+                ->setJSON([
+                    'status' => 'error',
+                    'message' => $e->getMessage(),
+                ]);
+        }
 
         return $this->response
             ->setHeader('Content-Type', 'text/csv; charset=UTF-8')
-            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
-            ->setBody($this->builder->buildCsv($data));
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $this->reports->csvFilename($report) . '"')
+            ->setBody($this->reports->buildCsv($report));
     }
 
     protected function authorizedUser()
@@ -104,5 +147,15 @@ class NativeReportController extends BaseController
         }
 
         return $user;
+    }
+
+    private function queryString(): string
+    {
+        $query = http_build_query(array_filter(
+            $this->request->getGet(),
+            static fn($value): bool => $value !== null && $value !== ''
+        ));
+
+        return $query !== '' ? '?' . $query : '';
     }
 }
