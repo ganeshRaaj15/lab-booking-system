@@ -4,10 +4,15 @@ namespace App\Controllers\Api;
 
 use App\Authentication\OtpPolicy;
 use App\Controllers\BaseController;
+use App\Libraries\AccountRecoveryService;
 use App\Libraries\NativeUserSerializer;
 use CodeIgniter\Events\Events;
+use CodeIgniter\I18n\Time;
+use CodeIgniter\Shield\Authentication\Authenticators\Session;
 use CodeIgniter\Shield\Entities\User;
 use CodeIgniter\Shield\Exceptions\ValidationException;
+use CodeIgniter\Shield\Models\LoginModel;
+use CodeIgniter\Shield\Models\UserIdentityModel;
 use CodeIgniter\Shield\Models\UserModel;
 use CodeIgniter\Shield\Validation\ValidationRules;
 use Random\RandomException;
@@ -81,6 +86,151 @@ class NativeAuthController extends BaseController
         return $this->response->setJSON([
             'status' => 'success',
             'token' => $token->raw_token,
+            'user' => $this->serializer->serialize($user),
+        ]);
+    }
+
+    public function requestMagicLink()
+    {
+        if (! setting('Auth.allowMagicLinkLogins')) {
+            return $this->response
+                ->setStatusCode(403)
+                ->setJSON([
+                    'status' => 'error',
+                    'message' => lang('Auth.magicLinkDisabled'),
+                ]);
+        }
+
+        $payload = $this->requestPayload();
+        $rules = [
+            'account' => [
+                'label' => 'Email or Username',
+                'rules' => 'required|string|max_length[254]',
+            ],
+        ];
+
+        if (! $this->validateData($payload, $rules, [], config('Auth')->DBGroup)) {
+            return $this->response
+                ->setStatusCode(422)
+                ->setJSON([
+                    'status' => 'error',
+                    'message' => 'Enter the email address or username on your account.',
+                    'errors' => $this->validator->getErrors(),
+                ]);
+        }
+
+        $account = trim((string) ($payload['account'] ?? ''));
+        $user = $this->findUserByAccount($account);
+
+        if ($user instanceof User && $this->canReceiveRecoveryLink($user)) {
+            (new AccountRecoveryService())->sendLoginLink($user, ['audience' => 'native']);
+        }
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'message' => 'If an account matches what you entered, we sent a secure one-time sign-in link to the registered email address.',
+        ]);
+    }
+
+    public function consumeMagicLink()
+    {
+        if (! setting('Auth.allowMagicLinkLogins')) {
+            return $this->response
+                ->setStatusCode(403)
+                ->setJSON([
+                    'status' => 'error',
+                    'message' => lang('Auth.magicLinkDisabled'),
+                ]);
+        }
+
+        $payload = $this->requestPayload();
+        $rules = [
+            'token' => 'required|string|max_length[128]',
+            'device_name' => [
+                'label' => 'Device Name',
+                'rules' => 'required|string|max_length[255]',
+            ],
+        ];
+
+        if (! $this->validateData($payload, $rules, [], config('Auth')->DBGroup)) {
+            return $this->response
+                ->setStatusCode(422)
+                ->setJSON([
+                    'status' => 'error',
+                    'message' => 'Invalid secure link payload.',
+                    'errors' => $this->validator->getErrors(),
+                ]);
+        }
+
+        $token = trim((string) ($payload['token'] ?? ''));
+        $identifier = $this->identifierForToken($token);
+
+        /** @var UserIdentityModel $identityModel */
+        $identityModel = model(UserIdentityModel::class);
+        $identity = $token !== ''
+            ? $identityModel->getIdentityBySecret(Session::ID_TYPE_MAGIC_LINK, hash('sha256', $token))
+            : null;
+
+        if ($identity === null) {
+            $this->recordMagicLinkAttempt($identifier, false);
+            Events::trigger('failedLogin', ['magicLinkToken' => $identifier]);
+
+            return $this->response
+                ->setStatusCode(401)
+                ->setJSON([
+                    'status' => 'error',
+                    'message' => 'That sign-in link is invalid or has already been used.',
+                ]);
+        }
+
+        $identityModel->delete($identity->id);
+
+        if ($identity->expires === null || Time::now()->isAfter($identity->expires)) {
+            $this->recordMagicLinkAttempt($identifier, false);
+            Events::trigger('failedLogin', ['magicLinkToken' => $identifier]);
+
+            return $this->response
+                ->setStatusCode(401)
+                ->setJSON([
+                    'status' => 'error',
+                    'message' => 'That sign-in link has expired. Request a new one.',
+                ]);
+        }
+
+        $user = $this->userProvider()->findById((int) $identity->user_id);
+        if (! $user instanceof User || ! $this->canReceiveRecoveryLink($user)) {
+            $this->recordMagicLinkAttempt($identifier, false, $identity->user_id);
+            Events::trigger('failedLogin', ['magicLinkToken' => $identifier]);
+
+            return $this->response
+                ->setStatusCode(403)
+                ->setJSON([
+                    'status' => 'error',
+                    'message' => 'That sign-in link cannot be used. Request a new one or contact an administrator.',
+                ]);
+        }
+
+        /** @var Session $sessionAuthenticator */
+        $sessionAuthenticator = auth('session')->getAuthenticator();
+        if ($sessionAuthenticator->hasAction($identity->user_id)) {
+            return $this->response
+                ->setStatusCode(403)
+                ->setJSON([
+                    'status' => 'error',
+                    'message' => lang('Auth.needActivate'),
+                ]);
+        }
+
+        $deviceName = trim((string) ($payload['device_name'] ?? 'SLAMS Mobile Device'));
+        $accessToken = $user->generateAccessToken($deviceName);
+
+        $this->recordMagicLinkAttempt($identifier, true, $identity->user_id);
+        Events::trigger('magicLogin');
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'message' => 'You are signed in.',
+            'token' => $accessToken->raw_token,
             'user' => $this->serializer->serialize($user),
         ]);
     }
@@ -401,5 +551,59 @@ class NativeAuthController extends BaseController
         }
 
         return $fallback;
+    }
+
+    private function findUserByAccount(string $account): ?User
+    {
+        $account = trim($account);
+        $accountLower = strtolower($account);
+
+        if (filter_var($account, FILTER_VALIDATE_EMAIL)) {
+            return $this->userProvider()->findByCredentials(['email' => $accountLower]);
+        }
+
+        if (! preg_match('/\A[a-zA-Z0-9\.]{3,30}\z/', $account)) {
+            return null;
+        }
+
+        $row = db_connect()->table('users')
+            ->select('id')
+            ->where('LOWER(username) =', $accountLower)
+            ->where('deleted_at', null)
+            ->get()
+            ->getRowArray();
+
+        return $row ? $this->userProvider()->findById((int) $row['id']) : null;
+    }
+
+    private function canReceiveRecoveryLink(User $user): bool
+    {
+        if ($user->isBanned()) {
+            return false;
+        }
+
+        return (int) ($user->active ?? 0) === 1;
+    }
+
+    private function identifierForToken(string $token): string
+    {
+        return $token === '' ? 'missing-token' : 'sha256:' . hash('sha256', $token);
+    }
+
+    /**
+     * @param int|string|null $userId
+     */
+    private function recordMagicLinkAttempt(string $identifier, bool $success, $userId = null): void
+    {
+        /** @var LoginModel $loginModel */
+        $loginModel = model(LoginModel::class);
+        $loginModel->recordLoginAttempt(
+            Session::ID_TYPE_MAGIC_LINK,
+            $identifier,
+            $success,
+            $this->request->getIPAddress(),
+            (string) $this->request->getUserAgent(),
+            $userId,
+        );
     }
 }

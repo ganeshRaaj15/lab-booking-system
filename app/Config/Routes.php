@@ -99,6 +99,8 @@ $routes->get('open/booking/(:num)', [AppLinkController::class, 'booking/$1']);
 $routes->group('api/native', static function ($routes) {
     $routes->get('health', [NativeHealthController::class, 'show']);
     $routes->post('auth/token', [NativeAuthController::class, 'token']);
+    $routes->post('auth/magic-link/request', [NativeAuthController::class, 'requestMagicLink']);
+    $routes->post('auth/magic-link/consume', [NativeAuthController::class, 'consumeMagicLink']);
     $routes->post('auth/otp/verify', [NativeAuthController::class, 'verifyOtp']);
     $routes->post('auth/register', [NativeAuthController::class, 'register']);
 
@@ -668,6 +670,7 @@ $routes->group('technician', ['filter' => 'group:pic'], function ($routes) {
 
 $routes->get('login/magic-link', [PasswordRecoveryController::class, 'loginView'], ['as' => 'magic-link']);
 $routes->post('login/magic-link', [PasswordRecoveryController::class, 'loginAction']);
+$routes->get('login/open-magic-link', [PasswordRecoveryController::class, 'openNativeLink'], ['as' => 'magic-link-open-native']);
 $routes->get('login/verify-magic-link', [PasswordRecoveryController::class, 'verify'], ['as' => 'verify-magic-link']);
 
 // Graceful redirect when user refreshes the OTP pages (Shield only defines POST for these)

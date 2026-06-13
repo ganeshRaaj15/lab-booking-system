@@ -119,6 +119,25 @@ class PasswordRecoveryController extends BaseController
         return redirect()->to(config('Auth')->loginRedirect())->with('message', 'You are signed in.');
     }
 
+    public function openNativeLink(): RedirectResponse|string
+    {
+        if (! setting('Auth.allowMagicLinkLogins')) {
+            return redirect()->route('login')->with('error', lang('Auth.magicLinkDisabled'));
+        }
+
+        $token = trim((string) $this->request->getGet('token'));
+        if ($token === '') {
+            return redirect()->route('magic-link')->with('error', 'That sign-in link is incomplete. Request a new one.');
+        }
+
+        $encodedToken = rawurlencode($token);
+
+        return view('auth/magic_link_native_redirect', [
+            'appUrl' => 'slamsnative://auth/magic-link?token=' . $encodedToken,
+            'fallbackUrl' => url_to('verify-magic-link') . '?token=' . $encodedToken,
+        ]);
+    }
+
     private function displayMessage(): string
     {
         return view(setting('Auth.views')['magic-link-message']);

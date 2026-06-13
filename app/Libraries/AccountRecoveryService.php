@@ -10,7 +10,10 @@ use CodeIgniter\Shield\Models\UserIdentityModel;
 
 class AccountRecoveryService
 {
-    public function sendLoginLink(User $user): bool
+    /**
+     * @param array{audience?: 'web'|'native'} $options
+     */
+    public function sendLoginLink(User $user, array $options = []): bool
     {
         if (empty($user->id)) {
             return false;
@@ -74,6 +77,7 @@ class AccountRecoveryService
             ->setFrom(setting('Email.fromEmail'), setting('Email.fromName') ?? '');
         $email->setTo($emailAddress);
         $email->setSubject('Secure sign-in link for FKMP Smart Lab');
+        $linkOptions = $this->linkOptions($token, $options['audience'] ?? 'web');
         $email->setMessage(view(
             setting('Auth.views')['magic-link-email'],
             [
@@ -83,6 +87,10 @@ class AccountRecoveryService
                 'userAgent'  => $userAgent,
                 'date'       => $date,
                 'expiresIn'  => (int) ceil(setting('Auth.magicLinkLifetime') / MINUTE),
+                'primaryUrl' => $linkOptions['primaryUrl'],
+                'primaryCta' => $linkOptions['primaryCta'],
+                'secondaryUrl' => $linkOptions['secondaryUrl'],
+                'secondaryCta' => $linkOptions['secondaryCta'],
             ],
             ['debug' => false],
         ));
@@ -99,5 +107,35 @@ class AccountRecoveryService
         $email->clear();
 
         return true;
+    }
+
+    /**
+     * @return array{
+     *     primaryUrl: string,
+     *     primaryCta: string,
+     *     secondaryUrl: string|null,
+     *     secondaryCta: string|null
+     * }
+     */
+    private function linkOptions(string $token, string $audience): array
+    {
+        $encodedToken = rawurlencode($token);
+        $verifyUrl = url_to('verify-magic-link') . '?token=' . $encodedToken;
+
+        if ($audience === 'native') {
+            return [
+                'primaryUrl' => site_url('login/open-magic-link') . '?token=' . $encodedToken,
+                'primaryCta' => 'Open in SLAMS Mobile',
+                'secondaryUrl' => $verifyUrl,
+                'secondaryCta' => 'Continue in browser',
+            ];
+        }
+
+        return [
+            'primaryUrl' => $verifyUrl,
+            'primaryCta' => 'Sign in securely',
+            'secondaryUrl' => null,
+            'secondaryCta' => null,
+        ];
     }
 }
