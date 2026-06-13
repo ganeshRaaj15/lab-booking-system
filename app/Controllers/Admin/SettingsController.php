@@ -7,7 +7,6 @@ use App\Libraries\MaintenanceForecastService;
 use App\Libraries\NotificationService;
 use App\Libraries\StaffRoleService;
 use App\Libraries\StudentRoleService;
-use App\Libraries\WhatsAppConfiguration;
 use App\Libraries\WebPushConfiguration;
 use App\Models\SettingsModel;
 
@@ -81,7 +80,6 @@ class SettingsController extends BaseController
             'settings'      => $settings,
             'bookingSlots'  => $bookingSlots,
             'webPush'       => (new WebPushConfiguration())->diagnostics(),
-            'whatsApp'      => (new WhatsAppConfiguration())->diagnostics(),
         ]);
     }
 
@@ -105,7 +103,7 @@ class SettingsController extends BaseController
         }
 
         foreach ($managedSettings as $key => $meta) {
-            $value = $this->normalizeSettingValue((string) $this->request->getPost($key));
+            $value = trim((string) $this->request->getPost($key));
 
             if ($key === 'student_email_domain') {
                 $value = $this->studentRoleService->normalizeDomain($value);
@@ -367,42 +365,6 @@ class SettingsController extends BaseController
                 'default' => '',
                 'hint' => 'Optional HELO host if your SMTP provider requires a specific hostname.',
             ],
-            'whatsapp_enabled' => [
-                'type' => 'bool',
-                'rules' => 'required|in_list[0,1]',
-                'default' => '0',
-                'hint' => 'Enable the WhatsApp webhook and future outbound delivery features.',
-            ],
-            'whatsapp_public_base_url' => [
-                'type' => 'string',
-                'rules' => 'required|max_length[255]',
-                'default' => 'https://slams.cloud',
-                'hint' => 'Public site URL used to build the exact Meta callback URL.',
-            ],
-            'whatsapp_verify_token' => [
-                'type' => 'string',
-                'rules' => 'permit_empty|max_length[255]',
-                'default' => '',
-                'hint' => 'Shared secret Meta will send during webhook verification.',
-            ],
-            'whatsapp_access_token' => [
-                'type' => 'string',
-                'rules' => 'permit_empty|max_length[1024]',
-                'default' => '',
-                'hint' => 'Temporary or permanent access token for WhatsApp Cloud API sends.',
-            ],
-            'whatsapp_phone_number_id' => [
-                'type' => 'string',
-                'rules' => 'permit_empty|max_length[64]',
-                'default' => '',
-                'hint' => 'Phone Number ID from the Meta WhatsApp dashboard.',
-            ],
-            'whatsapp_business_account_id' => [
-                'type' => 'string',
-                'rules' => 'permit_empty|max_length[64]',
-                'default' => '',
-                'hint' => 'WhatsApp Business Account ID from Meta.',
-            ],
         ];
     }
 
@@ -433,12 +395,5 @@ class SettingsController extends BaseController
             'created_at' => $now,
             'updated_at' => $now,
         ]);
-    }
-
-    protected function normalizeSettingValue(string $value): string
-    {
-        $cleaned = preg_replace('/[\x{200B}-\x{200D}\x{2060}\x{FEFF}]/u', '', $value);
-
-        return trim($cleaned ?? $value);
     }
 }

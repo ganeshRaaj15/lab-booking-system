@@ -9,7 +9,6 @@ use App\Libraries\MaintenancePredictionService;
 use App\Libraries\NotificationService;
 use App\Libraries\StaffRoleService;
 use App\Libraries\StudentRoleService;
-use App\Libraries\WhatsAppConfiguration;
 use App\Models\SettingsModel;
 use CodeIgniter\Shield\Entities\User;
 
@@ -67,7 +66,6 @@ class NativeAdminSettingsController extends BaseController
             'status' => 'success',
             'settings' => $settings,
             'booking_slots' => array_values($bookingSlots),
-            'whatsapp' => (new WhatsAppConfiguration())->diagnostics(),
         ]);
     }
 
@@ -439,48 +437,6 @@ class NativeAdminSettingsController extends BaseController
                 'rules' => 'permit_empty|max_length[255]',
                 'default' => '',
                 'hint' => 'Optional HELO host if your SMTP provider requires a specific hostname.',
-            ],
-            'whatsapp_enabled' => [
-                'label' => 'WhatsApp Enabled',
-                'type' => 'bool',
-                'rules' => 'required|in_list[0,1]',
-                'default' => '0',
-                'hint' => 'Enable the WhatsApp webhook and outbound integration settings.',
-            ],
-            'whatsapp_public_base_url' => [
-                'label' => 'WhatsApp Public Base URL',
-                'type' => 'string',
-                'rules' => 'required|max_length[255]',
-                'default' => 'https://slams.cloud',
-                'hint' => 'Public base URL used to build the Meta callback URL.',
-            ],
-            'whatsapp_verify_token' => [
-                'label' => 'WhatsApp Verify Token',
-                'type' => 'string',
-                'rules' => 'permit_empty|max_length[255]',
-                'default' => '',
-                'hint' => 'Shared secret to paste into Meta webhook verification.',
-            ],
-            'whatsapp_access_token' => [
-                'label' => 'WhatsApp Access Token',
-                'type' => 'string',
-                'rules' => 'permit_empty|max_length[1024]',
-                'default' => '',
-                'hint' => 'Access token for WhatsApp Cloud API requests.',
-            ],
-            'whatsapp_phone_number_id' => [
-                'label' => 'WhatsApp Phone Number ID',
-                'type' => 'string',
-                'rules' => 'permit_empty|max_length[64]',
-                'default' => '',
-                'hint' => 'Phone Number ID from the Meta dashboard.',
-            ],
-            'whatsapp_business_account_id' => [
-                'label' => 'WhatsApp Business Account ID',
-                'type' => 'string',
-                'rules' => 'permit_empty|max_length[64]',
-                'default' => '',
-                'hint' => 'Business account ID from Meta.',
             ],
         ];
     }
