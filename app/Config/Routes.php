@@ -18,6 +18,7 @@ use App\Controllers\Public\ChatbotController;
 use App\Controllers\Public\QrController;
 use App\Controllers\Public\AppLinkController;
 use App\Controllers\Public\ExternalAccessController;
+use App\Controllers\Public\WhatsAppWebhookController;
 use App\Controllers\Admin\ExternalAccessAdminController;
 use App\Controllers\Api\NativeAuthController;
 use App\Controllers\Api\NativeBootstrapController;
@@ -91,6 +92,8 @@ use CodeIgniter\Shield\Controllers\ActionController;
 $routes->get('/', [HomeController::class, 'index']);
 $routes->get('/contact', [HomeController::class, 'contact']);
 $routes->get('open/booking/(:num)', [AppLinkController::class, 'booking/$1']);
+$routes->get('webhooks/whatsapp', [WhatsAppWebhookController::class, 'verify']);
+$routes->post('webhooks/whatsapp', [WhatsAppWebhookController::class, 'receive']);
 
 // ====================================================================
 // NATIVE APP API ROUTES

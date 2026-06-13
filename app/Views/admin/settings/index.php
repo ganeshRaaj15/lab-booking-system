@@ -37,6 +37,24 @@ $settingMeta = [
     'email_smtp_helo_host' => [
         'label' => 'SMTP HELO Host',
     ],
+    'whatsapp_enabled' => [
+        'label' => 'WhatsApp Enabled',
+    ],
+    'whatsapp_public_base_url' => [
+        'label' => 'WhatsApp Public Base URL',
+    ],
+    'whatsapp_verify_token' => [
+        'label' => 'WhatsApp Verify Token',
+    ],
+    'whatsapp_access_token' => [
+        'label' => 'WhatsApp Access Token',
+    ],
+    'whatsapp_phone_number_id' => [
+        'label' => 'WhatsApp Phone Number ID',
+    ],
+    'whatsapp_business_account_id' => [
+        'label' => 'WhatsApp Business Account ID',
+    ],
 ];
 ?>
 
@@ -169,9 +187,9 @@ $settingMeta = [
                                            id="<?= esc($key) ?>"
                                            value="<?= esc(old($key, $row['value'])) ?>"
                                            class="form-control form-control-glass"
-                                           type="<?= $key === 'email_smtp_pass' ? 'password' : 'text' ?>"
-                                           <?= $key === 'email_smtp_pass' ? 'autocomplete="new-password"' : '' ?>
-                                           <?= in_array($key, ['email_from_email', 'email_from_name', 'email_mail_path', 'email_smtp_host', 'email_smtp_user', 'email_smtp_pass', 'email_smtp_helo_host'], true) ? '' : 'required' ?>>
+                                           type="<?= in_array($key, ['email_smtp_pass', 'whatsapp_access_token'], true) ? 'password' : 'text' ?>"
+                                           <?= in_array($key, ['email_smtp_pass', 'whatsapp_access_token'], true) ? 'autocomplete="new-password"' : '' ?>
+                                           <?= in_array($key, ['email_from_email', 'email_from_name', 'email_mail_path', 'email_smtp_host', 'email_smtp_user', 'email_smtp_pass', 'email_smtp_helo_host', 'whatsapp_verify_token', 'whatsapp_access_token', 'whatsapp_phone_number_id', 'whatsapp_business_account_id'], true) ? '' : 'required' ?>>
                                 <?php endif; ?>
                                 
                                 <div class="form-hint">
@@ -257,6 +275,67 @@ $settingMeta = [
                 <div class="fw-semibold mb-2">Setup</div>
                 <div class="small text-muted mb-3">Run the key generator once, copy the output to `.env`, restart the app, then enable push from a signed-in device.</div>
                 <pre class="bg-dark text-light rounded-3 p-3 small mb-0"><code>php spark slams:generate-web-push-keys mailto:lab-admin@example.com</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-card mb-5">
+        <div class="settings-card-header">
+            <h5>
+                <i class="bi bi-whatsapp"></i>
+                WhatsApp Webhooks
+            </h5>
+        </div>
+
+        <div class="card-body p-4">
+            <div class="info-box">
+                <p class="d-flex align-items-center mb-0">
+                    <i class="bi bi-info-circle-fill me-2" style="color: #3b82f6;"></i>
+                    Deploy these exact values to `slams.cloud`, then paste the callback URL and verify token into the Meta webhook form.
+                </p>
+            </div>
+
+            <?php $whatsApp = $whatsApp ?? ['enabled' => false, 'callback_url' => 'https://slams.cloud/webhooks/whatsapp', 'verify_token' => '', 'has_access_token' => false, 'phone_number_id' => '', 'business_account_id' => '', 'public_base_url' => 'https://slams.cloud']; ?>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="form-group-glass h-100">
+                        <label><i class="bi bi-shield-check"></i> Status</label>
+                        <div class="pt-2">
+                            <?php if (! empty($whatsApp['enabled'])): ?>
+                                <span class="badge bg-success fs-6">Enabled</span>
+                                <div class="form-hint mt-2">Webhook verification and event intake are enabled in settings.</div>
+                            <?php else: ?>
+                                <span class="badge bg-warning text-dark fs-6">Disabled</span>
+                                <div class="form-hint mt-2">Meta can still verify the endpoint, but outbound WhatsApp features remain disabled.</div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="form-group-glass h-100">
+                        <label><i class="bi bi-link-45deg"></i> Callback URL</label>
+                        <div class="pt-2 small text-muted text-break">
+                            <code><?= esc($whatsApp['callback_url'] ?? 'https://slams.cloud/webhooks/whatsapp') ?></code>
+                        </div>
+                        <div class="form-hint mt-2">Use this exact public HTTPS endpoint in Meta.</div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="form-group-glass h-100">
+                        <label><i class="bi bi-key"></i> Verify Token</label>
+                        <div class="pt-2 small text-muted text-break">
+                            <code><?= esc($whatsApp['verify_token'] ?? '') ?></code>
+                        </div>
+                        <div class="form-hint mt-2">Paste this exact token into the Meta verification form.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-top pt-4 mt-4">
+                <div class="fw-semibold mb-2">Notes</div>
+                <div class="small text-muted">The webhook route is `GET/POST /webhooks/whatsapp`. Incoming events are stored in `whatsapp_webhook_events` after deployment and migration.</div>
             </div>
         </div>
     </div>

@@ -101,7 +101,7 @@ class Filters extends BaseFilters
     public array $globals = [
         'before' => [
             'honeypot'     => ['except' => ['api/*']],
-            'csrf'         => ['except' => ['api/native/*']],
+            'csrf'         => ['except' => ['api/native/*', 'webhooks/whatsapp']],
             'invalidchars',
         ],
         'after' => [
