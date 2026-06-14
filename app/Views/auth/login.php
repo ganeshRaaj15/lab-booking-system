@@ -9,13 +9,14 @@
 <?= $this->endSection(); ?>
 
 <?= $this->section('content'); ?>
-<?= view('auth/_auth_shell', [
-    'activeMode' => 'login',
-    'loginError' => session('error'),
-    'loginErrors' => (array) (session('errors') ?? []),
-    'loginSuccess' => session('success'),
-    'registerErrors' => [],
-]); ?>
+<?php
+$activeMode = 'login';
+$loginError = session('error');
+$loginErrors = (array) (session('errors') ?? []);
+$loginSuccess = session('success');
+$registerErrors = [];
+?>
+<?= $this->include('auth/auth_shell'); ?>
 <?= $this->endSection(); ?>
 
 <?= $this->section('scripts'); ?>
