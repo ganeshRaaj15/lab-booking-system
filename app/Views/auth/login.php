@@ -2,105 +2,257 @@
     <?php header('Location: ' . site_url('/dashboard')); exit; ?>
 <?php endif; ?>
 
+<?php
+$heroFallbackUrl = base_url('images/fkmp/FKMP.jpeg');
+$heroDarkVideoUrl = base_url('images/uthm-aerial-compressed.mp4');
+$heroLightVideoUrl = base_url('images/day-time-aerial-compressed.mp4');
+$loginErrors = array_values(array_filter((array) (session('errors') ?? [])));
+?>
+
 <?= $this->extend('layouts/main_user'); ?>
+
+<?= $this->section('styles'); ?>
+<link href="<?= slams_asset('css/auth.css') ?>" rel="stylesheet">
+<?= $this->endSection(); ?>
+
 <?= $this->section('content'); ?>
-
-<div class="login-page">
-    <div class="login-card">
-        <div class="login-header">
-            <div class="login-logo">
-                <i class="bi bi-building-gear"></i>
-            </div>
-            <h1 class="login-title">FKMP Smart Lab</h1>
-            <p class="login-subtitle">Login to access the laboratory booking system.</p>
+<div
+    class="auth-shell"
+    data-auth-shell
+    data-auth-mode="login"
+    data-login-url="<?= esc(url_to('login'), 'attr') ?>"
+    data-register-url="<?= esc(url_to('register'), 'attr') ?>"
+>
+    <section class="auth-showcase slams-reveal is-visible" style="--slams-hero-fallback-image: url('<?= esc($heroFallbackUrl, 'attr') ?>');">
+        <div class="video-background auth-showcase-media" aria-hidden="true">
+            <video class="hero-video hero-video-dark" autoplay muted loop playsinline webkit-playsinline preload="auto" poster="<?= esc($heroFallbackUrl, 'attr') ?>">
+                <source src="<?= esc($heroDarkVideoUrl, 'attr') ?>" type="video/mp4">
+            </video>
+            <video class="hero-video hero-video-light" autoplay muted loop playsinline webkit-playsinline preload="auto" poster="<?= esc($heroFallbackUrl, 'attr') ?>">
+                <source src="<?= esc($heroLightVideoUrl, 'attr') ?>" type="video/mp4">
+            </video>
         </div>
 
-        <?php if (session()->has('error')): ?>
-            <div class="alert alert-danger">
-                <i class="bi bi-exclamation-triangle me-2"></i>
-                <?= session('error') ?>
-            </div>
-        <?php endif; ?>
+        <div class="auth-showcase-overlay" aria-hidden="true"></div>
 
-        <?php if (session()->has('errors')): ?>
-            <div class="alert alert-danger">
-                <i class="bi bi-exclamation-triangle me-2"></i>
-                <?php foreach ((array) session('errors') as $error): ?>
-                    <div><?= esc($error) ?></div>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
-
-        <?php if (session()->has('success')): ?>
-            <div class="alert alert-success">
-                <i class="bi bi-check-circle me-2"></i>
-                <?= session('success') ?>
-            </div>
-        <?php endif; ?>
-
-        <form action="<?= url_to('login') ?>" method="post" class="login-form">
-            <?= csrf_field() ?>
-
-            <div class="mb-3">
-                <label class="form-label">Email Address</label>
-                <input type="email" name="email" class="form-control form-control-lg" placeholder="Enter your email address" required autofocus>
-                <small class="text-muted mt-1 d-block">Use your institutional email.</small>
+        <div class="auth-showcase-content">
+            <div class="auth-showcase-copy" data-auth-copy="login">
+                <span class="auth-showcase-chip">FKMP UTHM</span>
+                <h1>Sign in to SLAMS</h1>
+                <p>View bookings, approvals, and equipment access from one place.</p>
             </div>
 
-            <div class="mb-3">
-                <label class="form-label">Password</label>
-                <div class="password-wrapper">
-                    <input type="password" name="password" id="passwordInput" class="form-control form-control-lg" placeholder="Enter your password" required>
-                    <button type="button" class="toggle-password" id="togglePassword" aria-label="Show password">
-                        <i class="bi bi-eye-slash"></i>
+            <div class="auth-showcase-copy" data-auth-copy="register">
+                <span class="auth-showcase-chip">New to SLAMS</span>
+                <h1>Create your account</h1>
+                <p>Register with your institutional email to start booking labs and assets.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="auth-panel slams-reveal is-visible">
+        <div class="auth-panel-header">
+            <div class="auth-panel-badge">
+                <span class="auth-panel-badge-icon"><i class="bi bi-fingerprint"></i></span>
+                <div>
+                    <div class="auth-panel-badge-title">SLAMS</div>
+                    <div class="auth-panel-badge-copy">Smart Laboratory and Asset Management System</div>
+                </div>
+            </div>
+
+            <div class="auth-mode-switch" role="tablist" aria-label="Authentication mode">
+                <button type="button" class="auth-mode-switch-btn is-active" data-auth-target="login" role="tab" aria-selected="true">
+                    Sign in
+                </button>
+                <button type="button" class="auth-mode-switch-btn" data-auth-target="register" role="tab" aria-selected="false">
+                    Create account
+                </button>
+            </div>
+        </div>
+
+        <div class="auth-form-stage" data-auth-stage>
+            <div class="auth-form-view is-active" data-auth-view="login" aria-hidden="false">
+                <div class="auth-form-copy">
+                    <h2>Welcome back</h2>
+                    <p>Sign in with your institutional email to continue.</p>
+                </div>
+
+                <?php if (session()->has('error')): ?>
+                    <div class="alert alert-danger auth-alert" role="alert">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <?= esc(session('error')) ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (! empty($loginErrors)): ?>
+                    <div class="alert alert-danger auth-alert" role="alert">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <div>
+                            <?php foreach ($loginErrors as $error): ?>
+                                <div><?= esc($error) ?></div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (session()->has('success')): ?>
+                    <div class="alert alert-success auth-alert" role="alert">
+                        <i class="bi bi-check-circle me-2"></i>
+                        <?= esc(session('success')) ?>
+                    </div>
+                <?php endif; ?>
+
+                <form action="<?= url_to('login') ?>" method="post" class="auth-form">
+                    <?= csrf_field() ?>
+
+                    <div class="auth-field">
+                        <label class="form-label" for="loginEmail">Email Address</label>
+                        <input
+                            type="email"
+                            name="email"
+                            id="loginEmail"
+                            class="form-control form-control-lg"
+                            placeholder="Enter your email address"
+                            value="<?= esc(old('email'), 'attr') ?>"
+                            required
+                            autofocus
+                        >
+                        <small class="auth-field-hint">Use your institutional email.</small>
+                    </div>
+
+                    <div class="auth-field">
+                        <label class="form-label" for="loginPassword">Password</label>
+                        <div class="password-wrapper">
+                            <input
+                                type="password"
+                                name="password"
+                                id="loginPassword"
+                                class="form-control form-control-lg"
+                                placeholder="Enter your password"
+                                required
+                            >
+                            <button type="button" class="toggle-password" data-password-toggle="loginPassword" aria-label="Show password">
+                                <i class="bi bi-eye-slash"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="auth-form-row">
+                        <div class="form-check">
+                            <input type="checkbox" name="remember" id="remember" class="form-check-input" <?= old('remember') ? 'checked' : '' ?>>
+                            <label for="remember" class="form-check-label">Remember me</label>
+                        </div>
+                        <a href="<?= url_to('magic-link') ?>" class="auth-inline-link">
+                            <i class="bi bi-link-45deg"></i>
+                            Use a sign-in link
+                        </a>
+                    </div>
+
+                    <button type="submit" class="auth-submit-btn">
+                        <i class="bi bi-box-arrow-in-right"></i>
+                        Sign in to Account
                     </button>
-                </div>
+
+                    <p class="auth-form-note">
+                        Need an account?
+                        <a href="<?= url_to('register') ?>" data-auth-toggle="register">Create one here</a>
+                    </p>
+                </form>
             </div>
 
-            <div class="login-options">
-                <div class="form-check">
-                    <input type="checkbox" name="remember" id="remember" class="form-check-input">
-                    <label for="remember" class="form-check-label">Remember me</label>
+            <div class="auth-form-view" data-auth-view="register" aria-hidden="true">
+                <div class="auth-form-copy">
+                    <h2>Create account</h2>
+                    <p>Set up your credentials to start booking laboratories and equipment.</p>
                 </div>
-                <a href="<?= url_to('magic-link') ?>" class="magic-link">
-                    <i class="bi bi-key me-1"></i>Forgot password?
-                </a>
+
+                <form action="<?= url_to('register') ?>" method="post" class="auth-form">
+                    <?= csrf_field() ?>
+
+                    <div class="auth-field">
+                        <label class="form-label" for="registerUsername">Username</label>
+                        <input
+                            type="text"
+                            name="username"
+                            id="registerUsername"
+                            class="form-control form-control-lg"
+                            placeholder="Choose a username"
+                            value="<?= esc(old('username'), 'attr') ?>"
+                            required
+                        >
+                    </div>
+
+                    <div class="auth-field">
+                        <label class="form-label" for="registerEmail">Email Address</label>
+                        <input
+                            type="email"
+                            name="email"
+                            id="registerEmail"
+                            class="form-control form-control-lg"
+                            placeholder="you@example.com"
+                            value="<?= esc(old('email'), 'attr') ?>"
+                            required
+                        >
+                    </div>
+
+                    <div class="auth-field">
+                        <label class="form-label" for="registerPassword">Password</label>
+                        <div class="password-wrapper">
+                            <input
+                                type="password"
+                                id="registerPassword"
+                                name="password"
+                                class="form-control form-control-lg"
+                                placeholder="Create a password"
+                                required
+                                data-password-criteria-input
+                            >
+                            <button type="button" class="toggle-password" data-password-toggle="registerPassword" aria-label="Show password">
+                                <i class="bi bi-eye-slash"></i>
+                            </button>
+                        </div>
+                        <div class="auth-password-criteria d-none" data-password-criteria>
+                            <span class="auth-password-rule" data-rule="length"><i class="bi bi-circle"></i>8+ characters</span>
+                            <span class="auth-password-rule" data-rule="upper"><i class="bi bi-circle"></i>Uppercase</span>
+                            <span class="auth-password-rule" data-rule="lower"><i class="bi bi-circle"></i>Lowercase</span>
+                            <span class="auth-password-rule" data-rule="number"><i class="bi bi-circle"></i>Number</span>
+                            <span class="auth-password-rule" data-rule="special"><i class="bi bi-circle"></i>Special character</span>
+                        </div>
+                    </div>
+
+                    <div class="auth-field">
+                        <label class="form-label" for="registerPasswordConfirm">Confirm Password</label>
+                        <div class="password-wrapper">
+                            <input
+                                type="password"
+                                id="registerPasswordConfirm"
+                                name="password_confirm"
+                                class="form-control form-control-lg"
+                                placeholder="Re-enter password"
+                                required
+                            >
+                            <button type="button" class="toggle-password" data-password-toggle="registerPasswordConfirm" aria-label="Show password">
+                                <i class="bi bi-eye-slash"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="auth-submit-btn">
+                        <i class="bi bi-person-plus"></i>
+                        Create Account
+                    </button>
+
+                    <p class="auth-form-note">
+                        Already have an account?
+                        <a href="<?= url_to('login') ?>" data-auth-toggle="login">Sign in here</a>
+                    </p>
+                </form>
             </div>
-
-            <button type="submit" class="login-btn">
-                <i class="bi bi-box-arrow-in-right me-2"></i>
-                Login to Account
-            </button>
-        </form>
-
-        <div class="auth-footer">
-            <p class="mb-2">Do not have an account yet?</p>
-            <a href="<?= url_to('register') ?>" class="register-btn">
-                <i class="bi bi-person-plus me-1"></i>
-                Create New Account
-            </a>
         </div>
-    </div>
+    </section>
 </div>
+<?= $this->endSection(); ?>
 
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    const togglePassword = document.getElementById("togglePassword");
-    const passwordInput = document.getElementById("passwordInput");
-
-    if (!togglePassword || !passwordInput) {
-        return;
-    }
-
-    togglePassword.addEventListener("click", function () {
-        const isHidden = passwordInput.type === "password";
-        passwordInput.type = isHidden ? "text" : "password";
-        togglePassword.setAttribute("aria-label", isHidden ? "Hide password" : "Show password");
-        togglePassword.querySelector("i").classList.toggle("bi-eye", isHidden);
-        togglePassword.querySelector("i").classList.toggle("bi-eye-slash", !isHidden);
-        passwordInput.focus();
-    });
-});
-</script>
-
+<?= $this->section('scripts'); ?>
+<script src="<?= slams_asset('js/auth-ui.js') ?>"></script>
 <?= $this->endSection(); ?>
