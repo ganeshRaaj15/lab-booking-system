@@ -1,3 +1,4 @@
+<?php helper(['url', 'asset', 'auth']); ?>
 <?php if (auth()->loggedIn()): ?>
     <?php header('Location: ' . site_url('/dashboard')); exit; ?>
 <?php endif; ?>
