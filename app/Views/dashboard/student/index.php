@@ -17,6 +17,7 @@ $nextBooking       = $nextBooking ?? null;
 $personalizedHints = $personalizedHints ?? [];
 $dashboardLabel    = $dashboardLabel ?? 'Student Dashboard';
 $filters           = $filters ?? ['q' => '', 'status' => '', 'date_from' => '', 'date_to' => ''];
+$dashboardBasePath = ($user && $user->inGroup('staff')) ? '/dashboard/staff' : '/dashboard/student';
 ?>
 <?= $this->extend('layouts/main_user') ?>
 <?= $this->section('content') ?>
@@ -367,7 +368,7 @@ $filters           = $filters ?? ['q' => '', 'status' => '', 'date_from' => '', 
         <div class="card-body">
 
             <!-- FILTER BAR -->
-            <form method="get" action="/dashboard/student" class="mb-3 d-flex flex-wrap gap-2 align-items-end">
+            <form method="get" action="<?= esc($dashboardBasePath) ?>" class="mb-3 d-flex flex-wrap gap-2 align-items-end">
                 <div>
                     <label class="small text-muted">Search</label>
                     <input type="text" name="q" id="filterSearch" class="form-control form-control-sm" value="<?= esc($filters['q']) ?>" placeholder="Lab, room, or activity">
@@ -398,7 +399,7 @@ $filters           = $filters ?? ['q' => '', 'status' => '', 'date_from' => '', 
                     <i class="bi bi-funnel me-1"></i> Apply Filters
                 </button>
 
-                <a id="clearFilters" href="/dashboard/student" class="btn btn-outline-secondary btn-sm">
+                <a id="clearFilters" href="<?= esc($dashboardBasePath) ?>" class="btn btn-outline-secondary btn-sm">
                     Reset
                 </a>
 
@@ -426,7 +427,7 @@ $filters           = $filters ?? ['q' => '', 'status' => '', 'date_from' => '', 
                                 <th>Lab</th>
                                 <th>Activity</th>
                                 <th>Status</th>
-                                <th>Actions</th>
+                                <th class="d-none d-lg-table-cell">Actions</th>
                             </tr>
                         </thead>
 
@@ -445,6 +446,7 @@ $filters           = $filters ?? ['q' => '', 'status' => '', 'date_from' => '', 
                                         <?php
                                             $isPendingPic = $b['status'] === 'PENDING' && empty($b['approved_by_pic']);
                                             $isPendingMgr = $b['status'] === 'PENDING' && !empty($b['approved_by_pic']);
+                                            $canEdit = ! empty($b['can_edit']);
                                             if ($isPendingPic) {
                                                 $badge = 'warning';
                                                 $label = 'Awaiting PIC';
@@ -465,10 +467,18 @@ $filters           = $filters ?? ['q' => '', 'status' => '', 'date_from' => '', 
                                         <?php if ($sub): ?>
                                             <div class="small text-muted mt-1"><?= esc($sub) ?></div>
                                         <?php endif; ?>
+                                        <?php if ($canEdit): ?>
+                                            <div class="d-lg-none mt-2" onclick="event.stopPropagation()">
+                                                <a href="<?= esc($dashboardBasePath) ?>/booking-edit/<?= (int) $b['id'] ?>"
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-pencil me-1"></i>Edit Booking
+                                                </a>
+                                            </div>
+                                        <?php endif; ?>
                                     </td>
-                                    <td onclick="event.stopPropagation()">
-                                        <?php if ($isPendingPic): ?>
-                                            <a href="/dashboard/student/booking-edit/<?= (int) $b['id'] ?>"
+                                    <td class="d-none d-lg-table-cell" onclick="event.stopPropagation()">
+                                        <?php if ($canEdit): ?>
+                                            <a href="<?= esc($dashboardBasePath) ?>/booking-edit/<?= (int) $b['id'] ?>"
                                                class="btn btn-sm btn-outline-primary">
                                                 <i class="bi bi-pencil me-1"></i>Edit
                                             </a>
@@ -552,6 +562,7 @@ $filters           = $filters ?? ['q' => '', 'status' => '', 'date_from' => '', 
 <script>
 const csrfHeaderName = "X-CSRF-TOKEN";
 const csrfTokenValue = "<?= csrf_hash() ?>";
+const dashboardBasePath = <?= json_encode($dashboardBasePath) ?>;
 
 function bookingDetailsSkeleton() {
     return `
@@ -626,7 +637,7 @@ document.querySelectorAll(".booking-row").forEach(row => {
         body.innerHTML = bookingDetailsSkeleton();
         modal.show();
 
-        fetch(`/dashboard/student/booking-details/${id}`, {
+        fetch(`${dashboardBasePath}/booking-details/${id}`, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
             })
             .then(r => r.json())
@@ -705,7 +716,7 @@ document.querySelectorAll(".booking-row").forEach(row => {
                 cancelBtn.onclick = () => {
                     if (!confirm("Are you sure you want to cancel this booking?")) return;
 
-                    fetch(`/dashboard/student/cancel-booking/${b.id}`, {
+                    fetch(`${dashboardBasePath}/cancel-booking/${b.id}`, {
                         method: "POST",
                         headers: {
                             "X-Requested-With": "XMLHttpRequest",

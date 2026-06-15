@@ -155,7 +155,7 @@ $requestModel = $requestModel ?? null;
                             <th>Preferred Schedule</th>
                             <th>Status</th>
                             <th>Review Notes</th>
-                            <th class="text-end">Action</th>
+                            <th class="text-end d-none d-lg-table-cell">Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -184,6 +184,11 @@ $requestModel = $requestModel ?? null;
                                 <td><?= $schedule ?></td>
                                 <td>
                                     <span class="badge bg-<?= esc($badgeClass) ?>"><?= esc($statusLabels[$status] ?? ucwords(str_replace('_', ' ', $status))) ?></span>
+                                    <?php if ($canEdit): ?>
+                                        <div class="d-lg-none mt-2">
+                                            <a href="/dashboard/external/request/edit/<?= esc($request['id']) ?>" class="btn btn-sm btn-outline-primary">Update Request</a>
+                                        </div>
+                                    <?php endif; ?>
                                 </td>
                                 <td>
                                     <?php if ($latestNote !== ''): ?>
@@ -192,7 +197,7 @@ $requestModel = $requestModel ?? null;
                                         <span class="text-muted small">No notes yet.</span>
                                     <?php endif; ?>
                                 </td>
-                                <td class="text-end">
+                                <td class="text-end d-none d-lg-table-cell">
                                     <?php if ($canEdit): ?>
                                         <a href="/dashboard/external/request/edit/<?= esc($request['id']) ?>" class="btn btn-sm btn-outline-primary">Update</a>
                                     <?php else: ?>

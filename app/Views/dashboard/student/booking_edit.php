@@ -55,10 +55,16 @@ $currentPdf = basename((string) ($booking['pdf_path'] ?? ''));
             </div>
         </div>
 
+        <?php if (!empty($booking['approved_by_pic'])): ?>
+            <div class="alert alert-info">
+                Editing this pending booking will send it back through the approval flow from the PIC stage.
+            </div>
+        <?php endif; ?>
+
         <div id="wizardErrorArea"></div>
 
         <form id="editBookingForm"
-              action="/dashboard/student/booking-edit/<?= $bookingId ?>"
+              action="<?= esc($dashUrl) ?>/booking-edit/<?= $bookingId ?>"
               method="post"
               enctype="multipart/form-data">
             <?= csrf_field() ?>

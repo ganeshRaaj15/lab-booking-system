@@ -13,6 +13,12 @@ use App\Models\LabReservationModel;
 
 class StudentDashboard extends BaseController
 {
+    private function canEditBookingRecord(?array $booking): bool
+    {
+        return is_array($booking)
+            && (string) ($booking['status'] ?? '') === 'PENDING';
+    }
+
     private function userRequiresSupervisorDetails($user): bool
     {
         return $user !== null
@@ -66,6 +72,11 @@ class StudentDashboard extends BaseController
             ->orderBy('bookings.date', 'DESC')
             ->orderBy('bookings.start_time', 'ASC')
             ->findAll();
+
+        $bookings = array_map(function (array $booking): array {
+            $booking['can_edit'] = $this->canEditBookingRecord($booking);
+            return $booking;
+        }, $bookings);
 
         // Stats
         $stats = [
@@ -270,7 +281,7 @@ class StudentDashboard extends BaseController
             ->where('bookings.user_id', $userId)
             ->first();
 
-        if (! $booking || $booking['status'] !== 'PENDING' || ! empty($booking['approved_by_pic'])) {
+        if (! $this->canEditBookingRecord($booking)) {
             return redirect()->back()->with('error', 'This booking cannot be edited.');
         }
 
@@ -303,7 +314,7 @@ class StudentDashboard extends BaseController
 
         $booking = $bookingModel->where('id', $id)->where('user_id', $userId)->first();
 
-        if (! $booking || $booking['status'] !== 'PENDING' || ! empty($booking['approved_by_pic'])) {
+        if (! $this->canEditBookingRecord($booking)) {
             return redirect()->back()->with('error', 'This booking cannot be edited.');
         }
 
