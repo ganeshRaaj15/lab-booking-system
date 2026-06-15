@@ -6,6 +6,8 @@
 
     var publicKey = button.dataset.pushPublicKey || "";
     var csrfMeta = document.getElementById("slams-csrf-meta");
+    var label = button.querySelector("[data-push-label]");
+    var statusCopy = document.querySelector("[data-push-status-copy]");
     var busy = false;
 
     function showToast(message, type) {
@@ -27,8 +29,29 @@
         var icon = button.querySelector("[data-push-icon]");
         button.setAttribute("aria-pressed", enabled ? "true" : "false");
         button.title = enabled ? "Disable push notifications" : "Enable push notifications";
+        button.classList.remove("is-blocked");
+        button.classList.toggle("is-enabled", enabled);
         if (icon) {
             icon.className = enabled ? "bi bi-bell-fill" : "bi bi-bell";
+        }
+        if (label) {
+            label.textContent = enabled ? "Disable" : "Enable";
+        }
+        if (statusCopy) {
+            statusCopy.textContent = enabled ? "On for this device." : "Off for this device.";
+        }
+    }
+
+    function setUnavailableState(message) {
+        button.disabled = true;
+        button.classList.remove("is-enabled");
+        button.classList.add("is-blocked");
+        button.title = message;
+        if (label) {
+            label.textContent = "Unavailable";
+        }
+        if (statusCopy) {
+            statusCopy.textContent = message;
         }
     }
 
@@ -105,8 +128,7 @@
 
     async function refreshState() {
         if (!("Notification" in window) || !("PushManager" in window)) {
-            button.disabled = true;
-            button.title = "Push notifications are not supported on this device";
+            setUnavailableState("Push notifications are not supported on this device.");
             return;
         }
 
@@ -114,8 +136,7 @@
             var subscription = await currentSubscription();
             setButtonState(!!subscription);
         } catch (_error) {
-            button.disabled = true;
-            button.title = "Push notifications are not available right now";
+            setUnavailableState("Push notifications are not available right now.");
         }
     }
 

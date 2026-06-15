@@ -1,8 +1,4 @@
 <?php
-use App\Models\NotificationModel;
-
-$userNavNotificationItems = [];
-$userNavUnreadCount = 0;
 $isLoggedIn = function_exists('auth') && auth()->loggedIn();
 $user = $isLoggedIn ? auth()->user() : null;
 $currentPath = trim((string) service('request')->getUri()->getPath(), '/');
@@ -143,52 +139,6 @@ $renderNavLink = static function (array $item, string $itemClass = 'nav-item me-
     </li>
     <?php
 };
-
-$renderNotificationNav = static function (bool $isActive = false, string $itemClass = 'nav-item me-2 dropdown notification-nav-item') use (&$userNavUnreadCount, &$userNavNotificationItems): void {
-    ?>
-    <li class="<?= esc($itemClass) ?>">
-        <a class="nav-link position-relative notification-nav-link<?= $isActive ? ' active' : '' ?>" href="#" data-bs-toggle="dropdown" aria-expanded="false">
-            <i class="bi bi-bell me-1"></i> Notifications
-            <?php if ($userNavUnreadCount > 0): ?>
-                <span class="notification-bubble" data-nav-notif-bubble><?= esc($userNavUnreadCount > 99 ? '99+' : (string) $userNavUnreadCount) ?></span>
-            <?php else: ?>
-                <span class="notification-bubble" data-nav-notif-bubble style="display:none">0</span>
-            <?php endif; ?>
-            <span class="nav-indicator"></span>
-        </a>
-        <div class="dropdown-menu dropdown-menu-end notification-menu p-0">
-            <div class="dropdown-header d-flex justify-content-between align-items-center">
-                <div>
-                    <div class="fw-semibold text-dark">Notifications</div>
-                    <div class="small text-muted"><span data-nav-notif-count><?= esc((int) $userNavUnreadCount) ?></span> unread</div>
-                </div>
-                <a href="/dashboard/notifications" class="small text-decoration-none">View all</a>
-            </div>
-            <?php if (empty($userNavNotificationItems)): ?>
-                <div class="px-3 py-4 text-center text-muted small">No notifications yet.</div>
-            <?php else: ?>
-                <?php foreach ($userNavNotificationItems as $item): ?>
-                    <a href="/dashboard/notifications" class="notification-item text-decoration-none">
-                        <div class="d-flex align-items-start gap-2">
-                            <span class="badge <?= (int) ($item['is_read'] ?? 0) === 0 ? 'bg-primary' : 'bg-secondary' ?> mt-1"><?= (int) ($item['is_read'] ?? 0) === 0 ? 'New' : 'Read' ?></span>
-                            <div class="flex-grow-1">
-                                <div class="fw-semibold small text-dark"><?= esc($item['title'] ?? 'Notification') ?></div>
-                                <div class="small text-muted"><?= esc($item['message'] ?? '') ?></div>
-                            </div>
-                        </div>
-                    </a>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </div>
-    </li>
-    <?php
-};
-
-if (function_exists('auth') && auth()->loggedIn()) {
-    $notificationModel = new NotificationModel();
-    $userNavUnreadCount = $notificationModel->where('user_id', $user->id)->where('is_read', 0)->countAllResults();
-    $userNavNotificationItems = $notificationModel->where('user_id', $user->id)->orderBy('created_at', 'DESC')->findAll(5);
-}
 ?>
 
 <nav class="navbar navbar-expand-lg glass-navbar py-2">
@@ -216,8 +166,6 @@ if (function_exists('auth') && auth()->loggedIn()) {
                     <?php endforeach; ?>
 
                     <?php if ($isLoggedIn): ?>
-                        <?php $renderNotificationNav($pathMatches(['dashboard/notifications*'])); ?>
-
                         <?php if (!($user->inGroup('pic') || $user->inGroup('manager'))): ?>
                             <li class="nav-item me-2">
                                 <a href="/dashboard/profile" class="nav-link position-relative<?= $pathMatches(['dashboard/profile*']) ? ' active' : '' ?>">
@@ -261,8 +209,6 @@ if (function_exists('auth') && auth()->loggedIn()) {
 
                             <ul class="navbar-nav slams-tiered-navbar__utilities">
                                 <?php if ($isLoggedIn): ?>
-                                    <?php $renderNotificationNav($pathMatches(['dashboard/notifications*']), 'nav-item me-2 dropdown notification-nav-item'); ?>
-
                                     <?php if (!($user->inGroup('pic') || $user->inGroup('manager'))): ?>
                                         <li class="nav-item me-2 d-flex align-items-center">
                                             <a href="/dashboard/profile" class="slams-navbar-app-btn slams-navbar-profile-btn <?= $pathMatches(['dashboard/profile*']) ? 'is-active' : '' ?>" aria-label="Profile" title="Profile">
@@ -296,8 +242,6 @@ if (function_exists('auth') && auth()->loggedIn()) {
                         <?php endforeach; ?>
 
                         <?php if ($isLoggedIn): ?>
-                            <?php $renderNotificationNav($pathMatches(['dashboard/notifications*']), 'nav-item me-2 dropdown notification-nav-item'); ?>
-
                             <?php if (!($user->inGroup('pic') || $user->inGroup('manager'))): ?>
                                 <li class="nav-item me-2 d-none d-lg-flex align-items-center">
                                     <a href="/dashboard/profile" class="slams-navbar-app-btn slams-navbar-profile-btn <?= $pathMatches(['dashboard/profile*']) ? 'is-active' : '' ?>" aria-label="Profile" title="Profile">
@@ -319,32 +263,3 @@ if (function_exists('auth') && auth()->loggedIn()) {
         </div>
     </div>
 </nav>
-
-<?php if ($isLoggedIn): ?>
-<script>
-(function () {
-    function updateBadge(n) {
-        const label = n > 99 ? '99+' : String(n);
-        document.querySelectorAll('[data-nav-notif-bubble]').forEach(function (bubble) {
-            bubble.textContent = label;
-            bubble.style.display = n > 0 ? '' : 'none';
-        });
-
-        document.querySelectorAll('[data-nav-notif-count]').forEach(function (countEl) {
-            countEl.textContent = String(n);
-        });
-    }
-
-    function poll() {
-        fetch('/dashboard/notifications/count', { credentials: 'same-origin' })
-            .then(function (r) { return r.ok ? r.json() : null; })
-            .then(function (data) { if (data && typeof data.unread === 'number') updateBadge(data.unread); })
-            .catch(function () {});
-    }
-
-    window.slamsRefreshNotificationBadge = poll;
-    window.addEventListener('slams:notifications-refresh', poll);
-    setInterval(poll, 30000);
-}());
-</script>
-<?php endif; ?>
