@@ -47,6 +47,27 @@ class BookingController extends BaseController
         return $this->slotService->findMatchingDefinition($startTime, $endTime);
     }
 
+    protected function userRequiresSupervisorDetails($user): bool
+    {
+        return $user !== null
+            && method_exists($user, 'inGroup')
+            && $user->inGroup('student')
+            && ! $user->inGroup('staff');
+    }
+
+    protected function supervisorValidationError(bool $required, string $name, string $email, string $phone): ?string
+    {
+        if ($required && ($name === '' || $email === '' || $phone === '')) {
+            return 'Supervisor name, email, and phone are required for student bookings.';
+        }
+
+        if ($email !== '' && ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return 'Supervisor email address is invalid.';
+        }
+
+        return null;
+    }
+
     /*
     |--------------------------------------------------------------------------
     | ASSET STRING PARSER "1:2,5:1" => [1=>2,5=>1]
@@ -464,6 +485,8 @@ class BookingController extends BaseController
             return $this->errorJson('External users cannot submit bookings directly. Please use the lab access request flow instead.');
         }
 
+        $requiresSupervisor = $this->userRequiresSupervisorDetails($user);
+
         $userType = 'UTHM';
         $labId = (int) $this->request->getPost('lab_id');
         $serviceId = (int) $this->request->getPost('service_id');
@@ -474,6 +497,10 @@ class BookingController extends BaseController
         $supervisorName = trim((string) $this->request->getPost('supervisor_name'));
         $supervisorEmail = trim((string) $this->request->getPost('supervisor_email'));
         $supervisorPhone = trim((string) $this->request->getPost('supervisor_phone'));
+
+        if ($error = $this->supervisorValidationError($requiresSupervisor, $supervisorName, $supervisorEmail, $supervisorPhone)) {
+            return $this->errorJson($error);
+        }
 
         $service = $this->findLabService($labId, $serviceId);
         if ($service === null) {

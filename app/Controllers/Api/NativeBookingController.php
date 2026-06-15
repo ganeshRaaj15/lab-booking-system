@@ -296,6 +296,14 @@ class NativeBookingController extends WebBookingController
             return $this->response->setStatusCode(422)->setJSON(['status' => 'error', 'message' => 'Please add at least one applicant.']);
         }
 
+        $supervisorName = trim((string) $this->request->getPost('supervisor_name'));
+        $supervisorEmail = trim((string) $this->request->getPost('supervisor_email'));
+        $supervisorPhone = trim((string) $this->request->getPost('supervisor_phone'));
+
+        if ($error = $this->supervisorValidationError($this->userRequiresSupervisorDetails($user), $supervisorName, $supervisorEmail, $supervisorPhone)) {
+            return $this->response->setStatusCode(422)->setJSON(['status' => 'error', 'message' => $error]);
+        }
+
         $pdfFile = $this->request->getFile('pdf');
         $pdfPath = (string) ($booking['pdf_path'] ?? '');
 
@@ -319,9 +327,9 @@ class NativeBookingController extends WebBookingController
                 'start_time'       => $startTime,
                 'end_time'         => $endTime,
                 'activity'         => $activity,
-                'supervisor_name'  => trim((string) $this->request->getPost('supervisor_name')) ?: null,
-                'supervisor_email' => trim((string) $this->request->getPost('supervisor_email')) ?: null,
-                'supervisor_phone' => trim((string) $this->request->getPost('supervisor_phone')) ?: null,
+                'supervisor_name'  => $supervisorName ?: null,
+                'supervisor_email' => $supervisorEmail ?: null,
+                'supervisor_phone' => $supervisorPhone ?: null,
                 'pdf_path'         => $pdfPath ?: null,
                 'approved_by_pic'     => 0,
                 'approved_by_manager' => 0,
