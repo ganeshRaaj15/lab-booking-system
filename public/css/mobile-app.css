@@ -69,6 +69,7 @@ body.slams-mobile-app {
 }
 
 .notification-menu-device {
+    flex-shrink: 0;
     background: var(--slams-surface-soft);
 }
 

@@ -22,7 +22,7 @@ if ($appControlUser) {
     if ($appControlsShowNotificationCenter) {
         $notificationModel = new NotificationModel();
         $appControlUnreadCount = $notificationModel->where('user_id', $appControlUser->id)->where('is_read', 0)->countAllResults();
-        $appControlNotificationItems = $notificationModel->where('user_id', $appControlUser->id)->orderBy('created_at', 'DESC')->findAll(5);
+        $appControlNotificationItems = $notificationModel->where('user_id', $appControlUser->id)->orderBy('created_at', 'DESC')->findAll(3);
     }
 
     if ($appControlsShowProfileLink && ! ($appControlUser->inGroup('pic') || $appControlUser->inGroup('manager'))) {
@@ -63,21 +63,23 @@ if ($appControlUser) {
                     <a href="/dashboard/notifications" class="small text-decoration-none">View all</a>
                 </div>
 
-                <?php if (empty($appControlNotificationItems)): ?>
-                    <div class="px-3 py-4 text-center text-muted small">No notifications yet.</div>
-                <?php else: ?>
-                    <?php foreach ($appControlNotificationItems as $item): ?>
-                        <a href="/dashboard/notifications" class="notification-item text-decoration-none">
-                            <div class="d-flex align-items-start gap-2">
-                                <span class="badge <?= (int) ($item['is_read'] ?? 0) === 0 ? 'bg-primary' : 'bg-secondary' ?> mt-1"><?= (int) ($item['is_read'] ?? 0) === 0 ? 'New' : 'Read' ?></span>
-                                <div class="flex-grow-1">
-                                    <div class="fw-semibold small text-dark"><?= esc($item['title'] ?? 'Notification') ?></div>
-                                    <div class="small text-muted"><?= esc($item['message'] ?? '') ?></div>
+                <div class="notification-menu-list">
+                    <?php if (empty($appControlNotificationItems)): ?>
+                        <div class="px-3 py-4 text-center text-muted small">No notifications yet.</div>
+                    <?php else: ?>
+                        <?php foreach ($appControlNotificationItems as $item): ?>
+                            <a href="/dashboard/notifications" class="notification-item text-decoration-none">
+                                <div class="d-flex align-items-start gap-2">
+                                    <span class="badge <?= (int) ($item['is_read'] ?? 0) === 0 ? 'bg-primary' : 'bg-secondary' ?> mt-1"><?= (int) ($item['is_read'] ?? 0) === 0 ? 'New' : 'Read' ?></span>
+                                    <div class="flex-grow-1">
+                                        <div class="fw-semibold small text-dark"><?= esc($item['title'] ?? 'Notification') ?></div>
+                                        <div class="small text-muted"><?= esc($item['message'] ?? '') ?></div>
+                                    </div>
                                 </div>
-                            </div>
-                        </a>
-                    <?php endforeach; ?>
-                <?php endif; ?>
+                            </a>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
 
                 <?php if (! empty($pushClientConfig['configured']) && ! empty($pushClientConfig['publicKey'])): ?>
                     <div class="notification-menu-device border-top px-3 py-3">
