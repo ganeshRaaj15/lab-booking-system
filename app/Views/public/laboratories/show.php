@@ -6,6 +6,7 @@ $picName = trim((string)($lab['pic_name'] ?? ''));
 $picEmail = trim((string)($lab['pic_email'] ?? ''));
 $picPhone = trim((string)($lab['pic_phone'] ?? ''));
 $services = is_array($services ?? null) ? $services : [];
+$isUthmUser = in_array($bookingMode ?? 'guest', ['student', 'staff'], true);
 
 if ($picName === '') {
     $picName = 'Not Assigned';
@@ -80,7 +81,7 @@ if ($picPhone === '') {
 
             <div class="lab-header-access-note">
                 <i class="bi bi-info-circle mb-1" style="font-size:1.1rem;display:block;text-align:center;"></i>
-                <?php if ($bookingMode === 'uthm'): ?>
+                <?php if ($isUthmUser): ?>
                     Select a service below, then use the booking wizard to reserve a slot.
                 <?php elseif ($bookingMode === 'external'): ?>
                     Login and submit an access request. The PIC will review it.
@@ -211,7 +212,7 @@ if ($picPhone === '') {
                                                 <div class="service-asset-meta">Required for service: <?= $requiredQty ?></div>
                                             </div>
 
-                                            <?php if ($bookingMode === 'uthm'): ?>
+                                            <?php if ($isUthmUser): ?>
                                                 <div class="service-asset-booking">
                                                     <div class="small text-muted <?= !$isAvailable ? 'opacity-50' : '' ?>">
                                                         Included automatically when this service is selected
@@ -274,7 +275,7 @@ if ($picPhone === '') {
         <div class="booking-card">
             <h2 class="booking-title">
                 <i class="bi bi-calendar-check"></i>
-                <?php if ($bookingMode === 'uthm'): ?>
+                <?php if ($isUthmUser): ?>
                     Ready to Book?
                 <?php else: ?>
                     How to Book This Laboratory
@@ -282,7 +283,7 @@ if ($picPhone === '') {
             </h2>
             
                 <p class="booking-description">
-                    <?php if ($bookingMode === 'uthm'): ?>
+                    <?php if ($isUthmUser): ?>
                         Start by choosing a service. The system will load the linked equipment, check availability,
                         and guide you into the booking wizard with the correct context.
                         <span class="text-danger fw-semibold d-block mt-1">Note: Only equipment marked as "Available" and linked to the chosen service can be booked.</span>
@@ -299,7 +300,7 @@ if ($picPhone === '') {
             </div>
             
             <div class="booking-actions">
-                <?php if ($bookingMode === 'uthm'): ?>
+                <?php if ($isUthmUser): ?>
                     <button id="openBookingWizardBtn"
                             class="btn booking-btn"
                             data-lab-id="<?= esc($lab['id']) ?>"
@@ -402,6 +403,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const LAB_ID      = <?= (int) $lab['id'] ?>;
     const BOOKING_MODE = "<?= esc($bookingMode) ?>";
+    const IS_UTHM_USER = BOOKING_MODE === "student" || BOOKING_MODE === "staff";
 
     const calendarEl       = document.getElementById("labCalendar");
     const assetCheckboxes  = document.querySelectorAll(".asset-checkbox");
@@ -638,7 +640,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const availableCount = getAvailableAssetsCount();
 
-        if (BOOKING_MODE === 'uthm') {
+        if (IS_UTHM_USER) {
             if (!getSelectedServiceId()) {
                 openWizardBtn.disabled = true;
                 openWizardBtn.innerHTML = '<i class="bi bi-magic me-1"></i>Launch Booking Wizard (Select Service First)';
@@ -1006,7 +1008,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         <i class="bi bi-check-circle"></i> Open
                     </span>`;
 
-                    if (BOOKING_MODE === "uthm") {
+                    if (IS_UTHM_USER) {
                         actionHtml = `
                             <button type="button"
                                     class="slams-slot-book-btn book-slot-btn"
@@ -1127,7 +1129,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Global function: pre-fill booking wizard from slot
     // -------------------------------------------------
     window.selectSlot = function(dateStr, start, end) {
-        if (BOOKING_MODE !== "uthm") {
+        if (!IS_UTHM_USER) {
             showAlert("Online booking is only available for UTHM users.", "warning");
             return;
         }
@@ -1172,7 +1174,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (openWizardBtn) {
         openWizardBtn.addEventListener("click", () => {
             // Non-UTHM: show simple PIC info modal
-            if (BOOKING_MODE !== "uthm") {
+            if (!IS_UTHM_USER) {
                 const modalEl = document.getElementById("bookingModal");
                 if (modalEl) {
                     showBookingModal();
