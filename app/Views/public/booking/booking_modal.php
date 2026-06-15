@@ -3,9 +3,10 @@
  * @var array $lab
  * @var array $faculties
  * @var array|null $userProfile
- * @var string|null $bookingMode
+ * @var string|null $bookingMode  'student'|'staff'|'external'|'guest'
  */
 $mode = $bookingMode ?? 'guest';
+$isUthmUser = in_array($mode, ['student', 'staff']);
 $userProfile = $userProfile ?? null;
 $defaultFacultyId = $userProfile['faculty_id'] ?? null;
 
@@ -24,7 +25,7 @@ if ($picPhone === '') {
 }
 ?>
 
-<?php if ($mode !== 'uthm'): ?>
+<?php if (!$isUthmUser): ?>
 
 <!-- SIMPLE MODAL FOR EXTERNAL / GUEST USERS -->
 <div class="modal fade" id="bookingModal" tabindex="-1">
@@ -240,10 +241,11 @@ if ($picPhone === '') {
 
                     <!-- ====================== STEP 3 ====================== -->
                     <div id="step3" class="wizard-step d-none">
-                        <h5 class="fw-semibold mb-3">Activity &amp; Supervisor</h5>
+                        <h5 class="fw-semibold mb-3">Activity<?= $mode === 'student' ? ' &amp; Supervisor' : '' ?></h5>
 
+                        <?php if ($mode === 'student'): ?>
                         <div class="card p-3 mb-3">
-                            <h6 class="fw-semibold small mb-2">Supervisor (Students Only)</h6>
+                            <h6 class="fw-semibold small mb-2">Supervisor</h6>
 
                             <div class="row g-3">
                                 <div class="col-md-6">
@@ -262,6 +264,7 @@ if ($picPhone === '') {
                                 </div>
                             </div>
                         </div>
+                        <?php endif; ?>
 
                         <label class="small mb-1 fw-semibold">Activity Description *</label>
                         <textarea name="activity" rows="4"
@@ -297,7 +300,7 @@ if ($picPhone === '') {
 <?php endif; ?>  <!-- end mode switch -->
 
 
-<?php if ($mode === 'uthm'): ?>
+<?php if ($isUthmUser): ?>
 <!-- ============================================================
      BOOKING WIZARD JAVASCRIPT (UTHM ONLY)
 =============================================================== -->
@@ -334,7 +337,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const labels = {
         1: "Step 1 of 3 - Applicant Details",
         2: "Step 2 of 3 - Date & Session",
-        3: "Step 3 of 3 - Activity & Supervisor"
+        3: "Step 3 of 3 - Activity<?= $mode === 'student' ? ' & Supervisor' : '' ?>"
     };
 
     const widths = {1:33, 2:66, 3:100};

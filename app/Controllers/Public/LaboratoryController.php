@@ -153,7 +153,8 @@ class LaboratoryController extends BaseController
         $userProfile = null;
 
         // Determine booking mode:
-        //  - 'uthm'     logged-in, NOT in 'external' group (students/staff)
+        //  - 'student'  logged-in UTHM student
+        //  - 'staff'    logged-in UTHM staff / admin
         //  - 'external' logged-in external user
         //  - 'guest'    not logged in
         $bookingMode = 'guest';
@@ -163,8 +164,10 @@ class LaboratoryController extends BaseController
 
             if ($user->inGroup('external')) {
                 $bookingMode = 'external';
+            } elseif ($user->inGroup('student')) {
+                $bookingMode = 'student';
             } else {
-                $bookingMode = 'uthm';
+                $bookingMode = 'staff'; // staff, admin, or any other UTHM role
             }
 
             $db = \Config\Database::connect();
