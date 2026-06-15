@@ -136,6 +136,7 @@ $currentStatus = (string) ($requestRecord['status'] ?? 'pending_pic_approval');
 <script>
 document.addEventListener("DOMContentLoaded", () => {
     const labField = document.getElementById("externalLabId");
+    const serviceIdField = document.getElementById("externalServiceId");
     const dateField = document.getElementById("externalPreferredDate");
     const startField = document.getElementById("externalPreferredStartTime");
     const endField = document.getElementById("externalPreferredEndTime");
@@ -143,7 +144,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const feedbackEl = document.getElementById("externalSlotFeedback");
     const slotChoicesEl = document.getElementById("externalSlotChoices");
 
-    if (!labField || !dateField || !startField || !endField || !summaryEl || !feedbackEl || !slotChoicesEl) {
+    if (!labField || !serviceIdField || !dateField || !startField || !endField || !summaryEl || !feedbackEl || !slotChoicesEl) {
         return;
     }
 
@@ -231,7 +232,12 @@ document.addEventListener("DOMContentLoaded", () => {
         slotChoicesEl.innerHTML = "";
 
         try {
-            const response = await fetch(`/dashboard/external/request/slots/${encodeURIComponent(labId)}/${encodeURIComponent(preferredDate)}`, {
+            const params = new URLSearchParams();
+            if (serviceIdField.value) {
+                params.set("service_id", serviceIdField.value);
+            }
+
+            const response = await fetch(`/dashboard/external/request/slots/${encodeURIComponent(labId)}/${encodeURIComponent(preferredDate)}?${params.toString()}`, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
             });
             const data = await response.json();
@@ -271,6 +277,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     dateField.addEventListener("change", () => {
+        selectedStart = "";
+        selectedEnd = "";
+        loadSlots();
+    });
+
+    serviceIdField.addEventListener("change", () => {
         selectedStart = "";
         selectedEnd = "";
         loadSlots();
@@ -379,6 +391,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 currentServiceId = "";
                 serviceIdField.value = "";
                 if (selectedAssetsField) selectedAssetsField.value = "";
+                serviceIdField.dispatchEvent(new Event("change"));
             }
             showEquipmentInfo("", "", false);
             return;
@@ -398,6 +411,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 currentServiceId = "";
                 serviceIdField.value = "";
                 if (selectedAssetsField) selectedAssetsField.value = "";
+                serviceIdField.dispatchEvent(new Event("change"));
             }
 
             renderServiceChoices(services);
@@ -419,6 +433,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (selectedAssetsField) {
             selectedAssetsField.value = "";
         }
+        serviceIdField.dispatchEvent(new Event("change"));
 
         serviceChoicesEl.querySelectorAll(".service-choice-btn").forEach((b) => {
             b.className = (b === btn && !isSame)

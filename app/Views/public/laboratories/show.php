@@ -172,6 +172,7 @@ if ($picPhone === '') {
                                              data-service-id="<?= esc((string)$serviceId) ?>"
                                              data-status="<?= esc($assetStatus) ?>"
                                              data-quantity="<?= $assetQty ?>"
+                                             data-required-qty="<?= $requiredQty ?>"
                                              data-asset-name="<?= esc($a['name'] ?? '') ?>"
                                              data-asset-category="<?= esc($a['category'] ?? '') ?>"
                                              data-asset-img="<?= !empty($a['image']) ? esc(base_url($a['image'])) : '' ?>"
@@ -309,7 +310,7 @@ if ($picPhone === '') {
                         Launch Booking Wizard (Select Service First)
                     </button>
                 <?php elseif ($bookingMode === 'external'): ?>
-                    <a href="/dashboard/external/request?lab_id=<?= esc($lab['id']) ?>" class="btn booking-btn">
+                    <a href="/dashboard/external/request?lab_id=<?= esc($lab['id']) ?>" class="btn booking-btn" id="requestLabAccessBtn">
                         <i class="bi bi-clipboard-check me-1"></i>
                         Request Lab Access
                     </a>
@@ -408,6 +409,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const calendarEl       = document.getElementById("labCalendar");
     const assetCheckboxes  = document.querySelectorAll(".asset-checkbox");
     const openWizardBtn    = document.getElementById("openBookingWizardBtn");
+    const requestLabAccessBtn = document.getElementById("requestLabAccessBtn");
     const hiddenAssetField = document.getElementById("asset_selection_modal");
     const hiddenLabIdInput = document.getElementById("labIdInput");
     const hiddenServiceInput = document.getElementById("service_id_modal");
@@ -432,6 +434,52 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function getSelectedServiceId() {
         return selectedService && selectedService.id ? String(selectedService.id) : "";
+    }
+
+    function buildSelectedServiceAssetString() {
+        const serviceId = getSelectedServiceId();
+        if (!serviceId) return "";
+
+        const parts = [];
+        document.querySelectorAll(`.service-asset-card[data-service-id="${serviceId}"]`).forEach(row => {
+            const assetId = row.dataset.assetId || "";
+            const requiredQty = parseInt(row.dataset.requiredQty || "1", 10);
+
+            if (!assetId || Number.isNaN(requiredQty) || requiredQty <= 0) {
+                return;
+            }
+
+            parts.push(`${assetId}:${requiredQty}`);
+        });
+
+        return parts.join(",");
+    }
+
+    function buildExternalRequestUrl(extraParams = {}) {
+        const params = new URLSearchParams({ lab_id: String(LAB_ID) });
+        const serviceId = getSelectedServiceId();
+        const selectedAssets = buildSelectedServiceAssetString();
+
+        if (serviceId) {
+            params.set("service_id", serviceId);
+        }
+
+        if (selectedAssets) {
+            params.set("selected_assets", selectedAssets);
+        }
+
+        Object.entries(extraParams).forEach(([key, value]) => {
+            if (value !== null && value !== undefined && String(value).trim() !== "") {
+                params.set(key, String(value));
+            }
+        });
+
+        return `/dashboard/external/request?${params.toString()}`;
+    }
+
+    function updateExternalRequestActionLink() {
+        if (!requestLabAccessBtn) return;
+        requestLabAccessBtn.href = buildExternalRequestUrl();
     }
 
     function buildServiceInfo(button) {
@@ -575,6 +623,7 @@ document.addEventListener("DOMContentLoaded", function () {
         updateBookingButton();
         syncAssetSelectionToModal();
         syncServiceContextToModal();
+        updateExternalRequestActionLink();
         refreshCalendar();
     }
 
@@ -591,6 +640,10 @@ document.addEventListener("DOMContentLoaded", function () {
     // Build asset selection string
     // -------------------------------
     function buildAssetSelectionString() {
+        if (!IS_UTHM_USER) {
+            return buildSelectedServiceAssetString();
+        }
+
         const parts = [];
         document.querySelectorAll(".asset-checkbox").forEach(cb => {
             const id = cb.dataset.assetId;
@@ -866,7 +919,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!calendar) return;
         const serviceId = getSelectedServiceId();
         const assets = buildAssetSelectionString();
-        if (!serviceId || !assets) {
+        if (!serviceId) {
             calendar.removeAllEvents();
             hideDaySlotPanel();
             return;
@@ -877,8 +930,11 @@ document.addEventListener("DOMContentLoaded", function () {
             : null;
         const params = new URLSearchParams({
             service_id: serviceId,
-            assets,
         });
+
+        if (assets) {
+            params.set("assets", assets);
+        }
 
         if (range?.start) params.set("start", range.start);
         if (range?.end) params.set("end", range.end);
@@ -961,7 +1017,14 @@ document.addEventListener("DOMContentLoaded", function () {
         daySlotPanel.classList.remove("d-none");
         daySlotPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
-        fetch(`/api/bookings/day-with-assets/${LAB_ID}/${dateStr}?service_id=${encodeURIComponent(serviceId)}&assets=${encodeURIComponent(assets)}`)
+        const params = new URLSearchParams({
+            service_id: serviceId,
+        });
+        if (assets) {
+            params.set("assets", assets);
+        }
+
+        fetch(`/api/bookings/day-with-assets/${LAB_ID}/${dateStr}?${params.toString()}`)
             .then(r => r.json())
             .then(data => renderDaySlots(dateStr, formattedDate, data.slots || []))
             .catch(() => {
@@ -1018,10 +1081,15 @@ document.addEventListener("DOMContentLoaded", function () {
                                 <i class="bi bi-calendar-plus"></i> Book This Session
                             </button>`;
                     } else if (BOOKING_MODE === "external") {
+                        const requestUrl = buildExternalRequestUrl({
+                            preferred_date: dateStr,
+                            preferred_start_time: slot.start,
+                            preferred_end_time: slot.end,
+                        });
                         actionHtml = `
                             <a class="slams-slot-book-btn"
                                style="text-decoration:none;background:var(--slams-primary);"
-                               href="/dashboard/external/request?lab_id=${LAB_ID}&preferred_date=${dateStr}&preferred_start_time=${slot.start}&preferred_end_time=${slot.end}">
+                               href="${requestUrl}">
                                 <i class="bi bi-clipboard-plus"></i> Request Slot
                             </a>`;
                     }
@@ -1260,7 +1328,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!openWizard) return true;
 
         if (BOOKING_MODE === "external") {
-            window.location.href = `/dashboard/external/request?lab_id=${LAB_ID}`;
+            window.location.href = buildExternalRequestUrl();
             return true;
         }
 
@@ -1342,6 +1410,8 @@ document.addEventListener("DOMContentLoaded", function () {
         refreshCalendar();
         updateBookingButton();
     }
+
+    updateExternalRequestActionLink();
 });
 </script>
 

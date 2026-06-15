@@ -861,6 +861,67 @@ input::placeholder {
     transform: translateY(-2px);
 }
 
+.slams-tiered-navbar {
+    width: 100%;
+}
+
+.slams-tiered-navbar__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.slams-tiered-navbar__primary,
+.slams-tiered-navbar__utilities,
+.slams-tiered-navbar__secondary-list {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.1rem;
+}
+
+.slams-tiered-navbar__primary {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.slams-tiered-navbar__utilities {
+    flex: 0 0 auto;
+    margin-left: auto;
+    justify-content: flex-end;
+}
+
+.slams-tiered-navbar__secondary {
+    margin-top: 0.6rem;
+    padding-top: 0.7rem;
+    border-top: 1px solid color-mix(in srgb, var(--slams-nav-border) 92%, transparent);
+}
+
+.slams-tiered-navbar__secondary-list {
+    padding-left: 0;
+}
+
+.slams-tiered-navbar__more-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.38rem;
+    border: 0;
+    background: transparent;
+}
+
+.slams-tiered-navbar__more-caret {
+    font-size: 0.72rem;
+    transition: transform 0.18s ease;
+}
+
+.slams-tiered-navbar__more-toggle[aria-expanded="true"] .slams-tiered-navbar__more-caret {
+    transform: rotate(180deg);
+}
+
 .navbar-toggler,
 .glass-toggler,
 .sidebar-toggle,
