@@ -236,14 +236,14 @@ if (function_exists('auth') && auth()->loggedIn()) {
             </div>
 
             <div class="d-none d-lg-block w-100">
-                <div class="slams-tiered-navbar">
-                    <div class="slams-tiered-navbar__top">
-                        <ul class="navbar-nav slams-tiered-navbar__primary">
-                            <?php foreach ($primaryNavItems as $item): ?>
-                                <?php $renderNavLink($item); ?>
-                            <?php endforeach; ?>
+                <?php if ($hasOverflowNav): ?>
+                    <div class="slams-tiered-navbar">
+                        <div class="slams-tiered-navbar__top">
+                            <ul class="navbar-nav slams-tiered-navbar__primary">
+                                <?php foreach ($primaryNavItems as $item): ?>
+                                    <?php $renderNavLink($item); ?>
+                                <?php endforeach; ?>
 
-                            <?php if ($hasOverflowNav): ?>
                                 <li class="nav-item me-2">
                                     <button
                                         class="nav-link position-relative slams-tiered-navbar__more-toggle<?= $hasActiveOverflowNav ? ' active' : '' ?>"
@@ -257,35 +257,33 @@ if (function_exists('auth') && auth()->loggedIn()) {
                                         <i class="bi bi-chevron-down slams-tiered-navbar__more-caret"></i>
                                     </button>
                                 </li>
-                            <?php endif; ?>
-                        </ul>
+                            </ul>
 
-                        <ul class="navbar-nav slams-tiered-navbar__utilities">
-                            <?php if ($isLoggedIn): ?>
-                                <?php $renderNotificationNav($pathMatches(['dashboard/notifications*']), 'nav-item me-2 dropdown notification-nav-item'); ?>
+                            <ul class="navbar-nav slams-tiered-navbar__utilities">
+                                <?php if ($isLoggedIn): ?>
+                                    <?php $renderNotificationNav($pathMatches(['dashboard/notifications*']), 'nav-item me-2 dropdown notification-nav-item'); ?>
 
-                                <?php if (!($user->inGroup('pic') || $user->inGroup('manager'))): ?>
-                                    <li class="nav-item me-2 d-flex align-items-center">
-                                        <a href="/dashboard/profile" class="slams-navbar-app-btn slams-navbar-profile-btn <?= $pathMatches(['dashboard/profile*']) ? 'is-active' : '' ?>" aria-label="Profile" title="Profile">
-                                            <?php if ($navProfilePhoto !== ''): ?>
-                                                <img src="<?= esc(base_url(ltrim($navProfilePhoto, '/'))) ?>" alt="Profile" class="slams-navbar-profile-avatar">
-                                            <?php else: ?>
-                                                <span class="slams-navbar-profile-fallback" aria-hidden="true"><i class="bi bi-person"></i></span>
-                                            <?php endif; ?>
-                                        </a>
+                                    <?php if (!($user->inGroup('pic') || $user->inGroup('manager'))): ?>
+                                        <li class="nav-item me-2 d-flex align-items-center">
+                                            <a href="/dashboard/profile" class="slams-navbar-app-btn slams-navbar-profile-btn <?= $pathMatches(['dashboard/profile*']) ? 'is-active' : '' ?>" aria-label="Profile" title="Profile">
+                                                <?php if ($navProfilePhoto !== ''): ?>
+                                                    <img src="<?= esc(base_url(ltrim($navProfilePhoto, '/'))) ?>" alt="Profile" class="slams-navbar-profile-avatar">
+                                                <?php else: ?>
+                                                    <span class="slams-navbar-profile-fallback" aria-hidden="true"><i class="bi bi-person"></i></span>
+                                                <?php endif; ?>
+                                            </a>
+                                        </li>
+                                    <?php endif; ?>
+
+                                    <li class="nav-item ms-lg-2">
+                                        <form action="/logout" method="post" class="d-inline"><?= csrf_field() ?><button class="btn btn-glass btn-sm"><i class="bi bi-box-arrow-right me-1"></i> Logout</button></form>
                                     </li>
+                                <?php else: ?>
+                                    <li class="nav-item ms-lg-2"><a class="btn btn-glow btn-sm" href="/login"><i class="bi bi-box-arrow-in-right me-1"></i> Login</a></li>
                                 <?php endif; ?>
+                            </ul>
+                        </div>
 
-                                <li class="nav-item ms-lg-2">
-                                    <form action="/logout" method="post" class="d-inline"><?= csrf_field() ?><button class="btn btn-glass btn-sm"><i class="bi bi-box-arrow-right me-1"></i> Logout</button></form>
-                                </li>
-                            <?php else: ?>
-                                <li class="nav-item ms-lg-2"><a class="btn btn-glow btn-sm" href="/login"><i class="bi bi-box-arrow-in-right me-1"></i> Login</a></li>
-                            <?php endif; ?>
-                        </ul>
-                    </div>
-
-                    <?php if ($hasOverflowNav): ?>
                         <div class="collapse slams-tiered-navbar__secondary<?= $hasActiveOverflowNav ? ' show' : '' ?>" id="<?= esc($desktopMoreCollapseId) ?>">
                             <ul class="navbar-nav slams-tiered-navbar__secondary-list">
                                 <?php foreach ($overflowNavItems as $item): ?>
@@ -293,8 +291,36 @@ if (function_exists('auth') && auth()->loggedIn()) {
                                 <?php endforeach; ?>
                             </ul>
                         </div>
-                    <?php endif; ?>
-                </div>
+                    </div>
+                <?php else: ?>
+                    <ul class="navbar-nav ms-auto align-items-lg-center">
+                        <?php foreach ($navItems as $item): ?>
+                            <?php $renderNavLink($item); ?>
+                        <?php endforeach; ?>
+
+                        <?php if ($isLoggedIn): ?>
+                            <?php $renderNotificationNav($pathMatches(['dashboard/notifications*']), 'nav-item me-2 dropdown notification-nav-item'); ?>
+
+                            <?php if (!($user->inGroup('pic') || $user->inGroup('manager'))): ?>
+                                <li class="nav-item me-2 d-none d-lg-flex align-items-center">
+                                    <a href="/dashboard/profile" class="slams-navbar-app-btn slams-navbar-profile-btn <?= $pathMatches(['dashboard/profile*']) ? 'is-active' : '' ?>" aria-label="Profile" title="Profile">
+                                        <?php if ($navProfilePhoto !== ''): ?>
+                                            <img src="<?= esc(base_url(ltrim($navProfilePhoto, '/'))) ?>" alt="Profile" class="slams-navbar-profile-avatar">
+                                        <?php else: ?>
+                                            <span class="slams-navbar-profile-fallback" aria-hidden="true"><i class="bi bi-person"></i></span>
+                                        <?php endif; ?>
+                                    </a>
+                                </li>
+                            <?php endif; ?>
+
+                            <li class="nav-item ms-lg-2">
+                                <form action="/logout" method="post" class="d-inline"><?= csrf_field() ?><button class="btn btn-glass btn-sm"><i class="bi bi-box-arrow-right me-1"></i> Logout</button></form>
+                            </li>
+                        <?php else: ?>
+                            <li class="nav-item ms-lg-2"><a class="btn btn-glow btn-sm" href="/login"><i class="bi bi-box-arrow-in-right me-1"></i> Login</a></li>
+                        <?php endif; ?>
+                    </ul>
+                <?php endif; ?>
             </div>
         </div>
     </div>
