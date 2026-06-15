@@ -286,7 +286,17 @@ class StudentDashboard extends BaseController
         }
 
         $applicants = (new BookingApplicantModel())->getForBooking($id);
-        $faculties  = (new FacultyModel())->orderBy('name', 'ASC')->findAll();
+        if ($applicants === []) {
+            $applicants = [[
+                'name' => '',
+                'matric_id' => '',
+                'email' => '',
+                'phone' => '',
+                'faculty' => '',
+            ]];
+        }
+
+        $faculties  = (new FacultyModel())->orderBy('name_en', 'ASC')->findAll();
         $assets     = (new BookingAssetModel())
             ->select('booking_assets.*, assets.name')
             ->join('assets', 'assets.id = booking_assets.asset_id', 'left')

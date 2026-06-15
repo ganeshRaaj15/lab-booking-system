@@ -414,7 +414,7 @@ $topAtRisk = $equipmentHealth['topAtRisk'] ?? [];
                                                             data-bs-toggle="tooltip" title="View Details">
                                                         <i class="bi bi-eye me-1"></i>View
                                                     </button>
-                                                    <div class="btn-group">
+                                                    <div class="d-flex gap-2">
                                                         <button class="btn btn-success btn-sm px-3"
                                                                 onclick="approveBooking(<?= $b['id'] ?>)"
                                                                 data-bs-toggle="tooltip" title="Approve Booking">
