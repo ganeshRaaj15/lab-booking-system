@@ -42,9 +42,9 @@ flowchart TD
         subgraph SS3["Step 3 — Activity & Supervisor"]
             direction TB
             SS3A["✱ Activity Description"]
-            SS3B["○ Supervisor Name"]
-            SS3C["○ Supervisor Email"]
-            SS3D["○ Supervisor Phone"]
+            SS3B["✱ Supervisor Name"]
+            SS3C["✱ Supervisor Email"]
+            SS3D["✱ Supervisor Phone"]
             SS3E["✱ PDF Upload\n(SOP / SWP / SDS, max 8 MB)"]
         end
 
@@ -71,21 +71,15 @@ flowchart TD
 
         SF1 --> SF2
 
-        subgraph SF2["Step 2 — Date & Time Slot"]
+        subgraph SF2["Step 2 — Date, Time Slot & Documents"]
             direction TB
             SF2A["✱ Date (date picker)"]
             SF2B["✱ Time slot (dynamic\navailability buttons)"]
+            SF2C["✱ Activity Description"]
+            SF2D["✱ PDF Upload\n(SOP / SWP / SDS, max 8 MB)"]
         end
 
-        SF2 --> SF3
-
-        subgraph SF3["Step 3 — Activity"]
-            direction TB
-            SF3A["✱ Activity Description"]
-            SF3B["✱ PDF Upload\n(SOP / SWP / SDS, max 8 MB)"]
-        end
-
-        SF3 --> STAFF_SUBMIT(["Submit Booking\nStatus → PENDING"])
+        SF2 --> STAFF_SUBMIT(["Submit Booking\nStatus → PENDING"])
     end
 
     %% ─── EXTERNAL FLOW ───────────────────────────────────────────
@@ -140,12 +134,12 @@ flowchart TD
 
 | | UTHM Student | UTHM Staff | External User |
 |---|---|---|---|
-| **Form structure** | 3-step wizard | 3-step wizard | Single-page form |
+| **Form structure** | 3-step wizard | 2-step wizard | Single-page form |
 | **Entry point** | Public lab page modal | Public lab page modal | Authenticated dashboard |
 | **Applicants** | Multiple (dynamic roster) | Multiple (dynamic roster) | Single contact person |
 | **ID field** | Matric ID | Staff ID | None |
 | **Faculty** | Required | Required | None |
-| **Supervisor info** | Optional (3 fields) | Not shown (staff are supervisors) | Not applicable |
+| **Supervisor info** | Required (3 fields) | Not shown (staff are supervisors) | Not applicable |
 | **PDF upload** | Required | Required | None |
 | **Activity / purpose** | Activity description | Activity description | Purpose of Use (min 10 chars) |
 | **Setup notes** | None | None | Optional |

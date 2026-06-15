@@ -7,6 +7,7 @@ $labId      = (int) $booking['lab_id'];
 $serviceId  = (int) ($booking['service_id'] ?? 0);
 $assetIds   = implode(',', array_column($assets ?? [], 'asset_id'));
 $dashUrl    = auth()->user()->inGroup('staff') ? '/dashboard/staff' : '/dashboard/student';
+$requiresSupervisor = auth()->user()->inGroup('student') && ! auth()->user()->inGroup('staff');
 $currentPdf = basename((string) ($booking['pdf_path'] ?? ''));
 ?>
 
@@ -47,10 +48,10 @@ $currentPdf = basename((string) ($booking['pdf_path'] ?? ''));
 
         <div class="mb-4">
             <div class="progress" style="height: 8px;">
-                <div id="wizardProgress" class="progress-bar bg-primary" style="width: 33%;"></div>
+                <div id="wizardProgress" class="progress-bar bg-primary" style="width: <?= $requiresSupervisor ? '33' : '50' ?>%;"></div>
             </div>
             <div id="wizardStepLabel" class="text-center mt-2 small fw-semibold text-primary">
-                Step 1 of 3 - Applicant Details
+                Step 1 of <?= $requiresSupervisor ? '3' : '2' ?> - Applicant Details
             </div>
         </div>
 
@@ -126,7 +127,7 @@ $currentPdf = basename((string) ($booking['pdf_path'] ?? ''));
 
                 <!-- STEP 2: Date & Session -->
                 <div id="step2" class="wizard-step d-none">
-                    <h5 class="fw-semibold mb-3">Date &amp; Session</h5>
+                    <h5 class="fw-semibold mb-3"><?= $requiresSupervisor ? 'Date &amp; Session' : 'Date, Session &amp; Documents' ?></h5>
 
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
@@ -151,28 +152,49 @@ $currentPdf = basename((string) ($booking['pdf_path'] ?? ''));
                            value="<?= esc(substr((string) ($booking['start_time'] ?? ''), 0, 5)) ?>">
                     <input type="hidden" id="endTime"   name="end_time"
                            value="<?= esc(substr((string) ($booking['end_time']   ?? ''), 0, 5)) ?>">
+
+                    <?php if (! $requiresSupervisor): ?>
+                    <div class="mt-4">
+                        <label class="small mb-1 fw-semibold">Activity Description *</label>
+                        <textarea name="activity" rows="4" class="form-control mb-3"><?= esc($booking['activity'] ?? '') ?></textarea>
+
+                        <label class="small mb-1 fw-semibold">Upload PDF (SOP/SWP/SDS)</label>
+                        <?php if ($currentPdf): ?>
+                            <div class="small text-muted mb-2">
+                                <i class="bi bi-file-earmark-pdf me-1 text-danger"></i>
+                                Current: <?= esc($currentPdf) ?> &mdash; upload a new file to replace it.
+                            </div>
+                        <?php endif; ?>
+                        <input type="file" name="pdf" accept=".pdf" class="form-control">
+                        <div class="form-text">Leave blank to keep the existing PDF.</div>
+                    </div>
+                    <?php endif; ?>
                 </div>
 
+                <?php if ($requiresSupervisor): ?>
                 <!-- STEP 3: Activity & PDF -->
                 <div id="step3" class="wizard-step d-none">
                     <h5 class="fw-semibold mb-3">Activity &amp; Supervisor</h5>
 
                     <div class="card p-3 mb-3">
-                        <h6 class="fw-semibold small mb-2">Supervisor (Students Only)</h6>
+                        <h6 class="fw-semibold small mb-2">Supervisor<?= $requiresSupervisor ? ' *' : ' (Students Only)' ?></h6>
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="small mb-1">Supervisor Name</label>
-                                <input type="text" name="supervisor_name" class="form-control"
+                                <label class="small mb-1">Supervisor Name<?= $requiresSupervisor ? ' *' : '' ?></label>
+                                <input type="text" name="supervisor_name" class="form-control<?= $requiresSupervisor ? ' student-supervisor-field' : '' ?>"
+                                       <?= $requiresSupervisor ? 'required' : '' ?>
                                        value="<?= esc($booking['supervisor_name'] ?? '') ?>">
                             </div>
                             <div class="col-md-6">
-                                <label class="small mb-1">Supervisor Email</label>
-                                <input type="email" name="supervisor_email" class="form-control"
+                                <label class="small mb-1">Supervisor Email<?= $requiresSupervisor ? ' *' : '' ?></label>
+                                <input type="email" name="supervisor_email" class="form-control<?= $requiresSupervisor ? ' student-supervisor-field' : '' ?>"
+                                       <?= $requiresSupervisor ? 'required' : '' ?>
                                        value="<?= esc($booking['supervisor_email'] ?? '') ?>">
                             </div>
                             <div class="col-md-6">
-                                <label class="small mb-1">Supervisor Phone</label>
-                                <input type="text" name="supervisor_phone" class="form-control"
+                                <label class="small mb-1">Supervisor Phone<?= $requiresSupervisor ? ' *' : '' ?></label>
+                                <input type="text" name="supervisor_phone" class="form-control<?= $requiresSupervisor ? ' student-supervisor-field' : '' ?>"
+                                       <?= $requiresSupervisor ? 'required' : '' ?>
                                        value="<?= esc($booking['supervisor_phone'] ?? '') ?>">
                             </div>
                         </div>
@@ -191,6 +213,7 @@ $currentPdf = basename((string) ($booking['pdf_path'] ?? ''));
                     <input type="file" name="pdf" accept=".pdf" class="form-control">
                     <div class="form-text">Leave blank to keep the existing PDF.</div>
                 </div>
+                <?php endif; ?>
 
             </div><!-- end wizardViewport -->
         </form>
@@ -236,13 +259,22 @@ document.addEventListener("DOMContentLoaded", () => {
     const serviceId = <?= json_encode((string) $serviceId) ?>;
     const assetStr  = <?= json_encode($assetIds) ?>;
     const bookingId = <?= json_encode((string) $bookingId) ?>;
+    const totalSteps = <?= $requiresSupervisor ? '3' : '2' ?>;
+    const finalStep = totalSteps;
 
-    const labels = {
-        1: "Step 1 of 3 - Applicant Details",
-        2: "Step 2 of 3 - Date & Session",
-        3: "Step 3 of 3 - Activity & Supervisor"
-    };
-    const widths = { 1: 33, 2: 66, 3: 100 };
+    const labels = totalSteps === 3
+        ? {
+            1: "Step 1 of 3 - Applicant Details",
+            2: "Step 2 of 3 - Date & Session",
+            3: "Step 3 of 3 - Activity & Supervisor"
+        }
+        : {
+            1: "Step 1 of 2 - Applicant Details",
+            2: "Step 2 of 2 - Date, Session & Documents"
+        };
+    const widths = totalSteps === 3
+        ? { 1: 33, 2: 66, 3: 100 }
+        : { 1: 50, 2: 100 };
 
     function showError(msg) {
         errorArea.innerHTML = `<div class="alert alert-danger small mb-2"><i class="bi bi-exclamation-triangle me-1"></i>${msg}</div>`;
@@ -339,8 +371,8 @@ document.addEventListener("DOMContentLoaded", () => {
         wizardLabel.textContent = labels[step];
         wizardProg.style.width  = widths[step] + "%";
         prevBtn.classList.toggle("d-none", step === 1);
-        nextBtn.classList.toggle("d-none", step === 3);
-        submitBtn.classList.toggle("d-none", step !== 3);
+        nextBtn.classList.toggle("d-none", step === finalStep);
+        submitBtn.classList.toggle("d-none", step !== finalStep);
         clearError();
     }
 
@@ -461,11 +493,30 @@ document.addEventListener("DOMContentLoaded", () => {
                 return false;
             }
         }
-        if (step === 3) {
-            const activityField = form.querySelector("textarea[name='activity']");
+        if (step === finalStep) {
+            const activityField = form.querySelector(totalSteps === 3 ? "#step3 textarea[name='activity']" : "#step2 textarea[name='activity']");
             if (!activityField || !activityField.value.trim()) {
                 showError("Please fill in the activity description.");
                 return false;
+            }
+
+            const supervisorFields = totalSteps === 3 ? form.querySelectorAll(".student-supervisor-field") : [];
+            if (supervisorFields.length) {
+                const supervisorValues = {};
+                supervisorFields.forEach(field => {
+                    supervisorValues[field.name] = field.value.trim();
+                });
+
+                if (!supervisorValues.supervisor_name || !supervisorValues.supervisor_email || !supervisorValues.supervisor_phone) {
+                    showError("Supervisor name, email, and phone are required for student bookings.");
+                    return false;
+                }
+
+                const emailField = form.querySelector("input[name='supervisor_email']");
+                if (emailField && emailField.value.trim() && !emailField.checkValidity()) {
+                    showError("Supervisor email address is invalid.");
+                    return false;
+                }
             }
         }
         return true;
@@ -474,7 +525,7 @@ document.addEventListener("DOMContentLoaded", () => {
     nextBtn.addEventListener("click", () => {
         if (isAnimating) return;
         if (!validateStep(currentStep)) return;
-        if (currentStep < 3) {
+        if (currentStep < finalStep) {
             const from = currentStep++;
             transitionToStep(from, currentStep);
         }
@@ -503,6 +554,12 @@ document.addEventListener("DOMContentLoaded", () => {
             refreshDaySlots();
         });
     }
+
+    form.addEventListener("submit", (e) => {
+        if (!validateStep(finalStep)) {
+            e.preventDefault();
+        }
+    });
 
     showStep(1);
 });

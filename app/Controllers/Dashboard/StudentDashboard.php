@@ -13,6 +13,27 @@ use App\Models\LabReservationModel;
 
 class StudentDashboard extends BaseController
 {
+    private function userRequiresSupervisorDetails($user): bool
+    {
+        return $user !== null
+            && method_exists($user, 'inGroup')
+            && $user->inGroup('student')
+            && ! $user->inGroup('staff');
+    }
+
+    private function supervisorValidationError(bool $required, string $name, string $email, string $phone): ?string
+    {
+        if ($required && ($name === '' || $email === '' || $phone === '')) {
+            return 'Supervisor name, email, and phone are required for student bookings.';
+        }
+
+        if ($email !== '' && ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return 'Supervisor email address is invalid.';
+        }
+
+        return null;
+    }
+
     public function index()
     {
         helper('auth');
@@ -340,6 +361,14 @@ class StudentDashboard extends BaseController
             return redirect()->back()->withInput()->with('error', 'Please add at least one applicant.');
         }
 
+        $supervisorName = trim((string) $this->request->getPost('supervisor_name'));
+        $supervisorEmail = trim((string) $this->request->getPost('supervisor_email'));
+        $supervisorPhone = trim((string) $this->request->getPost('supervisor_phone'));
+
+        if ($error = $this->supervisorValidationError($this->userRequiresSupervisorDetails(auth()->user()), $supervisorName, $supervisorEmail, $supervisorPhone)) {
+            return redirect()->back()->withInput()->with('error', $error);
+        }
+
         $pdfFile = $this->request->getFile('pdf');
         $pdfPath = (string) ($booking['pdf_path'] ?? '');
 
@@ -363,9 +392,9 @@ class StudentDashboard extends BaseController
                 'start_time'       => $startTime,
                 'end_time'         => $endTime,
                 'activity'         => $activity,
-                'supervisor_name'  => trim((string) $this->request->getPost('supervisor_name')) ?: null,
-                'supervisor_email' => trim((string) $this->request->getPost('supervisor_email')) ?: null,
-                'supervisor_phone' => trim((string) $this->request->getPost('supervisor_phone')) ?: null,
+                'supervisor_name'  => $supervisorName ?: null,
+                'supervisor_email' => $supervisorEmail ?: null,
+                'supervisor_phone' => $supervisorPhone ?: null,
                 'pdf_path'         => $pdfPath ?: null,
                 'approved_by_pic'     => 0,
                 'approved_by_manager' => 0,
