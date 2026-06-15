@@ -8,6 +8,10 @@ $serviceId  = (int) ($booking['service_id'] ?? 0);
 $assetIds   = implode(',', array_column($assets ?? [], 'asset_id'));
 $dashUrl    = auth()->user()->inGroup('staff') ? '/dashboard/staff' : '/dashboard/student';
 $requiresSupervisor = auth()->user()->inGroup('student') && ! auth()->user()->inGroup('staff');
+$idLabel = $requiresSupervisor ? 'Matric ID' : 'Staff ID';
+$editSubtitle = $requiresSupervisor
+    ? 'Update your booking details. Supervisor details and the safety PDF are required before resubmission.'
+    : 'Update your booking details. Staff do not need supervisor details, but the safety PDF must still be available.';
 $currentPdf = basename((string) ($booking['pdf_path'] ?? ''));
 ?>
 
@@ -15,7 +19,7 @@ $currentPdf = basename((string) ($booking['pdf_path'] ?? ''));
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
         <div>
             <h2 class="fw-bold text-primary mb-0">Edit Booking</h2>
-            <p class="text-muted small mb-0">Update your booking details. Lab and service cannot be changed.</p>
+            <p class="text-muted small mb-0"><?= esc($editSubtitle) ?></p>
         </div>
         <a href="<?= esc($dashUrl) ?>" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
@@ -86,7 +90,7 @@ $currentPdf = basename((string) ($booking['pdf_path'] ?? ''));
                                            value="<?= esc($a['name'] ?? '') ?>">
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="small mb-1">Matric / Staff ID *</label>
+                                    <label class="small mb-1"><?= esc($idLabel) ?> *</label>
                                     <input type="text" name="applicant_id[]"
                                            class="form-control"
                                            value="<?= esc($a['matric_id'] ?? '') ?>">
@@ -154,6 +158,9 @@ $currentPdf = basename((string) ($booking['pdf_path'] ?? ''));
                            value="<?= esc(substr((string) ($booking['end_time']   ?? ''), 0, 5)) ?>">
 
                     <?php if (! $requiresSupervisor): ?>
+                    <div class="alert alert-light border small mb-3">
+                        Staff bookings do not require supervisor details. Keep the activity details current and upload a replacement SOP/SWP/SDS PDF if needed.
+                    </div>
                     <div class="mt-4">
                         <label class="small mb-1 fw-semibold">Activity Description *</label>
                         <textarea name="activity" rows="4" class="form-control mb-3"><?= esc($booking['activity'] ?? '') ?></textarea>
@@ -176,8 +183,12 @@ $currentPdf = basename((string) ($booking['pdf_path'] ?? ''));
                 <div id="step3" class="wizard-step d-none">
                     <h5 class="fw-semibold mb-3">Activity &amp; Supervisor</h5>
 
+                    <div class="alert alert-light border small mb-3">
+                        Student bookings must include supervisor details. The existing SOP/SWP/SDS PDF can be kept, or you can upload a replacement.
+                    </div>
+
                     <div class="card p-3 mb-3">
-                        <h6 class="fw-semibold small mb-2">Supervisor<?= $requiresSupervisor ? ' *' : ' (Students Only)' ?></h6>
+                        <h6 class="fw-semibold small mb-2">Supervisor *</h6>
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="small mb-1">Supervisor Name<?= $requiresSupervisor ? ' *' : '' ?></label>

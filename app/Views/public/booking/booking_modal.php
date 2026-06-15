@@ -8,6 +8,12 @@
 $mode = $bookingMode ?? 'guest';
 $isUthmUser = in_array($mode, ['student', 'staff']);
 $requiresSupervisor = $mode === 'student';
+$wizardTitle = $requiresSupervisor ? 'Student Laboratory Booking Wizard' : 'Staff Laboratory Booking Wizard';
+$wizardSubtitle = $requiresSupervisor
+    ? 'Students must provide supervisor details and upload the required safety PDF.'
+    : 'Staff can book directly without supervisor details, but must still upload the required safety PDF.';
+$idLabel = $requiresSupervisor ? 'Matric ID' : 'Staff ID';
+$finalStepHeading = $requiresSupervisor ? 'Activity &amp; Supervisor' : 'Date, Session &amp; Documents';
 $userProfile = $userProfile ?? null;
 $defaultFacultyId = $userProfile['faculty_id'] ?? null;
 
@@ -108,8 +114,8 @@ if ($picPhone === '') {
             <!-- HEADER -->
             <div class="modal-header" style="background: var(--fkmp-maroon); color:white;">
                 <div>
-                    <h5 class="modal-title fw-bold">Laboratory Booking Wizard</h5>
-                    <small class="opacity-75">Complete all steps to submit your booking.</small>
+                    <h5 class="modal-title fw-bold"><?= esc($wizardTitle) ?></h5>
+                    <small class="opacity-75"><?= esc($wizardSubtitle) ?></small>
                 </div>
                 <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
@@ -171,7 +177,7 @@ if ($picPhone === '') {
                                     </div>
 
                                     <div class="col-md-6">
-                                        <label class="small mb-1">Matric / Staff ID *</label>
+                                        <label class="small mb-1"><?= esc($idLabel) ?> *</label>
                                         <input type="text" name="applicant_id[]"
                                                class="form-control required-field uthm-only">
                                     </div>
@@ -213,7 +219,7 @@ if ($picPhone === '') {
 
                     <!-- ====================== STEP 2 ====================== -->
                     <div id="step2" class="wizard-step d-none">
-                        <h5 class="fw-semibold mb-3"><?= $requiresSupervisor ? 'Date &amp; Session' : 'Date, Session &amp; Documents' ?></h5>
+                        <h5 class="fw-semibold mb-3"><?= $requiresSupervisor ? 'Date &amp; Session' : $finalStepHeading ?></h5>
 
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
@@ -239,6 +245,9 @@ if ($picPhone === '') {
                         <input type="hidden" id="endTime" name="end_time">
 
                         <?php if (! $requiresSupervisor): ?>
+                        <div class="alert alert-light border small mb-3">
+                            Staff bookings do not require supervisor details. Activity information and the SOP/SWP/SDS PDF are completed here before submission.
+                        </div>
                         <div class="mt-4">
                             <label class="small mb-1 fw-semibold">Activity Description *</label>
                             <textarea name="activity" rows="4"
@@ -255,7 +264,11 @@ if ($picPhone === '') {
                     <?php if ($requiresSupervisor): ?>
                     <!-- ====================== STEP 3 ====================== -->
                     <div id="step3" class="wizard-step d-none">
-                        <h5 class="fw-semibold mb-3">Activity &amp; Supervisor</h5>
+                        <h5 class="fw-semibold mb-3"><?= $finalStepHeading ?></h5>
+
+                        <div class="alert alert-light border small mb-3">
+                            Student bookings must include supervisor details together with the SOP/SWP/SDS PDF before submission.
+                        </div>
 
                         <div class="card p-3 mb-3">
                             <h6 class="fw-semibold small mb-2">Supervisor</h6>
