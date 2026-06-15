@@ -132,7 +132,7 @@ class BookingController extends BaseController
     | ASSET AVAILABILITY ENGINE
     |--------------------------------------------------------------------------
     */
-    protected function computeRemainingForSlot(
+    public function computeRemainingForSlot(
         int $labId,
         string $date,
         string $start,
@@ -213,7 +213,7 @@ class BookingController extends BaseController
         ]);
     }
 
-    protected function calendarAssetsInternal(int $labId, array $selected, ?string $rangeStart = null, ?string $rangeEnd = null): array
+    public function calendarAssetsInternal(int $labId, array $selected, ?string $rangeStart = null, ?string $rangeEnd = null): array
     {
         if (empty($selected)) return [];
 
@@ -291,7 +291,7 @@ class BookingController extends BaseController
         ]);
     }
 
-    protected function dayAssetsInternal(int $labId, string $date, array $selected, ?int $excludeBookingId = null): array
+    public function dayAssetsInternal(int $labId, string $date, array $selected, ?int $excludeBookingId = null): array
     {
         $slotDefs        = $this->getSlotDefinitions();
         $bookingModel    = new BookingModel();

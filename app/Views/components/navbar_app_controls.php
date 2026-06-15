@@ -56,4 +56,13 @@ if ($appControlUser) {
             <?php endif; ?>
         </a>
     <?php endif; ?>
+
+    <?php if ($appControlUser): ?>
+        <form action="/logout" method="post" class="d-none d-lg-inline-flex align-items-center">
+            <?= csrf_field() ?>
+            <button class="btn btn-glass btn-sm" type="submit">
+                <i class="bi bi-box-arrow-right me-1"></i> Logout
+            </button>
+        </form>
+    <?php endif; ?>
 </div>

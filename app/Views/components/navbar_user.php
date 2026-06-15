@@ -275,9 +275,6 @@ if (function_exists('auth') && auth()->loggedIn()) {
                                         </li>
                                     <?php endif; ?>
 
-                                    <li class="nav-item ms-lg-2">
-                                        <form action="/logout" method="post" class="d-inline"><?= csrf_field() ?><button class="btn btn-glass btn-sm"><i class="bi bi-box-arrow-right me-1"></i> Logout</button></form>
-                                    </li>
                                 <?php else: ?>
                                     <li class="nav-item ms-lg-2"><a class="btn btn-glow btn-sm" href="/login"><i class="bi bi-box-arrow-in-right me-1"></i> Login</a></li>
                                 <?php endif; ?>
@@ -313,9 +310,6 @@ if (function_exists('auth') && auth()->loggedIn()) {
                                 </li>
                             <?php endif; ?>
 
-                            <li class="nav-item ms-lg-2">
-                                <form action="/logout" method="post" class="d-inline"><?= csrf_field() ?><button class="btn btn-glass btn-sm"><i class="bi bi-box-arrow-right me-1"></i> Logout</button></form>
-                            </li>
                         <?php else: ?>
                             <li class="nav-item ms-lg-2"><a class="btn btn-glow btn-sm" href="/login"><i class="bi bi-box-arrow-in-right me-1"></i> Login</a></li>
                         <?php endif; ?>
