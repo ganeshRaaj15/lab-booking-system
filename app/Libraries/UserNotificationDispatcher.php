@@ -55,38 +55,40 @@ class UserNotificationDispatcher
             $grouped[$key]['userIds'][] = $userId;
         }
 
-        foreach ($grouped as $group) {
-            $row = $group['row'];
-            $userIds = array_values(array_unique(array_map('intval', $group['userIds'])));
+        DeferredTaskRunner::enqueue(function () use ($grouped): void {
+            foreach ($grouped as $group) {
+                $row = $group['row'];
+                $userIds = array_values(array_unique(array_map('intval', $group['userIds'])));
 
-            try {
-                $this->webPushService->notifyUsers($userIds, [
-                    'title' => $row['title'] ?? 'SLAMS Notification',
-                    'body' => $row['message'] ?? '',
-                    'url' => $row['link'] ?? '/dashboard/notifications',
-                    'tag' => $this->notificationTag($row),
-                    'type' => $row['type'] ?? 'notice',
-                    'entityType' => $row['entity_type'] ?? '',
-                    'entityId' => $row['entity_id'] ?? 0,
-                    'requireInteraction' => in_array((string) ($row['type'] ?? ''), ['booking', 'external_request'], true),
-                ]);
-            } catch (\Throwable $e) {
-                log_message('error', 'Web push dispatch failed: ' . $e->getMessage());
-            }
+                try {
+                    $this->webPushService->notifyUsers($userIds, [
+                        'title' => $row['title'] ?? 'SLAMS Notification',
+                        'body' => $row['message'] ?? '',
+                        'url' => $row['link'] ?? '/dashboard/notifications',
+                        'tag' => $this->notificationTag($row),
+                        'type' => $row['type'] ?? 'notice',
+                        'entityType' => $row['entity_type'] ?? '',
+                        'entityId' => $row['entity_id'] ?? 0,
+                        'requireInteraction' => in_array((string) ($row['type'] ?? ''), ['booking', 'external_request'], true),
+                    ]);
+                } catch (\Throwable $e) {
+                    log_message('error', 'Web push dispatch failed: ' . $e->getMessage());
+                }
 
-            try {
-                $this->expoPushService->notifyUsers($userIds, [
-                    'title' => $row['title'] ?? 'SLAMS Notification',
-                    'body' => $row['message'] ?? '',
-                    'url' => $row['link'] ?? '/dashboard/notifications',
-                    'type' => $row['type'] ?? 'notice',
-                    'entityType' => $row['entity_type'] ?? '',
-                    'entityId' => $row['entity_id'] ?? 0,
-                ]);
-            } catch (\Throwable $e) {
-                log_message('error', 'Native Expo push dispatch failed: ' . $e->getMessage());
+                try {
+                    $this->expoPushService->notifyUsers($userIds, [
+                        'title' => $row['title'] ?? 'SLAMS Notification',
+                        'body' => $row['message'] ?? '',
+                        'url' => $row['link'] ?? '/dashboard/notifications',
+                        'type' => $row['type'] ?? 'notice',
+                        'entityType' => $row['entity_type'] ?? '',
+                        'entityId' => $row['entity_id'] ?? 0,
+                    ]);
+                } catch (\Throwable $e) {
+                    log_message('error', 'Native Expo push dispatch failed: ' . $e->getMessage());
+                }
             }
-        }
+        }, 'user notification push dispatch');
     }
 
     private function notificationTag(array $row): string

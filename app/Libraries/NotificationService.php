@@ -1085,35 +1085,37 @@ class NotificationService
             return;
         }
 
-        try {
-            $email = service('email');
-            $email->clear(true);
-            $email->setTo($recipients);
-            $email->setSubject($subject);
-            $email->setMessage($message);
-            if ($attachment && ! empty($attachment['content']) && ! empty($attachment['filename'])) {
-                $email->attach(
-                    $attachment['content'],
-                    'attachment',
-                    $attachment['filename'],
-                    $attachment['mime'] ?? 'text/calendar'
-                );
-            }
-            if (! $email->send()) {
-                $debug = $this->emailDebugSummary($email);
-                log_message(
-                    'error',
-                    'Notification email send failed to ' . implode(', ', $recipients) . ' for subject "' . $subject . '". ' . $debug
-                );
-                $this->logEmail($recipients, $subject, $this->emailFailurePreview($message, $debug), $attachment, $context);
-                return;
-            }
+        DeferredTaskRunner::enqueue(function () use ($recipients, $subject, $message, $attachment, $context): void {
+            try {
+                $email = service('email');
+                $email->clear(true);
+                $email->setTo($recipients);
+                $email->setSubject($subject);
+                $email->setMessage($message);
+                if ($attachment && ! empty($attachment['content']) && ! empty($attachment['filename'])) {
+                    $email->attach(
+                        $attachment['content'],
+                        'attachment',
+                        $attachment['filename'],
+                        $attachment['mime'] ?? 'text/calendar'
+                    );
+                }
+                if (! $email->send()) {
+                    $debug = $this->emailDebugSummary($email);
+                    log_message(
+                        'error',
+                        'Notification email send failed to ' . implode(', ', $recipients) . ' for subject "' . $subject . '". ' . $debug
+                    );
+                    $this->logEmail($recipients, $subject, $this->emailFailurePreview($message, $debug), $attachment, $context);
+                    return;
+                }
 
-            $this->logEmail($recipients, $subject, $message, $attachment, $context);
-        } catch (\Throwable $e) {
-            log_message('error', 'Notification email error: ' . $e->getMessage());
-            $this->logEmail($recipients, $subject, $this->emailFailurePreview($message, $e->getMessage()), $attachment, $context);
-        }
+                $this->logEmail($recipients, $subject, $message, $attachment, $context);
+            } catch (\Throwable $e) {
+                log_message('error', 'Notification email error: ' . $e->getMessage());
+                $this->logEmail($recipients, $subject, $this->emailFailurePreview($message, $e->getMessage()), $attachment, $context);
+            }
+        }, 'notification email dispatch');
     }
 
     protected function emailDebugSummary($email): string

@@ -426,45 +426,47 @@ class ExternalRequestNotificationService
             return;
         }
 
-        $sent = false;
-        try {
-            $email = service('email');
-            $email->clear(true);
-            $email->setTo($recipients);
-            $email->setSubject($subject);
-            $email->setMessage($message);
-            if (! $email->send()) {
-                log_message('error', 'External request email send failed to ' . implode(', ', $recipients) . ' for subject "' . $subject . '".');
-            } else {
-                $sent = true;
+        DeferredTaskRunner::enqueue(function () use ($recipients, $subject, $message, $context): void {
+            $sent = false;
+            try {
+                $email = service('email');
+                $email->clear(true);
+                $email->setTo($recipients);
+                $email->setSubject($subject);
+                $email->setMessage($message);
+                if (! $email->send()) {
+                    log_message('error', 'External request email send failed to ' . implode(', ', $recipients) . ' for subject "' . $subject . '".');
+                } else {
+                    $sent = true;
+                }
+            } catch (\Throwable $e) {
+                log_message('error', 'External request email error: ' . $e->getMessage());
             }
-        } catch (\Throwable $e) {
-            log_message('error', 'External request email error: ' . $e->getMessage());
-        }
 
-        $now  = date('Y-m-d H:i:s');
-        $rows = [];
-        foreach ($recipients as $recipient) {
-            $rows[] = [
-                'user_id'           => $this->findUserIdByEmail($recipient) ?: null,
-                'to_email'          => $recipient,
-                'subject'           => $subject,
-                'body'              => $sent ? $message : ('[SEND FAILED] ' . $subject),
-                'notification_type' => $context['notification_type'] ?? 'external_request',
-                'entity_type'       => $context['entity_type'] ?? 'external_request',
-                'entity_id'         => isset($context['entity_id']) ? (int) $context['entity_id'] : null,
-                'has_attachment'    => 0,
-                'attachment_name'   => null,
-                'created_at'        => $now,
-                'updated_at'        => $now,
-            ];
-        }
+            $now  = date('Y-m-d H:i:s');
+            $rows = [];
+            foreach ($recipients as $recipient) {
+                $rows[] = [
+                    'user_id'           => $this->findUserIdByEmail($recipient) ?: null,
+                    'to_email'          => $recipient,
+                    'subject'           => $subject,
+                    'body'              => $sent ? $message : ('[SEND FAILED] ' . $subject),
+                    'notification_type' => $context['notification_type'] ?? 'external_request',
+                    'entity_type'       => $context['entity_type'] ?? 'external_request',
+                    'entity_id'         => isset($context['entity_id']) ? (int) $context['entity_id'] : null,
+                    'has_attachment'    => 0,
+                    'attachment_name'   => null,
+                    'created_at'        => $now,
+                    'updated_at'        => $now,
+                ];
+            }
 
-        try {
-            $this->emailLogModel->insertBatch($rows);
-        } catch (\Throwable $e) {
-            log_message('error', 'External request email log error: ' . $e->getMessage());
-        }
+            try {
+                $this->emailLogModel->insertBatch($rows);
+            } catch (\Throwable $e) {
+                log_message('error', 'External request email log error: ' . $e->getMessage());
+            }
+        }, 'external request email dispatch');
     }
 
     protected function emailTemplate(string $heading, array $paragraphs, ?string $actionUrl = null, ?string $actionText = null): string

@@ -161,7 +161,13 @@ if ($appControlUser) {
 
     window.slamsRefreshNotificationBadge = poll;
     window.addEventListener('slams:notifications-refresh', poll);
-    setInterval(poll, 30000);
+    window.addEventListener('focus', poll);
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible') {
+            poll();
+        }
+    });
+    setInterval(poll, 8000);
 }());
 </script>
 <?php endif; ?>
