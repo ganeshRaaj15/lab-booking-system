@@ -12,10 +12,5 @@ echo view('emails/transactional', [
     'actionText' => $primaryCta ?? 'Sign in securely',
     'secondaryUrl' => $secondaryUrl ?? '',
     'secondaryText' => $secondaryCta ?? '',
-    'metaLines' => [
-        'Request IP: ' . ($ipAddress ?? '-'),
-        'Device: ' . ($userAgent ?? '-'),
-        'Time: ' . ($date ?? '-'),
-    ],
     'footerNote' => 'If you did not request this link, you can ignore this email. The link will expire automatically.',
 ]);

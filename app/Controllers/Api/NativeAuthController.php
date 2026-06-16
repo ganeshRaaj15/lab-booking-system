@@ -349,11 +349,6 @@ class NativeAuthController extends BaseController
                 $mailer->setMessage(view('auth/email_2fa_email', [
                     'code' => $otp,
                     'user' => $user,
-                    'ipAddress' => (string) $this->request->getIPAddress(),
-                    'userAgent' => $this->request->getUserAgent() !== null
-                        ? (string) $this->request->getUserAgent()->getAgentString()
-                        : '',
-                    'date' => date('Y-m-d H:i:s'),
                 ]));
                 $mailer->send();
             } catch (\Throwable $e) {

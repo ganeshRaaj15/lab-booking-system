@@ -8,11 +8,5 @@ echo view('emails/transactional', [
     'lead' => 'Use this verification code to complete your sign-in. It expires in 10 minutes and should not be shared with anyone.',
     'code' => (string) ($code ?? ''),
     'codeLabel' => 'Verification Code',
-    'metaLines' => [
-        'Username: ' . ($user->username ?? '-'),
-        'IP Address: ' . ($ipAddress ?? '-'),
-        'Device: ' . ($userAgent ?? '-'),
-        'Time: ' . ($date ?? '-'),
-    ],
     'footerNote' => 'If you did not try to sign in, you can ignore this email and consider changing your password.',
 ]);

@@ -2,7 +2,6 @@
 
 namespace App\Libraries;
 
-use CodeIgniter\HTTP\IncomingRequest;
 use CodeIgniter\I18n\Time;
 use CodeIgniter\Shield\Authentication\Authenticators\Session;
 use CodeIgniter\Shield\Entities\User;
@@ -68,11 +67,6 @@ class AccountRecoveryService
     {
         helper('email');
 
-        $request = service('request');
-        $ipAddress = $request instanceof IncomingRequest ? $request->getIPAddress() : 'CLI';
-        $userAgent = $request instanceof IncomingRequest ? (string) $request->getUserAgent() : 'CLI';
-        $date = Time::now()->toDateTimeString();
-
         $email = emailer(['mailType' => 'html'])
             ->setFrom(setting('Email.fromEmail'), setting('Email.fromName') ?? '');
         $email->setTo($emailAddress);
@@ -83,9 +77,6 @@ class AccountRecoveryService
             [
                 'token'      => $token,
                 'user'       => $user,
-                'ipAddress'  => $ipAddress,
-                'userAgent'  => $userAgent,
-                'date'       => $date,
                 'expiresIn'  => (int) ceil(setting('Auth.magicLinkLifetime') / MINUTE),
                 'primaryUrl' => $linkOptions['primaryUrl'],
                 'primaryCta' => $linkOptions['primaryCta'],

@@ -21,11 +21,6 @@ $paragraphs = array_values(array_filter(array_map(
     is_array($paragraphs ?? null) ? $paragraphs : []
 ), static fn(string $paragraph): bool => $paragraph !== ''));
 
-$metaLines = array_values(array_filter(array_map(
-    static fn($line): string => trim((string) $line),
-    is_array($metaLines ?? null) ? $metaLines : []
-), static fn(string $line): bool => $line !== ''));
-
 $detailsText = trim((string) ($details ?? ''));
 $bodyParagraphs = [];
 
@@ -166,23 +161,6 @@ if ($detailsText !== '') {
                                 <p style="margin:14px 0 0 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.7;color:#45615e;">
                                     <a href="<?= esc($secondaryUrl) ?>" style="color:#0f766e;text-decoration:underline;font-weight:700;"><?= esc($secondaryText) ?></a>
                                 </p>
-                            <?php endif; ?>
-
-                            <?php if ($metaLines !== []): ?>
-                                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:24px 0 0 0;border-collapse:collapse;">
-                                    <tr>
-                                        <td style="background-color:#10211f;border-radius:20px;padding:18px 20px;">
-                                            <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.4;color:#9cd7cf;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;">
-                                                Security Details
-                                            </div>
-                                            <?php foreach ($metaLines as $line): ?>
-                                                <div style="margin:0 0 8px 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.6;color:#e7f5f2;">
-                                                    <?= esc($line) ?>
-                                                </div>
-                                            <?php endforeach; ?>
-                                        </td>
-                                    </tr>
-                                </table>
                             <?php endif; ?>
 
                             <?php if ($footerNote !== ''): ?>
