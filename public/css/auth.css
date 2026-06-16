@@ -274,6 +274,17 @@
     box-shadow: var(--slams-focus);
 }
 
+.auth-field .form-control.is-invalid {
+    border-color: color-mix(in srgb, var(--slams-danger, #dc2626) 72%, var(--slams-border));
+    box-shadow: 0 0 0 0.16rem color-mix(in srgb, var(--slams-danger, #dc2626) 16%, transparent);
+}
+
+.auth-field-error {
+    color: var(--slams-danger, #dc2626);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
 .auth-field-hint {
     color: var(--slams-muted);
     font-size: 0.8rem;

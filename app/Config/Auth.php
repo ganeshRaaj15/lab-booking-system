@@ -46,16 +46,16 @@ class Auth extends ShieldAuth
      * --------------------------------------------------------------------
      */
     public array $views = [
-         'login'                => 'auth/login',              // app/Views/auth/login.php
-    'register'             => 'auth/register',           // app/Views/auth/register.php
+        'login'                       => 'auth/auth_shell',         // app/Views/auth/auth_shell.php
+        'register'                    => 'auth/auth_shell',         // app/Views/auth/auth_shell.php
         'layout'                      => '\CodeIgniter\Shield\Views\layout',
         'action_email_2fa'            => 'auth/email_2fa_show',
         'action_email_2fa_verify'     => 'auth/email_2fa_verify',
         'action_email_2fa_email'      => '\CodeIgniter\Shield\Views\Email\email_2fa_email',
         'action_email_activate_show'  => '\CodeIgniter\Shield\Views\email_activate_show',
         'action_email_activate_email' => '\CodeIgniter\Shield\Views\Email\email_activate_email',
-        'magic-link-login'     => 'auth/magic_link_form',    // app/Views/auth/magic_link_form.php
-    'magic-link-message'   => 'auth/magic_link_message', // app/Views/auth/magic_link_message.php
+        'magic-link-login'            => 'auth/magic_link_form',    // app/Views/auth/magic_link_form.php
+        'magic-link-message'          => 'auth/magic_link_message', // app/Views/auth/magic_link_message.php
         'magic-link-email'            => 'auth/recovery_email',
     ];
 
