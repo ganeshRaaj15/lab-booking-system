@@ -255,7 +255,7 @@ $renderNavLink = static function (array $item, string $itemClass = 'nav-item me-
                             <?php endif; ?>
 
                         <?php else: ?>
-                            <li class="nav-item ms-lg-2"><a class="btn btn-glow btn-sm" href="/login"><i class="bi bi-box-arrow-in-right me-1"></i> Login</a></li>
+                            <li class="nav-item ms-lg-auto"><a class="btn btn-glow btn-sm" href="/login"><i class="bi bi-box-arrow-in-right me-1"></i> Login</a></li>
                         <?php endif; ?>
                     </ul>
                 <?php endif; ?>

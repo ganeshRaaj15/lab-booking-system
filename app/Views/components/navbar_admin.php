@@ -21,7 +21,7 @@ $dashboardLabel = $isPicWorkspace ? 'PIC Workspace' : 'Admin Dashboard';
         </div>
 
         <div class="navbar-actions">
-            <?= $this->include('components/navbar_app_controls', [
+            <?= view('components/navbar_app_controls', [
                 'appControlsShowProfileLink' => false,
                 'appControlsShowDesktopLogout' => false,
             ]) ?>
