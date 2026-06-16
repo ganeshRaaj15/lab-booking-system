@@ -70,7 +70,7 @@ if ($detailsText !== '') {
                                                 </td>
                                                 <td valign="middle">
                                                     <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.4;color:#147d75;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">FKMP UTHM</div>
-                                                    <div style="font-family:Arial,Helvetica,sans-serif;font-size:22px;line-height:1.2;color:#10211f;font-weight:700;">Smart Lab Management System</div>
+                                                    <div style="font-family:Arial,Helvetica,sans-serif;font-size:22px;line-height:1.2;color:#10211f;font-weight:700;">Smart Lab and Asset Management System</div>
                                                 </td>
                                             </tr>
                                         </table>
@@ -172,7 +172,7 @@ if ($detailsText !== '') {
                     </tr>
                     <tr>
                         <td style="padding:16px 8px 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#6a7f7b;text-align:center;">
-                            FKMP Smart Lab Management System<br>
+                            FKMP Smart Lab and Asset Management System<br>
                             This is an automated message. Please do not reply directly to this email.
                         </td>
                     </tr>
