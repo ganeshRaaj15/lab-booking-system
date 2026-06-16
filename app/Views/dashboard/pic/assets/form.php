@@ -15,16 +15,18 @@ $errors = session()->getFlashdata('errors') ?? [];
 
 <div class="container py-4">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="fw-bold text-primary"><?= esc($title) ?></h2>
-            <p class="text-muted small mb-0">
+    <div class="slams-page-header">
+        <div class="slams-page-header-left">
+            <h1 class="slams-page-title"><?= esc($title) ?></h1>
+            <p class="slams-page-subtitle">
                 <?= $isEdit ? 'Update asset details for your assigned laboratory.' : 'Add a new asset to your assigned laboratory.' ?>
             </p>
         </div>
-        <a href="/dashboard/pic/assets" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i> Back to Assets
-        </a>
+        <div class="slams-page-header-actions">
+            <a href="/dashboard/pic/assets" class="btn btn-glass btn-sm">
+                <i class="bi bi-arrow-left me-1"></i> Back to Assets
+            </a>
+        </div>
     </div>
 
     <?php if (! empty($errors)): ?>

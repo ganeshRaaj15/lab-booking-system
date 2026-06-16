@@ -5,13 +5,13 @@
 
 <div class="user-form-page">
     <!-- PAGE HEADER -->
-    <div class="dashboard-header">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
-            <div>
-                <h1>Edit User</h1>
-                <p>Update user details, roles, and permissions</p>
-            </div>
-            <a href="/admin/users" class="btn btn-outline-secondary">
+    <div class="slams-page-header">
+        <div class="slams-page-header-left">
+            <h1 class="slams-page-title">Edit User</h1>
+            <p class="slams-page-subtitle">Update user details, roles, and permissions</p>
+        </div>
+        <div class="slams-page-header-actions">
+            <a href="/admin/users" class="btn btn-glass btn-sm">
                 <i class="bi bi-arrow-left me-1"></i> Back to Users
             </a>
         </div>

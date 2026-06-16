@@ -2,6 +2,7 @@
 $navUser = isset($user) && $user ? $user : ((function_exists('auth') && auth()->loggedIn()) ? auth()->user() : null);
 $isPicWorkspace = $navUser && $navUser->inGroup('pic') && ! $navUser->inGroup('admin');
 $dashboardLabel = $isPicWorkspace ? 'PIC Workspace' : 'Admin Dashboard';
+$navProfilePhoto = $navUser ? trim((string) ($navUser->profile_photo ?? '')) : '';
 ?>
 
 <nav class="admin-glass-navbar">
@@ -27,7 +28,13 @@ $dashboardLabel = $isPicWorkspace ? 'PIC Workspace' : 'Admin Dashboard';
             ]) ?>
             <?php if ($navUser): ?>
                 <a href="/dashboard/profile" class="user-profile-glass">
-                    <div class="user-avatar"><i class="bi bi-person-circle"></i></div>
+                    <div class="user-avatar">
+                        <?php if ($navProfilePhoto !== ''): ?>
+                            <img src="<?= esc(base_url(ltrim($navProfilePhoto, '/'))) ?>" alt="Profile" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">
+                        <?php else: ?>
+                            <i class="bi bi-person-circle"></i>
+                        <?php endif; ?>
+                    </div>
                     <div class="user-info">
                         <div class="user-name"><?= esc($navUser->full_name ?? $navUser->username ?? 'User') ?></div>
                         <div class="user-role"><?= esc($isPicWorkspace ? 'PIC' : ($navUser->role ?? 'User')) ?></div>

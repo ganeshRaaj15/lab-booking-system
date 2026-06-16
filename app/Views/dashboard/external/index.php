@@ -19,13 +19,13 @@ $statusLabels = $statusLabels ?? [];
 $requestModel = $requestModel ?? null;
 ?>
 
-<div class="dashboard-header">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
-        <div>
-            <h2 class="fw-bold text-primary mb-0">Lab Access Requests</h2>
-            <p class="text-muted small mb-0">Request access to a FKMP laboratory. Submit your details, and the lab team will review and get back to you.</p>
-        </div>
-        <a href="/dashboard/external/request" class="btn btn-primary">
+<div class="slams-page-header">
+    <div class="slams-page-header-left">
+        <h1 class="slams-page-title">Lab Access Requests</h1>
+        <p class="slams-page-subtitle">Request access to a FKMP laboratory — the lab team will review and get back to you.</p>
+    </div>
+    <div class="slams-page-header-actions">
+        <a href="/dashboard/external/request" class="btn btn-primary btn-sm">
             <i class="bi bi-plus-circle me-1"></i> New Request
         </a>
     </div>

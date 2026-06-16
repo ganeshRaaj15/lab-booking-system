@@ -42,13 +42,13 @@ $settingMeta = [
 
 <div class="settings-page">
     <!-- PAGE HEADER -->
-    <div class="dashboard-header">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
-            <div>
-                <h1>System Settings</h1>
-                <p>Manage configuration values for Smart Lab Management System</p>
-            </div>
-            <a href="/dashboard/admin" class="btn btn-outline-secondary">
+    <div class="slams-page-header">
+        <div class="slams-page-header-left">
+            <h1 class="slams-page-title">System Settings</h1>
+            <p class="slams-page-subtitle">Manage configuration values for Smart Lab Management System</p>
+        </div>
+        <div class="slams-page-header-actions">
+            <a href="/dashboard/admin" class="btn btn-glass btn-sm">
                 <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
             </a>
         </div>

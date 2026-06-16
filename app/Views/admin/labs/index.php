@@ -7,14 +7,16 @@ $canCreateLabs = $canCreateLabs ?? false;
 ?>
 
 <div class="container-fluid">
-    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
-        <div>
-            <h1 class="h3 mb-1">Laboratory Management</h1>
-            <p class="text-muted mb-0">Manage laboratory profiles, PIC ownership, capacity, and asset readiness.</p>
+    <div class="slams-page-header">
+        <div class="slams-page-header-left">
+            <h1 class="slams-page-title">Laboratory Management</h1>
+            <p class="slams-page-subtitle">Manage laboratory profiles, PIC ownership, capacity, and asset readiness.</p>
         </div>
-        <?php if ($canCreateLabs): ?>
-            <a href="/admin/labs/create" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Add Lab</a>
-        <?php endif; ?>
+        <div class="slams-page-header-actions">
+            <?php if ($canCreateLabs): ?>
+                <a href="/admin/labs/create" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i>Add Lab</a>
+            <?php endif; ?>
+        </div>
     </div>
 
     <?php if (session()->getFlashdata('message')): ?>

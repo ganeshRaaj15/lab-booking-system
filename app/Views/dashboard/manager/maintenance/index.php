@@ -21,14 +21,16 @@ $statusBadge   = ['reported' => 'info', 'scheduled' => 'primary', 'in_progress' 
 
 <div class="container py-4">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="fw-bold text-primary">Maintenance Records</h2>
-            <p class="text-muted small mb-0">Read-only view of all system maintenance activity for <?= esc($roleLabel) ?>.</p>
+    <div class="slams-page-header">
+        <div class="slams-page-header-left">
+            <h1 class="slams-page-title">Maintenance Records</h1>
+            <p class="slams-page-subtitle">Read-only view of all system maintenance activity for <?= esc($roleLabel) ?>.</p>
         </div>
-        <a href="<?= esc($backUrl) ?>" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i> <?= esc($roleLabel) ?> Dashboard
-        </a>
+        <div class="slams-page-header-actions">
+            <a href="<?= esc($backUrl) ?>" class="btn btn-glass btn-sm">
+                <i class="bi bi-arrow-left me-1"></i> <?= esc($roleLabel) ?> Dashboard
+            </a>
+        </div>
     </div>
 
     <?php if (session()->getFlashdata('error')): ?>

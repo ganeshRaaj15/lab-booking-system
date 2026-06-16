@@ -26,53 +26,57 @@ $dashboardBasePath = ($user && $user->inGroup('staff')) ? '/dashboard/staff' : '
 <div class="container py-4">
 
     <!-- HEADER -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="fw-bold text-primary"><?= esc($dashboardLabel ?? 'Student Dashboard') ?></h2>
-            <p class="text-muted mb-0 small">Welcome back, <?= esc($user->full_name ?? $user->username ?? 'User') ?>!</p>
+    <div class="slams-page-header">
+        <div class="slams-page-header-left">
+            <h1 class="slams-page-title"><?= esc($dashboardLabel ?? 'Student Dashboard') ?></h1>
+            <p class="slams-page-subtitle">Welcome back, <?= esc($user->full_name ?? $user->username ?? 'User') ?>!</p>
+        </div>
+        <div class="slams-page-header-actions">
+            <a href="/laboratories" class="btn btn-primary btn-sm px-3">
+                <i class="bi bi-calendar-plus me-1"></i> Book a Lab
+            </a>
         </div>
     </div>
 
 
     <!-- ======================= FIRST-TIME GUIDE ======================= -->
     <?php if (($stats['total'] ?? 0) === 0): ?>
-    <div class="card border-0 shadow-sm rounded-4 mb-4" style="background: linear-gradient(135deg, #eff6ff, #f0fdf4); border-left: 4px solid #2563eb !important;">
-        <div class="card-body">
-            <h6 class="fw-bold text-primary mb-1">
-                <i class="bi bi-rocket-takeoff me-2"></i>Welcome to SLAMS — here's how it works
-            </h6>
-            <p class="text-muted small mb-3">You haven't made any bookings yet. Follow these steps to reserve a laboratory.</p>
-            <div class="row g-2 text-center">
-                <div class="col-md-4">
-                    <div class="p-3 bg-white rounded-3 border h-100">
-                        <div class="fw-bold text-primary fs-4 mb-1">1</div>
-                        <i class="bi bi-building text-primary fs-5 mb-1 d-block"></i>
-                        <div class="fw-semibold small">Browse Laboratories</div>
-                        <div class="text-muted" style="font-size: 0.78rem;">Go to <strong>Browse Laboratories</strong> below, pick a lab, then choose a service and an available timeslot.</div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="p-3 bg-white rounded-3 border h-100">
-                        <div class="fw-bold text-primary fs-4 mb-1">2</div>
-                        <i class="bi bi-send text-primary fs-5 mb-1 d-block"></i>
-                        <div class="fw-semibold small">Submit Your Booking</div>
-                        <div class="text-muted" style="font-size: 0.78rem;">Fill in your activity details and supervisor info, then submit. Your booking will appear here as <strong>Pending</strong>.</div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="p-3 bg-white rounded-3 border h-100">
-                        <div class="fw-bold text-primary fs-4 mb-1">3</div>
-                        <i class="bi bi-bell text-primary fs-5 mb-1 d-block"></i>
-                        <div class="fw-semibold small">Wait for Approval</div>
-                        <div class="text-muted" style="font-size: 0.78rem;">The lab PIC and manager will review your request. You'll be notified when it's <strong>Approved</strong> or <strong>Rejected</strong>.</div>
-                    </div>
+    <div class="slams-guide-card mb-4">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <i class="bi bi-rocket-takeoff" style="color:var(--slams-primary);font-size:1.2rem;"></i>
+            <h6 class="fw-bold mb-0" style="color:var(--slams-primary);">Welcome to SLAMS — here's how it works</h6>
+        </div>
+        <p class="slams-text-sm text-muted mb-3">You haven't made any bookings yet. Follow these steps to get started.</p>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="slams-guide-step">
+                    <div class="slams-guide-step-num">1</div>
+                    <i class="bi bi-building" style="color:var(--slams-primary);font-size:1.4rem;display:block;margin-bottom:0.5rem;"></i>
+                    <div class="fw-semibold slams-text-sm mb-1">Browse Laboratories</div>
+                    <div class="text-muted slams-text-xs">Pick a lab, choose a service and an available timeslot.</div>
                 </div>
             </div>
-            <div class="mt-3 text-center">
-                <a href="/laboratories" class="btn btn-primary btn-sm px-4">
-                    <i class="bi bi-building me-1"></i> Browse Laboratories to Get Started
-                </a>
+            <div class="col-md-4">
+                <div class="slams-guide-step">
+                    <div class="slams-guide-step-num">2</div>
+                    <i class="bi bi-send" style="color:var(--slams-primary);font-size:1.4rem;display:block;margin-bottom:0.5rem;"></i>
+                    <div class="fw-semibold slams-text-sm mb-1">Submit Your Booking</div>
+                    <div class="text-muted slams-text-xs">Fill in activity details and supervisor info, then submit. It appears here as <strong>Pending</strong>.</div>
+                </div>
             </div>
+            <div class="col-md-4">
+                <div class="slams-guide-step">
+                    <div class="slams-guide-step-num">3</div>
+                    <i class="bi bi-bell" style="color:var(--slams-primary);font-size:1.4rem;display:block;margin-bottom:0.5rem;"></i>
+                    <div class="fw-semibold slams-text-sm mb-1">Wait for Approval</div>
+                    <div class="text-muted slams-text-xs">The lab PIC and manager review your request. You'll be notified when <strong>Approved</strong> or <strong>Rejected</strong>.</div>
+                </div>
+            </div>
+        </div>
+        <div class="mt-3 text-center">
+            <a href="/laboratories" class="btn btn-primary btn-sm px-4">
+                <i class="bi bi-building me-1"></i> Browse Laboratories
+            </a>
         </div>
     </div>
     <?php endif; ?>
@@ -167,46 +171,62 @@ $dashboardBasePath = ($user && $user->inGroup('staff')) ? '/dashboard/staff' : '
     <div class="row g-3 mb-4">
 
         <div class="col-md-3">
-            <div class="kpi-card bg-primary">
-                <div>
-                    <h6 class="fw-semibold mb-1">Pending</h6>
-                    <h2 class="fw-bold"><?= esc($stats['pending']) ?></h2>
-                    <p class="mb-0 mt-1" style="font-size:0.72rem;opacity:0.85;">Awaiting PIC &amp; manager review</p>
+            <div class="slams-kpi slams-kpi-warning">
+                <div class="slams-kpi-head">
+                    <div>
+                        <div class="slams-kpi-label">Pending</div>
+                        <div class="slams-kpi-value"><?= esc($stats['pending']) ?></div>
+                    </div>
+                    <div class="slams-kpi-icon slams-kpi-icon--warning">
+                        <i class="bi bi-hourglass-split"></i>
+                    </div>
                 </div>
-                <i class="bi bi-hourglass-split kpi-icon"></i>
+                <div class="slams-kpi-footer">Awaiting PIC &amp; manager review</div>
             </div>
         </div>
 
         <div class="col-md-3">
-            <div class="kpi-card bg-success">
-                <div>
-                    <h6 class="fw-semibold mb-1">Approved</h6>
-                    <h2 class="fw-bold"><?= esc($stats['approved']) ?></h2>
-                    <p class="mb-0 mt-1" style="font-size:0.72rem;opacity:0.85;">Confirmed — you may use the lab</p>
+            <div class="slams-kpi slams-kpi-success">
+                <div class="slams-kpi-head">
+                    <div>
+                        <div class="slams-kpi-label">Approved</div>
+                        <div class="slams-kpi-value"><?= esc($stats['approved']) ?></div>
+                    </div>
+                    <div class="slams-kpi-icon slams-kpi-icon--success">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
                 </div>
-                <i class="bi bi-check-circle kpi-icon"></i>
+                <div class="slams-kpi-footer">Confirmed — you may use the lab</div>
             </div>
         </div>
 
         <div class="col-md-3">
-            <div class="kpi-card bg-danger">
-                <div>
-                    <h6 class="fw-semibold mb-1">Rejected</h6>
-                    <h2 class="fw-bold"><?= esc($stats['rejected']) ?></h2>
-                    <p class="mb-0 mt-1" style="font-size:0.72rem;opacity:0.85;">Not approved — check booking details</p>
+            <div class="slams-kpi slams-kpi-danger">
+                <div class="slams-kpi-head">
+                    <div>
+                        <div class="slams-kpi-label">Rejected</div>
+                        <div class="slams-kpi-value"><?= esc($stats['rejected']) ?></div>
+                    </div>
+                    <div class="slams-kpi-icon slams-kpi-icon--danger">
+                        <i class="bi bi-x-circle"></i>
+                    </div>
                 </div>
-                <i class="bi bi-x-circle kpi-icon"></i>
+                <div class="slams-kpi-footer">Not approved — check booking details</div>
             </div>
         </div>
 
         <div class="col-md-3">
-            <div class="kpi-card bg-secondary">
-                <div>
-                    <h6 class="fw-semibold mb-1">Cancelled</h6>
-                    <h2 class="fw-bold"><?= esc($stats['cancelled'] ?? 0) ?></h2>
-                    <p class="mb-0 mt-1" style="font-size:0.72rem;opacity:0.85;">Cancelled before approval</p>
+            <div class="slams-kpi slams-kpi-neutral">
+                <div class="slams-kpi-head">
+                    <div>
+                        <div class="slams-kpi-label">Cancelled</div>
+                        <div class="slams-kpi-value"><?= esc($stats['cancelled'] ?? 0) ?></div>
+                    </div>
+                    <div class="slams-kpi-icon slams-kpi-icon--neutral">
+                        <i class="bi bi-slash-circle"></i>
+                    </div>
                 </div>
-                <i class="bi bi-slash-circle kpi-icon"></i>
+                <div class="slams-kpi-footer">Cancelled before approval</div>
             </div>
         </div>
 
@@ -297,9 +317,12 @@ $dashboardBasePath = ($user && $user->inGroup('staff')) ? '/dashboard/staff' : '
     <div class="row g-3 mb-4">
 
         <div class="col-lg-8">
-            <div class="card shadow-sm border-0 rounded-4 h-100">
-                <div class="card-header bg-white border-0">
-                    <h5 class="fw-bold text-primary mb-0">Booking Activity (Last 6 Months)</h5>
+            <div class="glass-card h-100">
+                <div class="glass-card-header d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0" style="font-family:var(--slams-font-display);">
+                        <i class="bi bi-graph-up me-2" style="color:var(--slams-primary);"></i>Booking Activity
+                    </h5>
+                    <span class="slams-text-xs text-muted">Last 6 months</span>
                 </div>
                 <div class="card-body">
                     <canvas id="studentTrendChart" height="120"></canvas>
@@ -308,13 +331,13 @@ $dashboardBasePath = ($user && $user->inGroup('staff')) ? '/dashboard/staff' : '
         </div>
 
         <div class="col-lg-4">
-            <div class="card shadow-sm border-0 rounded-4 h-100">
-                <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                    <h6 class="fw-bold text-primary mb-0">Upcoming Schedule</h6>
+            <div class="glass-card h-100">
+                <div class="glass-card-header d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0" style="font-family:var(--slams-font-display);">
+                        <i class="bi bi-calendar-week me-2" style="color:var(--slams-primary);"></i>Upcoming Schedule
+                    </h6>
                     <?php if (!empty($upcomingBookings)): ?>
-                        <span class="badge bg-soft-primary text-primary small">
-                            <?= count($upcomingBookings) ?> upcoming
-                        </span>
+                        <span class="stat-badge"><?= count($upcomingBookings) ?> upcoming</span>
                     <?php endif; ?>
                 </div>
                 <div class="card-body">
@@ -360,9 +383,11 @@ $dashboardBasePath = ($user && $user->inGroup('staff')) ? '/dashboard/staff' : '
     </div>
 
     <!-- ======================= BOOKINGS TABLE ======================= -->
-    <div class="card shadow-sm border-0 rounded-4">
-        <div class="card-header bg-white border-0">
-            <h5 class="fw-bold text-primary mb-0">Your Bookings</h5>
+    <div class="glass-card">
+        <div class="glass-card-header">
+            <h5 class="fw-bold mb-0" style="font-family:var(--slams-font-display);">
+                <i class="bi bi-list-check me-2" style="color:var(--slams-primary);"></i>Your Bookings
+            </h5>
         </div>
 
         <div class="card-body">
@@ -503,11 +528,11 @@ $dashboardBasePath = ($user && $user->inGroup('staff')) ? '/dashboard/staff' : '
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content rounded-4 shadow-lg">
 
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title fw-bold">
-                    <i class="bi bi-journal-text me-2"></i>Booking Details
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" style="font-family:var(--slams-font-display);">
+                    <i class="bi bi-journal-text me-2" style="color:var(--slams-primary);"></i>Booking Details
                 </h5>
-                <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
             </div>
 
             <div class="modal-body" id="bookingDetailsBody">

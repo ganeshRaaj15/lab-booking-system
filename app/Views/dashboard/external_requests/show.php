@@ -20,13 +20,13 @@ $approveLabel = $currentStage === 'manager' ? 'Approve For Scheduling' : 'Approv
 $latestNote = $requestModel ? $requestModel->latestRequesterNote($requestRecord) : (string) ($requestRecord['review_notes'] ?? '');
 ?>
 
-<div class="dashboard-header">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
-        <div>
-            <h2 class="fw-bold text-primary mb-0">Review External Request</h2>
-            <p class="text-muted small mb-0">This panel is stage-based for external users: PIC reviews first, then Lab Manager approval, with separate notes at each stage.</p>
-        </div>
-        <a href="/dashboard/external-requests" class="btn btn-outline-secondary">
+<div class="slams-page-header">
+    <div class="slams-page-header-left">
+        <h1 class="slams-page-title">Review External Request</h1>
+        <p class="slams-page-subtitle">Stage-based review: PIC first, then Lab Manager — separate notes at each stage.</p>
+    </div>
+    <div class="slams-page-header-actions">
+        <a href="/dashboard/external-requests" class="btn btn-glass btn-sm">
             <i class="bi bi-arrow-left me-1"></i> Back to Queue
         </a>
     </div>

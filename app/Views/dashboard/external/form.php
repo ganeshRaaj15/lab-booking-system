@@ -11,13 +11,13 @@ $requestModel = $requestModel ?? null;
 $currentStatus = (string) ($requestRecord['status'] ?? 'pending_pic_approval');
 ?>
 
-<div class="dashboard-header">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
-        <div>
-            <h2 class="fw-bold text-primary mb-0"><?= $isEdit ? 'Update External Request' : 'Request Lab Access' ?></h2>
-            <p class="text-muted small mb-0">This form starts a staged approval flow. It does not directly reserve the laboratory.</p>
-        </div>
-        <a href="/dashboard/external" class="btn btn-outline-secondary">
+<div class="slams-page-header">
+    <div class="slams-page-header-left">
+        <h1 class="slams-page-title"><?= $isEdit ? 'Update External Request' : 'Request Lab Access' ?></h1>
+        <p class="slams-page-subtitle">This form starts a staged approval flow. It does not directly reserve the laboratory.</p>
+    </div>
+    <div class="slams-page-header-actions">
+        <a href="/dashboard/external" class="btn btn-glass btn-sm">
             <i class="bi bi-arrow-left me-1"></i> Back to Requests
         </a>
     </div>

@@ -4,12 +4,14 @@
 <?php $filters = $filters ?? ['q' => '', 'lab_id' => 0, 'active' => '']; ?>
 
 <div class="container-fluid">
-    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
-        <div>
-            <h1 class="h3 mb-1">Service Bundles</h1>
-            <p class="text-muted mb-0">Define bookable laboratory services as bundles of multiple assets and required quantities.</p>
+    <div class="slams-page-header">
+        <div class="slams-page-header-left">
+            <h1 class="slams-page-title">Service Bundles</h1>
+            <p class="slams-page-subtitle">Define bookable laboratory services as bundles of assets and required quantities.</p>
         </div>
-        <a href="/admin/services/create" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Add Service</a>
+        <div class="slams-page-header-actions">
+            <a href="/admin/services/create" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i>Add Service</a>
+        </div>
     </div>
 
     <?php if (session()->getFlashdata('message')): ?>

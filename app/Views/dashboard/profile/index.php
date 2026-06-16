@@ -2,15 +2,17 @@
 <?= $this->section('content') ?>
 
 <div class="container">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
-        <div>
-            <h2 class="fw-bold mb-1">My Profile</h2>
-            <p class="text-muted mb-0">Update your account details and contact information.</p>
+    <div class="slams-page-header">
+        <div class="slams-page-header-left">
+            <h1 class="slams-page-title">My Profile</h1>
+            <p class="slams-page-subtitle">Update your account details and contact information.</p>
         </div>
         <?php if (!empty($backUrl ?? null)): ?>
-            <a href="<?= esc($backUrl) ?>" class="btn btn-outline-secondary mt-3 mt-md-0">
+        <div class="slams-page-header-actions">
+            <a href="<?= esc($backUrl) ?>" class="btn btn-glass btn-sm">
                 <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
             </a>
+        </div>
         <?php endif; ?>
     </div>
 

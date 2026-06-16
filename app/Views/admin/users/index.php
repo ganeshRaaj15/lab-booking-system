@@ -19,26 +19,24 @@ $exportQuery = array_filter($baseQuery, static fn($value) => $value !== '' && $v
 
 <div class="user-management">
     <!-- PAGE HEADER -->
-    <div class="dashboard-header">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
-            <div>
-                <h1>User Management</h1>
-                <p>Manage system users, roles, and permissions</p>
-            </div>
-            <div class="d-flex gap-3">
-                <div class="quick-stat">
-                    <i class="bi bi-people-fill"></i>
-                    <div>
-                        <div class="small text-muted">Total Users</div>
-                        <div class="fw-bold"><?= esc($stats['total']) ?></div>
-                    </div>
+    <div class="slams-page-header">
+        <div class="slams-page-header-left">
+            <h1 class="slams-page-title">User Management</h1>
+            <p class="slams-page-subtitle">Manage system users, roles, and permissions</p>
+        </div>
+        <div class="slams-page-header-actions">
+            <div class="quick-stat">
+                <i class="bi bi-people-fill"></i>
+                <div>
+                    <div class="slams-text-xs text-muted">Total Users</div>
+                    <div class="fw-bold slams-text-sm"><?= esc($stats['total']) ?></div>
                 </div>
-                <div class="quick-stat">
-                    <i class="bi bi-person-check"></i>
-                    <div>
-                        <div class="small text-muted">Active</div>
-                        <div class="fw-bold"><?= esc($stats['active']) ?></div>
-                    </div>
+            </div>
+            <div class="quick-stat">
+                <i class="bi bi-person-check"></i>
+                <div>
+                    <div class="slams-text-xs text-muted">Active</div>
+                    <div class="fw-bold slams-text-sm"><?= esc($stats['active']) ?></div>
                 </div>
             </div>
         </div>

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /** @var array $stats */
 /** @var array $trends */
 /** @var array $facultyBreakdown */
@@ -18,147 +18,120 @@ $rejected         = $rejected ?? [];
 
 <?= $this->section('content') ?>
 
-
 <div class="admin-dashboard">
+
     <!-- PAGE HEADER -->
-    <div class="dashboard-header">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
-            <div>
-                <h1>Admin Dashboard</h1>
-                <p>System Overview & Real-time Analytics</p>
-            </div>
-            <div class="d-flex gap-3 flex-wrap align-items-center">
-                <a href="/dashboard/reports/pdf" class="btn btn-glass">
-                    <i class="bi bi-file-earmark-pdf me-1"></i> Download Report
-                </a>
-                <a href="/dashboard/reports/csv" class="btn btn-glass">
-                    <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
-                </a>
-                <div class="quick-stat">
-                    <i class="bi bi-calendar-week"></i>
-                    <div>
-                        <div class="small text-muted">Today</div>
-                        <div class="fw-bold"><?= date('d-m-Y') ?></div>
-                    </div>
-                </div>
-                <div class="quick-stat">
-                    <i class="bi bi-clock"></i>
-                    <div>
-                        <div class="small text-muted">Last Update</div>
-                        <div class="fw-bold">Just now</div>
-                    </div>
+    <div class="slams-page-header">
+        <div class="slams-page-header-left">
+            <h1 class="slams-page-title">Admin Dashboard</h1>
+            <p class="slams-page-subtitle">System overview &amp; real-time analytics</p>
+        </div>
+        <div class="slams-page-header-actions">
+            <a href="/dashboard/reports/pdf" class="btn btn-glass btn-sm">
+                <i class="bi bi-file-earmark-pdf me-1"></i> Report
+            </a>
+            <a href="/dashboard/reports/csv" class="btn btn-glass btn-sm">
+                <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
+            </a>
+            <div class="quick-stat">
+                <i class="bi bi-calendar-week"></i>
+                <div>
+                    <div class="slams-text-xs text-muted">Today</div>
+                    <div class="fw-bold slams-text-sm"><?= date('d M Y') ?></div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- KPI WIDGETS -->
-    <div class="row g-4 mb-3">
-        <!-- Pending PIC -->
+    <div class="row g-3 mb-4">
         <div class="col-xl-3 col-md-6">
-            <div class="kpi-glass-card gradient-pending text-white">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <div class="flex-grow-1">
-                        <div class="d-flex align-items-center gap-2 mb-2">
-                            <div class="status-badge">PIC Stage</div>
-                        </div>
-                        <h6 class="mb-2 opacity-90 fw-medium">Pending Approvals</h6>
-                        <div class="kpi-number"><?= esc($stats['pending']) ?></div>
+            <div class="slams-kpi slams-kpi-warning">
+                <div class="slams-kpi-head">
+                    <div>
+                        <div class="slams-kpi-label">Pending PIC</div>
+                        <div class="slams-kpi-value"><?= esc($stats['pending'] ?? 0) ?></div>
                     </div>
-                    <div class="icon-container">
-                        <i class="bi bi-clock-history fs-4"></i>
+                    <div class="slams-kpi-icon slams-kpi-icon--warning">
+                        <i class="bi bi-clock-history"></i>
                     </div>
                 </div>
-                <div class="small opacity-90">Awaiting PIC verification</div>
+                <div class="slams-kpi-footer">Awaiting PIC verification</div>
             </div>
         </div>
 
-        <!-- Pending Manager -->
         <div class="col-xl-3 col-md-6">
-            <div class="kpi-glass-card gradient-pending-mgr text-white">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <div class="flex-grow-1">
-                        <div class="d-flex align-items-center gap-2 mb-2">
-                            <div class="status-badge">Manager Stage</div>
-                        </div>
-                        <h6 class="mb-2 opacity-90 fw-medium">Pending Manager Review</h6>
-                        <div class="kpi-number"><?= esc($stats['pending_mgr']) ?></div>
+            <div class="slams-kpi slams-kpi-info">
+                <div class="slams-kpi-head">
+                    <div>
+                        <div class="slams-kpi-label">Pending Manager</div>
+                        <div class="slams-kpi-value"><?= esc($stats['pending_mgr'] ?? 0) ?></div>
                     </div>
-                    <div class="icon-container">
-                        <i class="bi bi-check2-square fs-4"></i>
+                    <div class="slams-kpi-icon slams-kpi-icon--info">
+                        <i class="bi bi-check2-square"></i>
                     </div>
                 </div>
-                <div class="small opacity-90">Awaiting manager approval</div>
+                <div class="slams-kpi-footer">Awaiting manager approval</div>
             </div>
         </div>
 
-        <!-- Approved -->
         <div class="col-xl-3 col-md-6">
-            <div class="kpi-glass-card gradient-approved text-white">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <div class="flex-grow-1">
-                        <div class="d-flex align-items-center gap-2 mb-2">
-                            <div class="status-badge">Approved</div>
-                        </div>
-                        <h6 class="mb-2 opacity-90 fw-medium">Approved Bookings</h6>
-                        <div class="kpi-number"><?= esc($stats['approved']) ?></div>
+            <div class="slams-kpi slams-kpi-success">
+                <div class="slams-kpi-head">
+                    <div>
+                        <div class="slams-kpi-label">Approved</div>
+                        <div class="slams-kpi-value"><?= esc($stats['approved'] ?? 0) ?></div>
                     </div>
-                    <div class="icon-container">
-                        <i class="bi bi-check-circle fs-4"></i>
+                    <div class="slams-kpi-icon slams-kpi-icon--success">
+                        <i class="bi bi-check-circle"></i>
                     </div>
                 </div>
-                <div class="small opacity-90">Successfully approved</div>
+                <div class="slams-kpi-footer">Successfully approved</div>
             </div>
         </div>
 
-        <!-- Rejected -->
         <div class="col-xl-3 col-md-6">
-            <div class="kpi-glass-card gradient-rejected text-white">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <div class="flex-grow-1">
-                        <div class="d-flex align-items-center gap-2 mb-2">
-                            <div class="status-badge">Rejected</div>
-                        </div>
-                        <h6 class="mb-2 opacity-90 fw-medium">Rejected Bookings</h6>
-                        <div class="kpi-number"><?= esc($stats['rejected']) ?></div>
+            <div class="slams-kpi slams-kpi-danger">
+                <div class="slams-kpi-head">
+                    <div>
+                        <div class="slams-kpi-label">Rejected</div>
+                        <div class="slams-kpi-value"><?= esc($stats['rejected'] ?? 0) ?></div>
                     </div>
-                    <div class="icon-container">
-                        <i class="bi bi-x-circle fs-4"></i>
+                    <div class="slams-kpi-icon slams-kpi-icon--danger">
+                        <i class="bi bi-x-circle"></i>
                     </div>
                 </div>
-                <div class="small opacity-90">Bookings that were declined</div>
+                <div class="slams-kpi-footer">Bookings declined</div>
             </div>
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm mb-5">
-        <div class="card-body py-3">
+    <!-- STATUS SUMMARY BAR -->
+    <div class="card border-0 mb-4">
+        <div class="card-body py-2 px-3">
             <div class="d-flex flex-wrap align-items-center gap-2">
-                <span class="fw-semibold text-dark me-2">Booking Status Summary</span>
-                <span class="badge rounded-pill bg-dark-subtle text-dark border">Total: <?= esc($stats['total'] ?? 0) ?></span>
-                <span class="badge rounded-pill bg-warning-subtle text-warning border">Pending PIC: <?= esc($stats['pending'] ?? 0) ?></span>
-                <span class="badge rounded-pill bg-primary-subtle text-primary border">Pending Manager: <?= esc($stats['pending_mgr'] ?? 0) ?></span>
-                <span class="badge rounded-pill bg-success-subtle text-success border">Approved: <?= esc($stats['approved'] ?? 0) ?></span>
-                <span class="badge rounded-pill bg-danger-subtle text-danger border">Rejected: <?= esc($stats['rejected'] ?? 0) ?></span>
-                <span class="badge rounded-pill bg-secondary-subtle text-secondary border">Cancelled: <?= esc($stats['cancelled'] ?? 0) ?></span>
+                <span class="fw-bold slams-text-sm me-1">Booking Status</span>
+                <span class="status-badge status-badge-neutral">Total: <?= esc($stats['total'] ?? 0) ?></span>
+                <span class="status-badge status-badge-pending">Pending PIC: <?= esc($stats['pending'] ?? 0) ?></span>
+                <span class="status-badge status-badge-review">Pending Manager: <?= esc($stats['pending_mgr'] ?? 0) ?></span>
+                <span class="status-badge status-badge-approved">Approved: <?= esc($stats['approved'] ?? 0) ?></span>
+                <span class="status-badge status-badge-rejected">Rejected: <?= esc($stats['rejected'] ?? 0) ?></span>
+                <span class="status-badge status-badge-cancelled">Cancelled: <?= esc($stats['cancelled'] ?? 0) ?></span>
             </div>
         </div>
     </div>
 
     <!-- CHARTS ROW -->
-    <div class="row g-4 mb-5">
+    <div class="row g-4 mb-4">
         <!-- Booking Trends -->
         <div class="col-lg-8">
             <div class="glass-card h-100">
                 <div class="glass-card-header d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold text-gray-800 mb-0">
-                        <i class="bi bi-graph-up me-2"></i>
-                        Booking Trends (Last 6 Months)
+                    <h5 class="fw-bold mb-0" style="font-family:var(--slams-font-display);">
+                        <i class="bi bi-graph-up me-2" style="color:var(--slams-primary);"></i>
+                        Booking Trends
                     </h5>
-                    <div class="stat-badge">
-                        <i class="bi bi-bar-chart"></i>
-                        Monthly Overview
-                    </div>
+                    <span class="slams-text-xs text-muted">Last 6 months</span>
                 </div>
                 <div class="card-body p-4">
                     <div class="chart-container-wrapper">
@@ -174,14 +147,11 @@ $rejected         = $rejected ?? [];
         <div class="col-lg-4">
             <div class="glass-card h-100">
                 <div class="glass-card-header d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold text-gray-800 mb-0">
-                        <i class="bi bi-pie-chart me-2"></i>
-                        Faculty Distribution
+                    <h5 class="fw-bold mb-0" style="font-family:var(--slams-font-display);">
+                        <i class="bi bi-pie-chart me-2" style="color:var(--slams-primary);"></i>
+                        Faculty Mix
                     </h5>
-                    <div class="stat-badge">
-                        <i class="bi bi-info-circle"></i>
-                        Total: <?= array_sum(array_column($facultyBreakdown, 'total')) ?>
-                    </div>
+                    <span class="stat-badge">Total: <?= array_sum(array_column($facultyBreakdown, 'total')) ?></span>
                 </div>
                 <div class="card-body p-4 d-flex flex-column">
                     <div class="chart-container-wrapper" style="height: 160px;">
@@ -189,25 +159,19 @@ $rejected         = $rejected ?? [];
                             <canvas id="facultyChart"></canvas>
                         </div>
                     </div>
-                    
-                    <!-- Custom Legend -->
                     <div class="chart-legend-container mt-3">
                         <div class="row g-2">
-                            <?php 
-                            // Dynamic color generation for any number of faculties
+                            <?php
                             $facultyColors = generateFacultyColors(count($facultyBreakdown));
                             $i = 0;
-                            foreach ($facultyBreakdown as $faculty): 
-                                $color = $facultyColors[$i];
-                                $i++;
+                            foreach ($facultyBreakdown as $faculty):
+                                $color = $facultyColors[$i++];
                             ?>
                             <div class="col-6">
-                                <div class="d-flex align-items-center mb-2">
-                                    <div class="rounded-circle me-2" style="width: 12px; height: 12px; background: <?= $color ?>;"></div>
-                                    <div class="text-truncate small" style="max-width: 120px;" title="<?= esc($faculty['faculty']) ?>">
-                                        <?= esc($faculty['faculty']) ?>
-                                    </div>
-                                    <span class="ms-auto fw-semibold small"><?= $faculty['total'] ?></span>
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span class="legend-dot flex-shrink-0" style="background:<?= $color ?>; width:10px;height:10px;border-radius:50%;display:inline-block;"></span>
+                                    <span class="text-truncate slams-text-xs" title="<?= esc($faculty['faculty']) ?>"><?= esc($faculty['faculty']) ?></span>
+                                    <span class="ms-auto fw-bold slams-text-xs"><?= $faculty['total'] ?></span>
                                 </div>
                             </div>
                             <?php endforeach; ?>
@@ -219,55 +183,53 @@ $rejected         = $rejected ?? [];
     </div>
 
     <!-- APPROVAL QUEUE -->
-    <div class="glass-card mb-5">
-        <div class="glass-card-header d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+    <div class="glass-card mb-4">
+        <div class="glass-card-header d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
             <div>
-                <h5 class="fw-bold text-gray-800 mb-1">
-                    <i class="bi bi-list-check me-2"></i>
+                <h5 class="fw-bold mb-1" style="font-family:var(--slams-font-display);">
+                    <i class="bi bi-list-check me-2" style="color:var(--slams-primary);"></i>
                     Approval Queue
                 </h5>
-                <p class="text-muted small mb-0">Manage booking approvals across different stages</p>
+                <p class="slams-text-xs text-muted mb-0">Manage booking approvals across all stages</p>
             </div>
-            <div class="d-flex gap-2">
-                <span class="stat-badge">
-                    <i class="bi bi-clock"></i> Total Pending: <?= $stats['pending'] + $stats['pending_mgr'] ?>
-                </span>
-            </div>
+            <span class="stat-badge">
+                <i class="bi bi-clock me-1"></i>Total Pending: <?= ($stats['pending'] ?? 0) + ($stats['pending_mgr'] ?? 0) ?>
+            </span>
         </div>
-        
+
         <div class="card-body p-4">
-            <ul class="nav nav-tabs" id="approvalTabs" role="tablist">
+            <ul class="nav nav-tabs mb-4" id="approvalTabs" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#pendingPicTab">
                         <i class="bi bi-clock-history me-1"></i>
                         <span class="d-none d-md-inline">Pending PIC</span>
-                        <span class="badge bg-warning ms-2"><?= count($pendingPic) ?></span>
+                        <span class="badge bg-warning ms-1"><?= count($pendingPic) ?></span>
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" data-bs-toggle="tab" data-bs-target="#pendingMgrTab">
                         <i class="bi bi-check2-square me-1"></i>
                         <span class="d-none d-md-inline">Pending Manager</span>
-                        <span class="badge bg-primary ms-2"><?= count($pendingMgr) ?></span>
+                        <span class="badge bg-primary ms-1"><?= count($pendingMgr) ?></span>
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" data-bs-toggle="tab" data-bs-target="#approvedTab">
                         <i class="bi bi-check-circle me-1"></i>
                         <span class="d-none d-md-inline">Approved</span>
-                        <span class="badge bg-success ms-2"><?= count($approved) ?></span>
+                        <span class="badge bg-success ms-1"><?= count($approved) ?></span>
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" data-bs-toggle="tab" data-bs-target="#rejectedTab">
                         <i class="bi bi-x-circle me-1"></i>
                         <span class="d-none d-md-inline">Rejected</span>
-                        <span class="badge bg-danger ms-2"><?= count($rejected) ?></span>
+                        <span class="badge bg-danger ms-1"><?= count($rejected) ?></span>
                     </button>
                 </li>
             </ul>
 
-            <div class="tab-content mt-4">
+            <div class="tab-content">
                 <div class="tab-pane fade show active" id="pendingPicTab">
                     <div class="table-responsive">
                         <?php include('partials/table_pending_pic.php'); ?>
@@ -297,17 +259,17 @@ $rejected         = $rejected ?? [];
 <div class="modal fade" id="adminBookingModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title fw-bold">
-                    <i class="bi bi-journal-text me-2"></i>Booking Details
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" style="font-family:var(--slams-font-display);">
+                    <i class="bi bi-journal-text me-2" style="color:var(--slams-primary);"></i>Booking Details
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="adminBookingBody">
                 <!-- populated by JS -->
             </div>
-            <div class="modal-footer border-0" id="adminBookingFooter" style="display:none;">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <div class="modal-footer" id="adminBookingFooter" style="display:none;">
+                <button type="button" class="btn btn-glass" data-bs-dismiss="modal">Close</button>
                 <form id="adminRejectForm" method="post" class="d-inline">
                     <?= csrf_field() ?>
                     <button type="submit" class="btn btn-outline-danger px-4">
@@ -329,107 +291,51 @@ $rejected         = $rejected ?? [];
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 <?php
-// Helper function to generate distinct colors for any number of faculties
 function generateFacultyColors($count) {
-    // Base palette with 12 distinct, color-blind friendly colors
     $basePalette = [
         '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b',
         '#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#393b79', '#5254a3'
     ];
-    
-    // Extended palette for more than 12 faculties
     $extendedPalette = [
         '#6b6ecf', '#9c9ede', '#637939', '#8ca252', '#b5cf6b', '#cedb9c',
         '#8c6d31', '#bd9e39', '#e7ba52', '#843c39', '#ad494a', '#d6616b',
         '#e7969c', '#7b4173', '#a55194', '#ce6dbd', '#de9ed6'
     ];
-    
-    // Combine palettes
     $fullPalette = array_merge($basePalette, $extendedPalette);
-    
-    // If we need more colors than available, generate them dynamically
     if ($count > count($fullPalette)) {
         $generatedColors = [];
-        // Use HSL color space to generate evenly distributed colors
         for ($i = 0; $i < $count; $i++) {
-            $hue = ($i * 137.508) % 360; // Golden angle for distribution
-            $saturation = 70 + (($i % 3) * 10); // 70-90%
-            $lightness = 45 + (($i % 2) * 10); // 45-55%
+            $hue = ($i * 137.508) % 360;
+            $saturation = 70 + (($i % 3) * 10);
+            $lightness = 45 + (($i % 2) * 10);
             $generatedColors[] = hslToHex($hue, $saturation, $lightness);
         }
         return $generatedColors;
     }
-    
-    // Return subset of palette based on count needed
     return array_slice($fullPalette, 0, $count);
 }
 
-// Helper function to convert HSL to HEX
 function hslToHex($h, $s, $l) {
-    $h /= 360;
-    $s /= 100;
-    $l /= 100;
-    
-    $r = $l;
-    $g = $l;
-    $b = $l;
+    $h /= 360; $s /= 100; $l /= 100;
+    $r = $g = $b = $l;
     $v = ($l <= 0.5) ? ($l * (1.0 + $s)) : ($l + $s - $l * $s);
-    
     if ($v > 0) {
-        $m = $l + $l - $v;
-        $sv = ($v - $m) / $v;
-        $h *= 6.0;
-        $sextant = floor($h);
-        $fract = $h - $sextant;
-        $vsf = $v * $sv * $fract;
-        $mid1 = $m + $vsf;
-        $mid2 = $v - $vsf;
-        
+        $m = $l + $l - $v; $sv = ($v - $m) / $v;
+        $h *= 6.0; $sextant = floor($h); $fract = $h - $sextant;
+        $vsf = $v * $sv * $fract; $mid1 = $m + $vsf; $mid2 = $v - $vsf;
         switch ($sextant) {
-            case 0:
-                $r = $v;
-                $g = $mid1;
-                $b = $m;
-                break;
-            case 1:
-                $r = $mid2;
-                $g = $v;
-                $b = $m;
-                break;
-            case 2:
-                $r = $m;
-                $g = $v;
-                $b = $mid1;
-                break;
-            case 3:
-                $r = $m;
-                $g = $mid2;
-                $b = $v;
-                break;
-            case 4:
-                $r = $mid1;
-                $g = $m;
-                $b = $v;
-                break;
-            case 5:
-                $r = $v;
-                $g = $m;
-                $b = $mid2;
-                break;
+            case 0: $r=$v; $g=$mid1; $b=$m; break;
+            case 1: $r=$mid2; $g=$v; $b=$m; break;
+            case 2: $r=$m; $g=$v; $b=$mid1; break;
+            case 3: $r=$m; $g=$mid2; $b=$v; break;
+            case 4: $r=$mid1; $g=$m; $b=$v; break;
+            case 5: $r=$v; $g=$m; $b=$mid2; break;
         }
     }
-    
-    $r = round($r * 255);
-    $g = round($g * 255);
-    $b = round($b * 255);
-    
-    return sprintf("#%02x%02x%02x", $r, $g, $b);
+    return sprintf("#%02x%02x%02x", round($r*255), round($g*255), round($b*255));
 }
 
-// Generate colors for the current faculty data
 $facultyColors = generateFacultyColors(count($facultyBreakdown));
-
-// Prepare faculty data with labels and colors for JavaScript
 $facultyChartData = [];
 $i = 0;
 foreach ($facultyBreakdown as $faculty) {
@@ -442,9 +348,6 @@ foreach ($facultyBreakdown as $faculty) {
 }
 ?>
 
-/* ------------------------------
-   BOOKING TRENDS LINE CHART
------------------------------- */
 const trendCtx = document.getElementById('trendChart');
 new Chart(trendCtx, {
     type: 'line',
@@ -454,13 +357,13 @@ new Chart(trendCtx, {
             label: "Total Bookings",
             data: <?= json_encode(array_column($trends, 'total')) ?>,
             borderColor: "#3b82f6",
-            backgroundColor: "rgba(59, 130, 246, 0.15)",
+            backgroundColor: "rgba(59, 130, 246, 0.12)",
             pointBackgroundColor: "#1e40af",
             pointBorderColor: "#ffffff",
             pointBorderWidth: 2,
-            pointRadius: 6,
-            pointHoverRadius: 8,
-            borderWidth: 3,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            borderWidth: 2.5,
             tension: 0.4,
             fill: true
         }]
@@ -469,92 +372,55 @@ new Chart(trendCtx, {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-            legend: {
-                display: false
-            },
+            legend: { display: false },
             tooltip: {
-                backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                titleColor: '#ffffff',
+                backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                titleColor: '#fff',
                 bodyColor: '#e2e8f0',
                 borderColor: '#3b82f6',
                 borderWidth: 1,
                 cornerRadius: 8,
-                padding: 12,
+                padding: 10,
                 displayColors: false
             }
         },
         scales: {
-            y: {
-                beginAtZero: true,
-                grid: {
-                    color: 'rgba(59, 130, 246, 0.08)',
-                    drawBorder: false
-                },
-                ticks: {
-                    color: '#64748b',
-                    padding: 8
-                }
-            },
-            x: {
-                grid: {
-                    color: 'rgba(59, 130, 246, 0.08)',
-                    drawBorder: false
-                },
-                ticks: {
-                    color: '#64748b',
-                    padding: 8
-                }
-            }
+            y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#64748b' } },
+            x: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#64748b' } }
         }
     }
 });
 
-/* ------------------------------
-   FACULTY PIE CHART
------------------------------- */
 const facultyCtx = document.getElementById('facultyChart');
-
-// Use PHP-generated dynamic colors
 const facultyChartData = <?= json_encode($facultyChartData) ?>;
-const facultyLabels = facultyChartData.map(item => item.label);
-const facultyValues = facultyChartData.map(item => item.value);
-const facultyChartColors = facultyChartData.map(item => item.color);
-
 new Chart(facultyCtx, {
     type: 'doughnut',
     data: {
-        labels: facultyLabels,
+        labels: facultyChartData.map(d => d.label),
         datasets: [{
-            data: facultyValues,
-            backgroundColor: facultyChartColors,
+            data: facultyChartData.map(d => d.value),
+            backgroundColor: facultyChartData.map(d => d.color),
             borderColor: '#ffffff',
-            borderWidth: 3,
-            borderRadius: 8,
-            spacing: 4
+            borderWidth: 2,
+            borderRadius: 6,
+            spacing: 3
         }]
     },
     options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-            legend: { 
-                display: false 
-            },
+            legend: { display: false },
             tooltip: {
-                backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                titleColor: '#ffffff',
+                backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                titleColor: '#fff',
                 bodyColor: '#e2e8f0',
-                borderColor: '#3b82f6',
-                borderWidth: 1,
                 cornerRadius: 8,
-                padding: 12,
+                padding: 10,
                 callbacks: {
-                    label: function(context) {
-                        const label = context.label || '';
-                        const value = context.raw || 0;
-                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                        const percentage = Math.round((value / total) * 100);
-                        return `${label}: ${value} (${percentage}%)`;
+                    label: ctx => {
+                        const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                        return `${ctx.label}: ${ctx.raw} (${Math.round(ctx.raw/total*100)}%)`;
                     }
                 }
             }
@@ -563,9 +429,6 @@ new Chart(facultyCtx, {
     }
 });
 
-/* ---------------------------------------------------------
-   ADMIN BOOKING DETAILS MODAL
---------------------------------------------------------- */
 function adminViewBooking(id) {
     const modalEl = document.getElementById('adminBookingModal');
     const body    = document.getElementById('adminBookingBody');
@@ -579,24 +442,16 @@ function adminViewBooking(id) {
 
     const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
     footer.style.display = 'none';
-    body.innerHTML = `
-        <div class="d-flex justify-content-center py-5">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-        </div>`;
+    body.innerHTML = `<div class="d-flex justify-content-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>`;
     modal.show();
 
-    fetch(`/dashboard/admin/booking-details/${id}`, {
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    })
+    fetch(`/dashboard/admin/booking-details/${id}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
     .then(r => r.json())
     .then(data => {
         if (data.status !== 'success') {
             body.innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
             return;
         }
-
         const b = data.booking;
         const isPending = b.status === 'PENDING';
 
@@ -604,80 +459,52 @@ function adminViewBooking(id) {
         if (b.assets && b.assets.length > 0) {
             assetsHtml = '<div class="row g-2">';
             b.assets.forEach(a => {
-                assetsHtml += `
-                    <div class="col-md-6">
-                        <div class="d-flex align-items-center gap-3 border rounded-3 p-2">
-                            ${a.image ? `<img src="${a.image}" width="36" height="36" class="rounded object-fit-cover" alt="${a.name}">` : '<i class="bi bi-tools fs-4 text-muted"></i>'}
-                            <div>
-                                <div class="fw-semibold small">${a.name}</div>
-                                <div class="text-muted" style="font-size:0.78rem;">Qty: ${a.quantity_used}</div>
-                            </div>
-                        </div>
-                    </div>`;
+                assetsHtml += `<div class="col-md-6"><div class="d-flex align-items-center gap-2 border rounded p-2">${a.image ? `<img src="${a.image}" width="36" height="36" class="rounded object-fit-cover" alt="${a.name}">` : '<i class="bi bi-tools fs-5 text-muted"></i>'}<div><div class="fw-semibold slams-text-sm">${a.name}</div><div class="text-muted slams-text-xs">Qty: ${a.quantity_used}</div></div></div></div>`;
             });
             assetsHtml += '</div>';
         }
 
-        let pdfHtml = '';
-        if (b.pdf_url) {
-            pdfHtml = `<a href="${b.pdf_url}" target="_blank" class="btn btn-outline-primary btn-sm mt-2">
-                <i class="bi bi-file-pdf me-1"></i>View Uploaded PDF
-            </a>`;
-        }
+        const pdfHtml = b.pdf_url ? `<a href="${b.pdf_url}" target="_blank" class="btn btn-outline-primary btn-sm mt-2"><i class="bi bi-file-pdf me-1"></i>View PDF</a>` : '';
+
+        const statusClass = b.status === 'APPROVED' ? 'status-badge-approved' : b.status === 'REJECTED' ? 'status-badge-rejected' : 'status-badge-pending';
 
         body.innerHTML = `
             <div class="row g-3 mb-3">
                 <div class="col-md-6">
-                    <div class="card border h-100">
-                        <div class="card-body">
-                            <h6 class="fw-bold text-primary mb-3">Laboratory</h6>
-                            <div class="fw-semibold">${b.lab_name}</div>
-                            <div class="text-muted small">Room ${b.lab_room || '—'}</div>
-                            ${b.pic_name ? `<div class="text-muted small mt-1">PIC: ${b.pic_name}</div>` : ''}
-                        </div>
-                    </div>
+                    <div class="card border h-100"><div class="card-body">
+                        <div class="slams-form-section-header">Laboratory</div>
+                        <div class="fw-bold">${b.lab_name}</div>
+                        <div class="text-muted slams-text-sm">Room ${b.lab_room || '—'}</div>
+                        ${b.pic_name ? `<div class="text-muted slams-text-sm mt-1">PIC: ${b.pic_name}</div>` : ''}
+                    </div></div>
                 </div>
                 <div class="col-md-6">
-                    <div class="card border h-100">
-                        <div class="card-body">
-                            <h6 class="fw-bold text-primary mb-3">Schedule</h6>
-                            <div class="small"><strong>Date:</strong> ${b.date}</div>
-                            <div class="small"><strong>Time:</strong> ${b.start_time?.substring(0,5)} – ${b.end_time?.substring(0,5)}</div>
-                            <div class="small"><strong>Faculty:</strong> ${b.faculty_name || '—'}</div>
-                            <div class="mt-2">
-                                <span class="badge bg-${b.status === 'APPROVED' ? 'success' : b.status === 'REJECTED' ? 'danger' : 'warning text-dark'}">${b.status}</span>
-                            </div>
-                        </div>
-                    </div>
+                    <div class="card border h-100"><div class="card-body">
+                        <div class="slams-form-section-header">Schedule</div>
+                        <div class="slams-text-sm mb-1"><strong>Date:</strong> ${b.date}</div>
+                        <div class="slams-text-sm mb-1"><strong>Time:</strong> ${b.start_time?.substring(0,5)} – ${b.end_time?.substring(0,5)}</div>
+                        <div class="slams-text-sm mb-2"><strong>Faculty:</strong> ${b.faculty_name || '—'}</div>
+                        <span class="status-badge ${statusClass}">${b.status}</span>
+                    </div></div>
                 </div>
             </div>
-
-            <div class="card border mb-3">
-                <div class="card-body">
-                    <h6 class="fw-bold text-primary mb-2">Activity</h6>
-                    <p class="mb-0">${b.activity || '—'}</p>
+            <div class="card border mb-3"><div class="card-body">
+                <div class="slams-form-section-header">Activity</div>
+                <p class="mb-0">${b.activity || '—'}</p>
+            </div></div>
+            <div class="card border mb-3"><div class="card-body">
+                <div class="slams-form-section-header">Supervisor</div>
+                <div class="row g-1 slams-text-sm">
+                    <div class="col-md-4"><strong>Name:</strong> ${b.supervisor_name || '—'}</div>
+                    <div class="col-md-4"><strong>Email:</strong> ${b.supervisor_email || '—'}</div>
+                    <div class="col-md-4"><strong>Phone:</strong> ${b.supervisor_phone || '—'}</div>
                 </div>
-            </div>
-
-            <div class="card border mb-3">
-                <div class="card-body">
-                    <h6 class="fw-bold text-primary mb-2">Supervisor</h6>
-                    <div class="row g-1 small">
-                        <div class="col-md-4"><strong>Name:</strong> ${b.supervisor_name || '—'}</div>
-                        <div class="col-md-4"><strong>Email:</strong> ${b.supervisor_email || '—'}</div>
-                        <div class="col-md-4"><strong>Phone:</strong> ${b.supervisor_phone || '—'}</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card border mb-3">
-                <div class="card-body">
-                    <h6 class="fw-bold text-primary mb-2">Equipment</h6>
-                    ${assetsHtml}
-                    ${pdfHtml}
-                </div>
-            </div>
-        `;
+            </div></div>
+            <div class="card border mb-3"><div class="card-body">
+                <div class="slams-form-section-header">Equipment</div>
+                ${assetsHtml}
+                ${pdfHtml}
+            </div></div>`;
 
         if (isPending) {
             document.getElementById('adminApproveForm').action = `/booking/approve/${b.id}`;
@@ -689,70 +516,6 @@ function adminViewBooking(id) {
         body.innerHTML = `<div class="alert alert-danger">Could not load booking details.</div>`;
     });
 }
-
-// Function to update colors if faculty data changes dynamically
-function updateFacultyColors(newCount) {
-    // This function can be used if you need to update colors dynamically via AJAX
-    // It generates colors using the same algorithm as PHP
-    function generateDynamicColors(count) {
-        const basePalette = [
-            '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b',
-            '#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#393b79', '#5254a3'
-        ];
-        
-        if (count <= basePalette.length) {
-            return basePalette.slice(0, count);
-        }
-        
-        // Generate colors dynamically for large counts
-        const colors = [];
-        for (let i = 0; i < count; i++) {
-            const hue = (i * 137.508) % 360;
-            const saturation = 70 + ((i % 3) * 10);
-            const lightness = 45 + ((i % 2) * 10);
-            colors.push(hslToHex(hue, saturation, lightness));
-        }
-        return colors;
-    }
-    
-    function hslToHex(h, s, l) {
-        h /= 360;
-        s /= 100;
-        l /= 100;
-        
-        let r, g, b;
-        
-        if (s === 0) {
-            r = g = b = l;
-        } else {
-            const hue2rgb = (p, q, t) => {
-                if (t < 0) t += 1;
-                if (t > 1) t -= 1;
-                if (t < 1/6) return p + (q - p) * 6 * t;
-                if (t < 1/2) return q;
-                if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-                return p;
-            };
-            
-            const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-            const p = 2 * l - q;
-            
-            r = hue2rgb(p, q, h + 1/3);
-            g = hue2rgb(p, q, h);
-            b = hue2rgb(p, q, h - 1/3);
-        }
-        
-        const toHex = x => {
-            const hex = Math.round(x * 255).toString(16);
-            return hex.length === 1 ? '0' + hex : hex;
-        };
-        
-        return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-    }
-    
-    return generateDynamicColors(newCount);
-}
 </script>
 
 <?= $this->endSection() ?>
-

@@ -9,15 +9,17 @@ $maintenanceUrl = $isPicWorkspace ? '/technician/maintenance' : '/dashboard/admi
 ?>
 
 <aside class="glass-sidebar d-flex flex-column">
-    <div class="text-center mb-4 mt-3">
+    <div class="text-center mb-3 mt-2">
         <div class="sidebar-logo">
             <img src="<?= slams_asset('icons/slams-icon.png') ?>" alt="SLAMS" class="sidebar-logo-img">
         </div>
-        <div class="fw-bold text-white"><?= esc($workspaceTitle) ?></div>
-        <small class="text-light opacity-75">SLAMS | FKMP</small>
+        <div class="fw-bold" style="color: var(--slams-nav-text); font-family: var(--slams-font-display);"><?= esc($workspaceTitle) ?></div>
+        <small style="color: var(--slams-nav-muted); font-size: 0.72rem;">SLAMS | FKMP</small>
     </div>
 
     <hr class="sidebar-divider">
+
+    <span class="sidebar-section-label">Core</span>
 
     <a href="<?= esc($dashboardUrl) ?>" class="sidebar-link <?= url_is('dashboard/admin') || url_is('dashboard/pic') ? 'active' : '' ?>">
         <i class="bi bi-briefcase"></i> <?= esc($dashboardLabel) ?>
@@ -34,6 +36,8 @@ $maintenanceUrl = $isPicWorkspace ? '/technician/maintenance' : '/dashboard/admi
     <a href="/admin/services" class="sidebar-link <?= url_is('admin/services*') ? 'active' : '' ?>">
         <i class="bi bi-diagram-3"></i> Manage Services
     </a>
+
+    <span class="sidebar-section-label">Operations</span>
 
     <a href="/dashboard/external-requests" class="sidebar-link <?= url_is('dashboard/external-requests*') ? 'active' : '' ?>">
         <i class="bi bi-clipboard-data"></i> External Requests
@@ -52,6 +56,8 @@ $maintenanceUrl = $isPicWorkspace ? '/technician/maintenance' : '/dashboard/admi
     </a>
 
     <?php if (! $isPicWorkspace): ?>
+        <span class="sidebar-section-label">System</span>
+
         <a href="/admin/users" class="sidebar-link <?= url_is('admin/users*') ? 'active' : '' ?>">
             <i class="bi bi-people"></i> User Management
         </a>

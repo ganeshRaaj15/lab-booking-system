@@ -3,21 +3,20 @@
 
 <div class="settings-page">
     <!-- PAGE HEADER -->
-    <div class="dashboard-header">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
-            <div>
-                <h1>Contact Page Settings</h1>
-                <p>Manage the information displayed on the public Contact Us page</p>
-            </div>
-            <div class="d-flex gap-2">
-                <a href="/contact" target="_blank" class="btn btn-outline-secondary">
-                    <i class="bi bi-box-arrow-up-right me-1"></i> Preview Contact Page
-                </a>
-                <a href="/dashboard/admin" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
-                </a>
-            </div>
+    <div class="slams-page-header">
+        <div class="slams-page-header-left">
+            <h1 class="slams-page-title">Contact Page Settings</h1>
+            <p class="slams-page-subtitle">Manage the information displayed on the public Contact Us page</p>
         </div>
+        <div class="slams-page-header-actions">
+            <a href="/contact" target="_blank" class="btn btn-glass btn-sm">
+                <i class="bi bi-box-arrow-up-right me-1"></i> Preview
+            </a>
+            <a href="/dashboard/admin" class="btn btn-glass btn-sm">
+                <i class="bi bi-arrow-left me-1"></i> Back
+            </a>
+        </div>
+    </div>
     </div>
 
     <!-- FLASH MESSAGES -->

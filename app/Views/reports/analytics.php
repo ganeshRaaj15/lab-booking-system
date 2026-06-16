@@ -14,10 +14,10 @@
             <div class="small text-muted">Generated: <?= esc($report['generatedAtDisplay'] ?? ($report['generatedAt'] ?? '')) ?></div>
         </div>
         <div class="reports-export-group">
-            <a href="<?= esc($summaryExportUrls['pdf']) ?>" class="btn btn-outline-primary">
+            <a href="<?= esc($summaryExportUrls['pdf']) ?>" class="btn btn-glass btn-sm">
                 <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
             </a>
-            <a href="<?= esc($summaryExportUrls['csv']) ?>" class="btn btn-outline-success">
+            <a href="<?= esc($summaryExportUrls['csv']) ?>" class="btn btn-glass btn-sm">
                 <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
             </a>
         </div>

@@ -13,10 +13,10 @@ $statusBadge = ['pending' => 'warning', 'approved' => 'success', 'rejected' => '
 
 <div class="container-fluid py-4">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="fw-bold text-primary">External Access Requests</h2>
-            <p class="text-muted small mb-0">Review, approve, or reject external user registration requests.</p>
+    <div class="slams-page-header">
+        <div class="slams-page-header-left">
+            <h1 class="slams-page-title">External Access Requests</h1>
+            <p class="slams-page-subtitle">Review, approve, or reject external user registration requests.</p>
         </div>
     </div>
 

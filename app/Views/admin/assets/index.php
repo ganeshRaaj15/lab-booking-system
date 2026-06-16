@@ -23,14 +23,14 @@ $unitsInMaintenance = array_sum(array_map(static fn($asset) => (int) ($asset['ma
 ?>
 
 <div class="container-fluid">
-    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
-        <div>
-            <h1 class="h3 mb-1">Asset Management</h1>
-            <p class="text-muted mb-0">Track equipment specifications, live availability, and maintenance history in one place.</p>
+    <div class="slams-page-header">
+        <div class="slams-page-header-left">
+            <h1 class="slams-page-title">Asset Management</h1>
+            <p class="slams-page-subtitle">Track equipment specifications, live availability, and maintenance history.</p>
         </div>
-        <div class="d-flex flex-wrap gap-2">
-            <a href="/admin/assets/qr-labels" class="btn btn-outline-primary"><i class="bi bi-qr-code me-2"></i>Print QR Labels</a>
-            <a href="/admin/assets/create" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Add Asset</a>
+        <div class="slams-page-header-actions">
+            <a href="/admin/assets/qr-labels" class="btn btn-glass btn-sm"><i class="bi bi-qr-code me-1"></i>QR Labels</a>
+            <a href="/admin/assets/create" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i>Add Asset</a>
         </div>
     </div>
 

@@ -35,14 +35,16 @@ $priorityBadgeClass = [
     <?php if (session()->getFlashdata('success')): ?><div class="alert alert-success border-0 shadow-sm"><?= esc(session()->getFlashdata('success')) ?></div><?php endif; ?>
     <?php if (session()->getFlashdata('error')): ?><div class="alert alert-danger border-0 shadow-sm"><?= esc(session()->getFlashdata('error')) ?></div><?php endif; ?>
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="fw-bold text-primary mb-0">Maintenance Workflow</h2>
-            <p class="text-muted small">Track, schedule, and resolve equipment maintenance cases across all laboratories.</p>
+    <div class="slams-page-header">
+        <div class="slams-page-header-left">
+            <h1 class="slams-page-title">Maintenance Workflow</h1>
+            <p class="slams-page-subtitle">Track, schedule, and resolve equipment maintenance cases across all laboratories.</p>
         </div>
-        <a href="/technician/maintenance/create" class="btn btn-success btn-sm px-3 shadow-sm">
-            <i class="bi bi-plus-circle me-1"></i> New Planned Maintenance
-        </a>
+        <div class="slams-page-header-actions">
+            <a href="/technician/maintenance/create" class="btn btn-success btn-sm px-3">
+                <i class="bi bi-plus-circle me-1"></i> New Planned Maintenance
+            </a>
+        </div>
     </div>
 
 

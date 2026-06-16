@@ -10,12 +10,14 @@ $canEditPicAssignment = $canEditPicAssignment ?? false;
 ?>
 
 <div class="container-fluid">
-    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
-        <div>
-            <h1 class="h3 mb-1"><?= esc($title) ?></h1>
-            <p class="text-muted mb-0">Define laboratory ownership, capacity, safety context, and availability notes.</p>
+    <div class="slams-page-header">
+        <div class="slams-page-header-left">
+            <h1 class="slams-page-title"><?= esc($title) ?></h1>
+            <p class="slams-page-subtitle">Define laboratory ownership, capacity, safety context, and availability notes.</p>
         </div>
-        <a href="/admin/labs" class="btn btn-outline-primary"><i class="bi bi-arrow-left me-2"></i>Back</a>
+        <div class="slams-page-header-actions">
+            <a href="/admin/labs" class="btn btn-glass btn-sm"><i class="bi bi-arrow-left me-1"></i>Back</a>
+        </div>
     </div>
 
     <?php if (!empty($errors)): ?>

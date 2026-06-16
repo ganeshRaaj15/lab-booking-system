@@ -10,57 +10,80 @@
 ?>
 
 <!-- KPI CARDS -->
-<div class="row g-2 mb-3">
+<div class="row g-3 mb-4">
 
     <!-- Total Bookings -->
-    <div class="col-md-3">
-        <div class="card shadow-sm border-0 kpi-card-blue">
-            <div class="card-body">
-                <h6 class="text-uppercase small text-muted">Total Bookings</h6>
-                <h2 class="fw-bold"><?= $stats['total'] ?? 0 ?></h2>
+    <div class="col-md-3 col-sm-6">
+        <div class="slams-kpi slams-kpi-primary">
+            <div class="slams-kpi-head">
+                <div>
+                    <div class="slams-kpi-label">Total Bookings</div>
+                    <div class="slams-kpi-value"><?= $stats['total'] ?? 0 ?></div>
+                </div>
+                <div class="slams-kpi-icon">
+                    <i class="bi bi-calendar3"></i>
+                </div>
             </div>
+            <div class="slams-kpi-footer">All submitted requests</div>
         </div>
     </div>
 
     <!-- Pending -->
-    <div class="col-md-3">
-        <div class="card shadow-sm border-0 kpi-card-yellow">
-            <div class="card-body">
-                <h6 class="text-uppercase small text-muted">Pending</h6>
-                <h2 class="fw-bold"><?= $stats['pending'] ?? 0 ?></h2>
+    <div class="col-md-3 col-sm-6">
+        <div class="slams-kpi slams-kpi-warning">
+            <div class="slams-kpi-head">
+                <div>
+                    <div class="slams-kpi-label">Pending</div>
+                    <div class="slams-kpi-value"><?= $stats['pending'] ?? 0 ?></div>
+                </div>
+                <div class="slams-kpi-icon slams-kpi-icon--warning">
+                    <i class="bi bi-clock-history"></i>
+                </div>
             </div>
+            <div class="slams-kpi-footer">Awaiting review</div>
         </div>
     </div>
 
     <!-- Approved -->
-    <div class="col-md-3">
-        <div class="card shadow-sm border-0 kpi-card-green">
-            <div class="card-body">
-                <h6 class="text-uppercase small text-muted">Approved</h6>
-                <h2 class="fw-bold"><?= $stats['approved'] ?? 0 ?></h2>
+    <div class="col-md-3 col-sm-6">
+        <div class="slams-kpi slams-kpi-success">
+            <div class="slams-kpi-head">
+                <div>
+                    <div class="slams-kpi-label">Approved</div>
+                    <div class="slams-kpi-value"><?= $stats['approved'] ?? 0 ?></div>
+                </div>
+                <div class="slams-kpi-icon slams-kpi-icon--success">
+                    <i class="bi bi-check-circle"></i>
+                </div>
             </div>
+            <div class="slams-kpi-footer">Successfully confirmed</div>
         </div>
     </div>
 
     <!-- Rejected -->
-    <div class="col-md-3">
-        <div class="card shadow-sm border-0 kpi-card-red">
-            <div class="card-body">
-                <h6 class="text-uppercase small text-muted">Rejected</h6>
-                <h2 class="fw-bold"><?= $stats['rejected'] ?? 0 ?></h2>
+    <div class="col-md-3 col-sm-6">
+        <div class="slams-kpi slams-kpi-danger">
+            <div class="slams-kpi-head">
+                <div>
+                    <div class="slams-kpi-label">Rejected</div>
+                    <div class="slams-kpi-value"><?= $stats['rejected'] ?? 0 ?></div>
+                </div>
+                <div class="slams-kpi-icon slams-kpi-icon--danger">
+                    <i class="bi bi-x-circle"></i>
+                </div>
             </div>
+            <div class="slams-kpi-footer">Not approved</div>
         </div>
     </div>
 
 </div>
 
-
-
 <!-- MONTHLY TREND CHART -->
-<div class="card shadow-sm border-0">
+<div class="card border-0">
+    <div class="card-header glass-card-header">
+        <span class="fw-bold" style="font-family: var(--slams-font-display);">Monthly Booking Trend</span>
+    </div>
     <div class="card-body">
-        <h6 class="text-uppercase small text-muted mb-3">Monthly Booking Trend</h6>
-
         <canvas id="trendChart" height="100"></canvas>
     </div>
 </div>
@@ -95,6 +118,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 borderColor: primary,
                 backgroundColor: 'rgba(15, 118, 110, 0.14)'
             }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { color: 'rgba(0,0,0,0.05)' } },
+                y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } }
+            }
         }
     });
 });

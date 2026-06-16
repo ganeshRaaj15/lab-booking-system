@@ -15,16 +15,16 @@ $pendingExternalMgr = $pendingExternalMgr ?? [];
 <?= $this->extend('layouts/main_user') ?>
 <?= $this->section('content') ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h2 class="fw-bold text-primary mb-0">Lab Manager Dashboard</h2>
-        <p class="text-muted small">Comprehensive overview and management tools for all laboratories.</p>
+<div class="slams-page-header">
+    <div class="slams-page-header-left">
+        <h1 class="slams-page-title">Lab Manager Dashboard</h1>
+        <p class="slams-page-subtitle">Comprehensive overview and management tools for all laboratories.</p>
     </div>
-    <div class="d-flex gap-2">
-        <a href="/dashboard/reports/pdf" class="btn btn-outline-primary btn-sm">
-            <i class="bi bi-file-earmark-pdf me-1"></i> Download Report
+    <div class="slams-page-header-actions">
+        <a href="/dashboard/reports/pdf" class="btn btn-glass btn-sm">
+            <i class="bi bi-file-earmark-pdf me-1"></i> Report
         </a>
-        <a href="/dashboard/reports/csv" class="btn btn-outline-success btn-sm">
+        <a href="/dashboard/reports/csv" class="btn btn-glass btn-sm">
             <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
         </a>
     </div>
@@ -33,124 +33,125 @@ $pendingExternalMgr = $pendingExternalMgr ?? [];
 <!-- QUICK STATS CARDS -->
 <div class="row g-3 mb-3">
     <div class="col-md-3">
-        <div class="card stats-card bg-white border-0 shadow-sm rounded-3">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <div class="text-muted small fw-semibold text-uppercase">Total Bookings</div>
-                        <div class="fs-3 fw-bold text-primary"><?= esc($stats['total']) ?></div>
-                    </div>
-                    <i class="bi bi-calendar-check fs-2 text-primary opacity-75"></i>
+        <div class="slams-kpi slams-kpi-primary">
+            <div class="slams-kpi-head">
+                <div>
+                    <div class="slams-kpi-label">Total Bookings</div>
+                    <div class="slams-kpi-value"><?= esc($stats['total']) ?></div>
                 </div>
+                <div class="slams-kpi-icon">
+                    <i class="bi bi-calendar-check"></i>
+                </div>
+            </div>
+            <div class="slams-kpi-footer">All submitted requests</div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="slams-kpi slams-kpi-success">
+            <div class="slams-kpi-head">
+                <div>
+                    <div class="slams-kpi-label">This Week</div>
+                    <div class="slams-kpi-value"><?= esc($stats['currentWeek']) ?></div>
+                </div>
+                <div class="slams-kpi-icon slams-kpi-icon--success">
+                    <i class="bi bi-graph-up-arrow"></i>
+                </div>
+            </div>
+            <div class="slams-kpi-footer">
+                <i class="bi bi-arrow-<?= $stats['weekGrowth'] >= 0 ? 'up' : 'down' ?> me-1"></i>
+                <?= abs($stats['weekGrowth']) ?>% vs last week
             </div>
         </div>
     </div>
 
     <div class="col-md-3">
-        <div class="card stats-card bg-white border-0 shadow-sm rounded-3">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <div class="text-muted small fw-semibold text-uppercase">This Week</div>
-                        <div class="fs-3 fw-bold text-success"><?= esc($stats['currentWeek']) ?></div>
-                        <div class="small <?= $stats['weekGrowth'] >= 0 ? 'text-success' : 'text-danger' ?>">
-                            <i class="bi bi-arrow-<?= $stats['weekGrowth'] >= 0 ? 'up' : 'down' ?> me-1"></i>
-                            <?= abs($stats['weekGrowth']) ?>%
-                        </div>
-                    </div>
-                    <i class="bi bi-graph-up-arrow fs-2 text-success opacity-75"></i>
+        <div class="slams-kpi slams-kpi-warning">
+            <div class="slams-kpi-head">
+                <div>
+                    <div class="slams-kpi-label">Pending Approval</div>
+                    <div class="slams-kpi-value"><?= esc($stats['pendingManager']) ?></div>
+                </div>
+                <div class="slams-kpi-icon slams-kpi-icon--warning">
+                    <i class="bi bi-clipboard-check"></i>
                 </div>
             </div>
+            <div class="slams-kpi-footer">Non-FKMP bookings</div>
         </div>
     </div>
 
     <div class="col-md-3">
-        <div class="card stats-card bg-white border-0 shadow-sm rounded-3">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <div class="text-muted small fw-semibold text-uppercase">Pending Approval</div>
-                        <div class="fs-3 fw-bold text-warning"><?= esc($stats['pendingManager']) ?></div>
-                        <div class="small text-muted">Non-FKMP bookings</div>
-                    </div>
-                    <i class="bi bi-clipboard-check fs-2 text-warning opacity-75"></i>
+        <div class="slams-kpi slams-kpi-info">
+            <div class="slams-kpi-head">
+                <div>
+                    <div class="slams-kpi-label">Faculty Mix</div>
+                    <div class="slams-kpi-value"><?= esc($stats['fkmp']) ?>/<?= esc($stats['nonFkmp']) ?></div>
+                </div>
+                <div class="slams-kpi-icon slams-kpi-icon--info">
+                    <i class="bi bi-people"></i>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <div class="col-md-3">
-        <div class="card stats-card bg-white border-0 shadow-sm rounded-3">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <div class="text-muted small fw-semibold text-uppercase">Faculty Mix</div>
-                        <div class="fs-3 fw-bold text-info"><?= esc($stats['fkmp']) ?>/<?= esc($stats['nonFkmp']) ?></div>
-                        <div class="small text-muted">FKMP/Non-FKMP</div>
-                    </div>
-                    <i class="bi bi-people fs-2 text-info opacity-75"></i>
-                </div>
-            </div>
+            <div class="slams-kpi-footer">FKMP / Non-FKMP</div>
         </div>
     </div>
 </div>
 
 <?php $pendingPicTotal = max((int) ($stats['pending'] ?? 0) - (int) ($stats['pendingManager'] ?? 0), 0); ?>
-<div class="card border-0 shadow-sm rounded-3 mb-4">
-    <div class="card-body py-3">
+<div class="card border-0 mb-4">
+    <div class="card-body py-2 px-3">
         <div class="d-flex flex-wrap align-items-center gap-2">
-            <span class="fw-semibold text-dark me-2">Booking Status Summary</span>
-            <span class="badge rounded-pill bg-dark-subtle text-dark border">Total: <?= esc($stats['total'] ?? 0) ?></span>
-            <span class="badge rounded-pill bg-warning-subtle text-warning border">Pending PIC: <?= esc($pendingPicTotal) ?></span>
-            <span class="badge rounded-pill bg-primary-subtle text-primary border">Pending Manager: <?= esc($stats['pendingManager'] ?? 0) ?></span>
-            <span class="badge rounded-pill bg-success-subtle text-success border">Approved: <?= esc($stats['approved'] ?? 0) ?></span>
-            <span class="badge rounded-pill bg-danger-subtle text-danger border">Rejected: <?= esc($stats['rejected'] ?? 0) ?></span>
-            <span class="badge rounded-pill bg-secondary-subtle text-secondary border">Cancelled: <?= esc($stats['cancelled'] ?? 0) ?></span>
+            <span class="fw-bold slams-text-sm me-1">Status Summary</span>
+            <span class="status-badge status-badge-neutral">Total: <?= esc($stats['total'] ?? 0) ?></span>
+            <span class="status-badge status-badge-pending">Pending PIC: <?= esc($pendingPicTotal) ?></span>
+            <span class="status-badge status-badge-review">Pending Manager: <?= esc($stats['pendingManager'] ?? 0) ?></span>
+            <span class="status-badge status-badge-approved">Approved: <?= esc($stats['approved'] ?? 0) ?></span>
+            <span class="status-badge status-badge-rejected">Rejected: <?= esc($stats['rejected'] ?? 0) ?></span>
+            <span class="status-badge status-badge-cancelled">Cancelled: <?= esc($stats['cancelled'] ?? 0) ?></span>
         </div>
     </div>
 </div>
 
 <div class="row g-3 mb-4">
     <div class="col-md-4">
-        <div class="card stats-card bg-white border-0 shadow-sm rounded-3">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <div class="text-muted small fw-semibold text-uppercase">Open Maintenance</div>
-                        <div class="fs-3 fw-bold text-danger"><?= esc($stats['maintenanceOpen'] ?? 0) ?></div>
-                        <div class="small text-muted">Reported, scheduled, repair, or testing cases</div>
-                    </div>
-                    <i class="bi bi-tools fs-2 text-danger opacity-75"></i>
+        <div class="slams-kpi slams-kpi-danger">
+            <div class="slams-kpi-head">
+                <div>
+                    <div class="slams-kpi-label">Open Maintenance</div>
+                    <div class="slams-kpi-value"><?= esc($stats['maintenanceOpen'] ?? 0) ?></div>
+                </div>
+                <div class="slams-kpi-icon slams-kpi-icon--danger">
+                    <i class="bi bi-tools"></i>
                 </div>
             </div>
+            <div class="slams-kpi-footer">Active maintenance cases</div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card stats-card bg-white border-0 shadow-sm rounded-3">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <div class="text-muted small fw-semibold text-uppercase">Completed Maintenance</div>
-                        <div class="fs-3 fw-bold text-success"><?= esc($stats['maintenanceCompleted'] ?? 0) ?></div>
-                        <div class="small text-muted">Resolved maintenance cases</div>
-                    </div>
-                    <i class="bi bi-check2-circle fs-2 text-success opacity-75"></i>
+        <div class="slams-kpi slams-kpi-success">
+            <div class="slams-kpi-head">
+                <div>
+                    <div class="slams-kpi-label">Completed Maintenance</div>
+                    <div class="slams-kpi-value"><?= esc($stats['maintenanceCompleted'] ?? 0) ?></div>
+                </div>
+                <div class="slams-kpi-icon slams-kpi-icon--success">
+                    <i class="bi bi-check2-circle"></i>
                 </div>
             </div>
+            <div class="slams-kpi-footer">Resolved maintenance cases</div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card stats-card bg-white border-0 shadow-sm rounded-3">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1">
-                        <div class="text-muted small fw-semibold text-uppercase">Upcoming Approved</div>
-                        <div class="fs-3 fw-bold text-primary"><?= esc($stats['upcomingApproved'] ?? 0) ?></div>
-                        <div class="small text-muted">Approved bookings in the next 7 days</div>
-                    </div>
-                    <i class="bi bi-calendar-event fs-2 text-primary opacity-75"></i>
+        <div class="slams-kpi slams-kpi-primary">
+            <div class="slams-kpi-head">
+                <div>
+                    <div class="slams-kpi-label">Upcoming Approved</div>
+                    <div class="slams-kpi-value"><?= esc($stats['upcomingApproved'] ?? 0) ?></div>
+                </div>
+                <div class="slams-kpi-icon">
+                    <i class="bi bi-calendar-event"></i>
                 </div>
             </div>
+            <div class="slams-kpi-footer">Approved bookings, next 7 days</div>
         </div>
     </div>
 </div>
@@ -828,9 +829,11 @@ $topAtRisk = $equipmentHealth['topAtRisk'] ?? [];
 <div class="modal fade" id="bookingModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-primary text-white border-0 rounded-top-3">
-                <h5 class="modal-title">Booking Details - Manager Review</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" style="font-family:var(--slams-font-display);">
+                    <i class="bi bi-journal-text me-2" style="color:var(--slams-primary);"></i>Booking Details — Manager Review
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="bookingDetails">
                 <div class="slams-skeleton-modal" aria-hidden="true">
@@ -862,7 +865,7 @@ $topAtRisk = $equipmentHealth['topAtRisk'] ?? [];
                     </div>
                 </div>
             </div>
-            <div class="modal-footer border-0 bg-light rounded-bottom-3">
+            <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-danger btn-sm px-3" id="btnRejectModal" onclick="rejectBookingModal()">
                     <i class="bi bi-x-lg me-1"></i>Reject

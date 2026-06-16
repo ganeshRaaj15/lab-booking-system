@@ -19,14 +19,16 @@ $statusLabel   = $statusLabels[$record['status'] ?? ''] ?? ucfirst((string) ($re
 
 <div class="container py-4">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="fw-bold text-primary">Maintenance #<?= (int) $record['id'] ?></h2>
-            <p class="text-muted small mb-0"><?= esc($record['title'] ?? '') ?></p>
+    <div class="slams-page-header">
+        <div class="slams-page-header-left">
+            <h1 class="slams-page-title">Maintenance #<?= (int) $record['id'] ?></h1>
+            <p class="slams-page-subtitle"><?= esc($record['title'] ?? '') ?></p>
         </div>
-        <a href="<?= esc($backUrl) ?>" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i> Back to List
-        </a>
+        <div class="slams-page-header-actions">
+            <a href="<?= esc($backUrl) ?>" class="btn btn-glass btn-sm">
+                <i class="bi bi-arrow-left me-1"></i> Back to List
+            </a>
+        </div>
     </div>
 
     <div class="row g-4">

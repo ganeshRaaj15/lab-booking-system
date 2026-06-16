@@ -7,14 +7,14 @@ $dayNames  = $dayNames  ?? [];
 ?>
 
 <div class="container-fluid">
-    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
-        <div>
-            <h1 class="h3 mb-1">Lab Reservations</h1>
-            <p class="text-muted mb-0">Block time slots for walk-in use or recurring class schedules.</p>
+    <div class="slams-page-header">
+        <div class="slams-page-header-left">
+            <h1 class="slams-page-title">Lab Reservations</h1>
+            <p class="slams-page-subtitle">Block time slots for walk-in use or recurring class schedules.</p>
         </div>
-        <div class="d-flex gap-2 flex-wrap">
-            <a href="/admin/reservations/upload" class="btn btn-outline-primary"><i class="bi bi-upload me-2"></i>Upload Class Schedule</a>
-            <a href="/admin/reservations/create" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Add Reservation</a>
+        <div class="slams-page-header-actions">
+            <a href="/admin/reservations/upload" class="btn btn-glass btn-sm"><i class="bi bi-upload me-1"></i>Upload Schedule</a>
+            <a href="/admin/reservations/create" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i>Add Reservation</a>
         </div>
     </div>
 

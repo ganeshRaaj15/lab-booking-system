@@ -18,14 +18,16 @@ $statusBadge = [
 
 <div class="container py-4">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="fw-bold text-primary">Asset Management</h2>
-            <p class="text-muted small mb-0">Assets in your assigned laboratories.</p>
+    <div class="slams-page-header">
+        <div class="slams-page-header-left">
+            <h1 class="slams-page-title">Asset Management</h1>
+            <p class="slams-page-subtitle">Assets in your assigned laboratories.</p>
         </div>
-        <a href="/dashboard/pic/assets/create" class="btn btn-primary">
-            <i class="bi bi-plus-circle me-1"></i> Add Asset
-        </a>
+        <div class="slams-page-header-actions">
+            <a href="/dashboard/pic/assets/create" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-circle me-1"></i> Add Asset
+            </a>
+        </div>
     </div>
 
     <?php if (session()->getFlashdata('message')): ?>

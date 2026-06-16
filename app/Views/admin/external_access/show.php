@@ -8,14 +8,16 @@ $statusBadge = ['pending' => 'warning', 'approved' => 'success', 'rejected' => '
 
 <div class="container py-4" style="max-width:800px">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="fw-bold text-primary">Access Request #<?= (int) $req['id'] ?></h2>
-            <p class="text-muted small mb-0"><?= esc($req['full_name']) ?> — <?= esc($req['organization']) ?></p>
+    <div class="slams-page-header">
+        <div class="slams-page-header-left">
+            <h1 class="slams-page-title">Access Request #<?= (int) $req['id'] ?></h1>
+            <p class="slams-page-subtitle"><?= esc($req['full_name']) ?> — <?= esc($req['organization']) ?></p>
         </div>
-        <a href="/admin/external-access" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i> Back to List
-        </a>
+        <div class="slams-page-header-actions">
+            <a href="/admin/external-access" class="btn btn-glass btn-sm">
+                <i class="bi bi-arrow-left me-1"></i> Back to List
+            </a>
+        </div>
     </div>
 
     <?php if (session()->getFlashdata('error')): ?>

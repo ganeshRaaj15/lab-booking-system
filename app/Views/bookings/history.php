@@ -3,9 +3,13 @@
 
 <div class="container py-4">
 
-    <h3 class="fw-bold mb-4 text-primary">
-        <i class="bi bi-journal-bookmark-fill me-2"></i> My Booking History
-    </h3>
+    <div class="slams-page-header">
+        <div class="slams-page-header-left">
+            <h1 class="slams-page-title">
+                <i class="bi bi-journal-bookmark-fill me-2" style="color:var(--slams-primary);"></i>My Booking History
+            </h1>
+        </div>
+    </div>
 
     <?php if (empty($bookings)): ?>
         <div class="alert alert-info">No bookings found.</div>

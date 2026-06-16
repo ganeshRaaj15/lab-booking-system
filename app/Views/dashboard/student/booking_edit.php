@@ -11,13 +11,13 @@ $requiresSupervisor = auth()->user()->inGroup('student') && ! auth()->user()->in
 $currentPdf = basename((string) ($booking['pdf_path'] ?? ''));
 ?>
 
-<div class="dashboard-header">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
-        <div>
-            <h2 class="fw-bold text-primary mb-0">Edit Booking</h2>
-            <p class="text-muted small mb-0">Update your booking details. Lab and service cannot be changed.</p>
-        </div>
-        <a href="<?= esc($dashUrl) ?>" class="btn btn-outline-secondary">
+<div class="slams-page-header">
+    <div class="slams-page-header-left">
+        <h1 class="slams-page-title">Edit Booking</h1>
+        <p class="slams-page-subtitle">Update your booking details. Lab and service cannot be changed.</p>
+    </div>
+    <div class="slams-page-header-actions">
+        <a href="<?= esc($dashUrl) ?>" class="btn btn-glass btn-sm">
             <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
         </a>
     </div>

@@ -9,18 +9,19 @@ $errors = session()->getFlashdata('errors') ?? [];
 
 <div class="container py-4">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="fw-bold text-primary">Edit Laboratory Details</h2>
-            <p class="text-muted small mb-0">
-                You may update the description, availability notes, safety notes, capacity, and images for
+    <div class="slams-page-header">
+        <div class="slams-page-header-left">
+            <h1 class="slams-page-title">Edit Laboratory Details</h1>
+            <p class="slams-page-subtitle">
+                Update description, availability notes, safety notes, capacity, and images for
                 <strong><?= esc($lab['name'] ?? '') ?></strong>.
-                Contact an administrator to change the laboratory name, room, or PIC assignment.
             </p>
         </div>
-        <a href="/dashboard/pic" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
-        </a>
+        <div class="slams-page-header-actions">
+            <a href="/dashboard/pic" class="btn btn-glass btn-sm">
+                <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+            </a>
+        </div>
     </div>
 
     <?php if (! empty($errors)): ?>

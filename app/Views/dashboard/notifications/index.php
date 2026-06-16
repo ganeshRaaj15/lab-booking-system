@@ -5,16 +5,16 @@
     <?php if (session()->getFlashdata('error')): ?><div class="alert alert-danger border-0 shadow-sm"><?= esc(session()->getFlashdata('error')) ?></div><?php endif; ?>
     <?php if (session()->getFlashdata('success')): ?><div class="alert alert-success border-0 shadow-sm"><?= esc(session()->getFlashdata('success')) ?></div><?php endif; ?>
 
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-        <div>
-            <h3 class="mb-1">Notifications</h3>
-            <p class="text-muted mb-0">Track booking approvals, maintenance updates, and system alerts in one place.</p>
+    <div class="slams-page-header">
+        <div class="slams-page-header-left">
+            <h1 class="slams-page-title">Notifications</h1>
+            <p class="slams-page-subtitle">Track booking approvals, maintenance updates, and system alerts in one place.</p>
         </div>
-        <div class="d-flex align-items-center gap-2">
-            <span class="badge rounded-pill bg-primary-subtle text-primary border px-3 py-2"><?= esc((int) $unreadCount) ?> unread</span>
+        <div class="slams-page-header-actions">
+            <span class="stat-badge"><i class="bi bi-bell me-1"></i><?= esc((int) $unreadCount) ?> unread</span>
             <form action="/dashboard/notifications/mark-all-read" method="post">
                 <?= csrf_field() ?>
-                <button type="submit" class="btn btn-outline-primary">Mark All As Read</button>
+                <button type="submit" class="btn btn-glass btn-sm">Mark All As Read</button>
             </form>
         </div>
     </div>

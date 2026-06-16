@@ -8,14 +8,12 @@ $statusLabels = $statusLabels ?? [];
 $requestModel = $requestModel ?? null;
 ?>
 
-<div class="dashboard-header">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
-        <div>
-            <h2 class="fw-bold text-primary mb-0">External Request Queue</h2>
-            <p class="text-muted small mb-0">
-                <?= $role === 'pic' ? 'Requests for laboratories assigned to you as PIC.' : 'Review and triage external access requests across the system.' ?>
-            </p>
-        </div>
+<div class="slams-page-header">
+    <div class="slams-page-header-left">
+        <h1 class="slams-page-title">External Request Queue</h1>
+        <p class="slams-page-subtitle">
+            <?= $role === 'pic' ? 'Requests for laboratories assigned to you as PIC.' : 'Review and triage external access requests across the system.' ?>
+        </p>
     </div>
 </div>
 

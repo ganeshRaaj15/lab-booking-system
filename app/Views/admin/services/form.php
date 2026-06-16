@@ -22,12 +22,14 @@ if (is_array($oldAssetIds) && is_array($oldQuantities)) {
 ?>
 
 <div class="container-fluid">
-    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
-        <div>
-            <h1 class="h3 mb-1"><?= $isEdit ? 'Edit Service Bundle' : 'Create Service Bundle' ?></h1>
-            <p class="text-muted mb-0">Applicants book the service, and SLAMS checks every linked asset in the bundle before allowing the slot.</p>
+    <div class="slams-page-header">
+        <div class="slams-page-header-left">
+            <h1 class="slams-page-title"><?= $isEdit ? 'Edit Service Bundle' : 'Create Service Bundle' ?></h1>
+            <p class="slams-page-subtitle">SLAMS checks every linked asset in the bundle before allowing the slot to be booked.</p>
         </div>
-        <a href="/admin/services" class="btn btn-outline-primary"><i class="bi bi-arrow-left me-2"></i>Back</a>
+        <div class="slams-page-header-actions">
+            <a href="/admin/services" class="btn btn-glass btn-sm"><i class="bi bi-arrow-left me-1"></i>Back</a>
+        </div>
     </div>
 
     <?php if (! empty($errors)): ?>
