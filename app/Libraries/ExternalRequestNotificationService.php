@@ -102,7 +102,7 @@ class ExternalRequestNotificationService
         $requesterIds = $this->compactIds([(int) ($context['user_id'] ?? 0)]);
         $requesterEmail = [$context['contact_email'] ?? null];
         $roleLabel = $actorRole === 'manager' ? 'Lab Manager' : 'PIC';
-        $note = esc(trim((string) ($actorRole === 'manager' ? ($context['manager_notes'] ?? '') : ($context['pic_notes'] ?? ''))));
+        $note = trim((string) ($actorRole === 'manager' ? ($context['manager_notes'] ?? '') : ($context['pic_notes'] ?? '')));
 
         if ($status === 'pending_manager_approval' && $actorRole === 'pic') {
             $requesterMessage = 'Your external request for ' . $descriptor . ' was approved by the PIC and is now waiting for Lab Manager approval.';
@@ -345,7 +345,7 @@ class ExternalRequestNotificationService
             'Purpose: ' . (($context['purpose'] ?? '') !== '' ? $context['purpose'] : '-'),
         ];
 
-        return implode('<br>', array_map('esc', $lines));
+        return implode("\n", $lines);
     }
 
     protected function managerEmails(): array
@@ -471,21 +471,14 @@ class ExternalRequestNotificationService
 
     protected function emailTemplate(string $heading, array $paragraphs, ?string $actionUrl = null, ?string $actionText = null): string
     {
-        $paragraphHtml = '';
-        foreach ($paragraphs as $paragraph) {
-            $paragraphHtml .= '<p style="margin:0 0 12px 0;color:#334155;line-height:1.6;">' . $paragraph . '</p>';
-        }
-
-        $actionHtml = '';
-        if ($actionUrl !== null && $actionText !== null) {
-            $actionHtml = '<p style="margin:24px 0 0 0;"><a href="' . esc($actionUrl) . '" style="display:inline-block;padding:12px 18px;background:#0d6efd;color:#ffffff;text-decoration:none;border-radius:8px;">' . esc($actionText) . '</a></p>';
-        }
-
-        return '<div style="font-family:Arial,sans-serif;background:#f8fafc;padding:24px;">'
-            . '<div style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:16px;padding:32px;border:1px solid #e2e8f0;">'
-            . '<h2 style="margin:0 0 18px 0;color:#0f172a;">' . esc($heading) . '</h2>'
-            . $paragraphHtml
-            . $actionHtml
-            . '</div></div>';
+        return view('emails/transactional', [
+            'preheader' => $heading,
+            'eyebrow' => 'External Request Update',
+            'heading' => $heading,
+            'paragraphs' => $paragraphs,
+            'actionUrl' => $actionUrl,
+            'actionText' => $actionText,
+            'footerNote' => 'You are receiving this because you are involved in an external laboratory request in the FKMP Smart Lab Management System.',
+        ]);
     }
 }

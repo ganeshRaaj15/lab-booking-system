@@ -346,12 +346,15 @@ class NativeAuthController extends BaseController
                 $mailer->clear(true);
                 $mailer->setTo($email);
                 $mailer->setSubject('Your SLAMS login verification code');
-                $mailer->setMessage(
-                    '<p>Hi ' . esc($user->username ?? 'there') . ',</p>'
-                    . '<p>Your one-time login code is:</p>'
-                    . '<h2 style="letter-spacing:0.3em">' . $otp . '</h2>'
-                    . '<p>This code expires in 10 minutes. Do not share it with anyone.</p>'
-                );
+                $mailer->setMessage(view('auth/email_2fa_email', [
+                    'code' => $otp,
+                    'user' => $user,
+                    'ipAddress' => (string) $this->request->getIPAddress(),
+                    'userAgent' => $this->request->getUserAgent() !== null
+                        ? (string) $this->request->getUserAgent()->getAgentString()
+                        : '',
+                    'date' => date('Y-m-d H:i:s'),
+                ]));
                 $mailer->send();
             } catch (\Throwable $e) {
                 log_message('error', '[NativeAuthController] OTP email failed: ' . $e->getMessage());

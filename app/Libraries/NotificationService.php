@@ -942,7 +942,7 @@ class NotificationService
         ];
 
         if ($rejectionReason !== '') {
-            $paragraphs[] = 'Reason: ' . htmlspecialchars($rejectionReason, ENT_QUOTES, 'UTF-8');
+            $paragraphs[] = 'Reason: ' . $rejectionReason;
         }
 
         $paragraphs[] = 'If you believe this is in error or need further assistance, please contact the lab administrator.';
@@ -1191,19 +1191,15 @@ class NotificationService
 
     protected function emailTemplate(string $heading, array $paragraphs, ?string $actionUrl = null, ?string $actionText = null): string
     {
-        $html = '<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6;color:#1f2937">';
-        $html .= '<h2 style="margin:0 0 16px;color:#1d4ed8">' . htmlspecialchars($heading, ENT_QUOTES, 'UTF-8') . '</h2>';
-        foreach ($paragraphs as $paragraph) {
-            if ($paragraph === null || trim((string) $paragraph) === '') {
-                continue;
-            }
-            $html .= '<p style="margin:0 0 12px">' . nl2br(htmlspecialchars((string) $paragraph, ENT_QUOTES, 'UTF-8')) . '</p>';
-        }
-        if ($actionUrl && $actionText) {
-            $html .= '<p style="margin:20px 0 0"><a href="' . htmlspecialchars($actionUrl, ENT_QUOTES, 'UTF-8') . '" style="display:inline-block;padding:10px 16px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:600">' . htmlspecialchars($actionText, ENT_QUOTES, 'UTF-8') . '</a></p>';
-        }
-        $html .= '</div>';
-        return $html;
+        return view('emails/transactional', [
+            'preheader' => $heading,
+            'eyebrow' => 'System Notification',
+            'heading' => $heading,
+            'paragraphs' => $paragraphs,
+            'actionUrl' => $actionUrl,
+            'actionText' => $actionText,
+            'footerNote' => 'You are receiving this because you have activity or responsibilities in the FKMP Smart Lab Management System.',
+        ]);
     }
 
     protected function bookingDescriptor(array $context): string
