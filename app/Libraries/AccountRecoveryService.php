@@ -38,7 +38,9 @@ class AccountRecoveryService
             'expires' => Time::now()->addSeconds(setting('Auth.magicLinkLifetime')),
         ], true);
 
-        if (! $this->sendEmail($user, $email, $token)) {
+        $audience = ($options['audience'] ?? 'web') === 'native' ? 'native' : 'web';
+
+        if (! $this->sendEmail($user, $email, $token, $audience)) {
             if ($identityId) {
                 $identityModel->delete($identityId);
             }
@@ -63,7 +65,7 @@ class AccountRecoveryService
         }
     }
 
-    private function sendEmail(User $user, string $emailAddress, string $token): bool
+    private function sendEmail(User $user, string $emailAddress, string $token, string $audience = 'web'): bool
     {
         helper('email');
 
@@ -71,7 +73,7 @@ class AccountRecoveryService
             ->setFrom(setting('Email.fromEmail'), setting('Email.fromName') ?? '');
         $email->setTo($emailAddress);
         $email->setSubject('Secure sign-in link for FKMP Smart Lab');
-        $linkOptions = $this->linkOptions($token, $options['audience'] ?? 'web');
+        $linkOptions = $this->linkOptions($token, $audience);
         $email->setMessage(view(
             setting('Auth.views')['magic-link-email'],
             [
