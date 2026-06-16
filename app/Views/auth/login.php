@@ -144,8 +144,8 @@ $loginErrors = array_values(array_filter((array) (session('errors') ?? [])));
                             <label for="remember" class="form-check-label">Remember me</label>
                         </div>
                         <a href="<?= url_to('magic-link') ?>" class="auth-inline-link">
-                            <i class="bi bi-link-45deg"></i>
-                            Use a sign-in link
+                            <i class="bi bi-key"></i>
+                            Forgot password?
                         </a>
                     </div>
 
