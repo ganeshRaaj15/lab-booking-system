@@ -13,10 +13,10 @@
             <div class="small text-muted mt-2">Scope: <?= esc($scopeLabel) ?></div>
         </div>
         <div class="reports-export-group">
-            <a href="<?= esc($exportUrls['pdf']) ?>" class="btn btn-outline-primary">
+            <a href="<?= esc($exportUrls['pdf']) ?>" class="btn btn-glass btn-sm">
                 <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
             </a>
-            <a href="<?= esc($exportUrls['csv']) ?>" class="btn btn-outline-success">
+            <a href="<?= esc($exportUrls['csv']) ?>" class="btn btn-glass btn-sm">
                 <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
             </a>
         </div>

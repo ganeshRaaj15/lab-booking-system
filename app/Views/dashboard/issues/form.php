@@ -12,12 +12,14 @@ $oldAssetId    = (int) old('asset_id');
 <?= $this->section('content') ?>
 
 <div class="container py-4">
-    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
-        <div>
-            <h2 class="fw-bold text-primary mb-1">Report Asset Issue</h2>
-            <p class="text-muted mb-0 small">Select the laboratory, then the affected equipment. Fill in the details and attach a photo if possible.</p>
+    <div class="slams-page-header">
+        <div class="slams-page-header-left">
+            <h1 class="slams-page-title">Report Asset Issue</h1>
+            <p class="slams-page-subtitle">Select the laboratory, then the affected equipment. Fill in the details and attach a photo if possible.</p>
         </div>
-        <a href="/dashboard" class="btn btn-outline-primary"><i class="bi bi-arrow-left me-2"></i>Back to Dashboard</a>
+        <div class="slams-page-header-actions">
+            <a href="/dashboard" class="btn btn-glass btn-sm"><i class="bi bi-arrow-left me-1"></i>Back to Dashboard</a>
+        </div>
     </div>
 
     <?php if (session()->getFlashdata('success')): ?><div class="alert alert-success shadow-sm border-0"><?= esc(session()->getFlashdata('success')) ?></div><?php endif; ?>
@@ -25,8 +27,8 @@ $oldAssetId    = (int) old('asset_id');
 
     <div class="row g-4">
         <div class="col-lg-7">
-            <div class="card shadow-sm border-0 rounded-4">
-                <div class="card-header bg-white border-0 pt-4 px-4"><h5 class="fw-semibold text-primary mb-1">New Issue Report</h5></div>
+            <div class="glass-card">
+                <div class="glass-card-header"><h5 class="mb-0">New Issue Report</h5></div>
                 <div class="card-body px-4 pb-4">
                     <form method="post" action="/dashboard/report-issue/store" class="row g-3" enctype="multipart/form-data" id="issueForm">
                         <?= csrf_field() ?>

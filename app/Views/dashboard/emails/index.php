@@ -4,15 +4,17 @@
 <div class="container-fluid">
     <?php if (session()->getFlashdata('error')): ?><div class="alert alert-danger border-0 shadow-sm"><?= esc(session()->getFlashdata('error')) ?></div><?php endif; ?>
 
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-        <div>
-            <h3 class="mb-1">Email Inbox</h3>
-            <p class="text-muted mb-0">Preview outgoing system emails generated for your account.</p>
+    <div class="slams-page-header">
+        <div class="slams-page-header-left">
+            <h1 class="slams-page-title">Email Inbox</h1>
+            <p class="slams-page-subtitle">Preview outgoing system emails generated for your account.</p>
         </div>
-        <a href="/dashboard/notifications" class="btn btn-outline-secondary">Back to Notifications</a>
+        <div class="slams-page-header-actions">
+            <a href="/dashboard/notifications" class="btn btn-glass btn-sm">Back to Notifications</a>
+        </div>
     </div>
 
-    <div class="card border-0 shadow-sm">
+    <div class="glass-card">
         <div class="card-body p-0">
             <?php if (empty($emails)): ?>
                 <div class="p-5 text-center text-muted">

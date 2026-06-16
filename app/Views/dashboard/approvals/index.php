@@ -3,14 +3,14 @@
 
 <?php $filters = $filters ?? ['q' => '', 'date_from' => '', 'date_to' => '']; ?>
 
-<div class="d-flex align-items-center justify-content-between mb-4">
-    <h3 class="fw-bold text-primary">
-        <i class="bi bi-check2-circle me-2"></i>
-        Booking Approvals
-    </h3>
+<div class="slams-page-header">
+    <div class="slams-page-header-left">
+        <h1 class="slams-page-title">Booking Approvals</h1>
+        <p class="slams-page-subtitle">Review and act on pending booking requests assigned to you.</p>
+    </div>
 </div>
 
-<div class="card shadow-sm border-0 mb-4">
+<div class="card border-0 shadow-sm mb-4">
     <div class="card-body">
         <form method="get" action="/dashboard/approvals" class="row g-3 align-items-end">
             <div class="col-md-5">
@@ -33,8 +33,8 @@
     </div>
 </div>
 
-<div class="card shadow-sm border-0">
-    <div class="card-header bg-primary text-white">
+<div class="glass-card">
+    <div class="glass-card-header">
         <h5 class="mb-0">Pending Approval Requests</h5>
     </div>
 

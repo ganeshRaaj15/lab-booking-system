@@ -9,9 +9,13 @@ $old      = fn(string $key, $default = '') => old($key, $isEdit ? ($record[$key]
 ?>
 
 <div class="container-fluid">
-    <div class="mb-4">
-        <a href="/admin/reservations" class="btn btn-sm btn-outline-secondary mb-3"><i class="bi bi-arrow-left me-1"></i>Back</a>
-        <h1 class="h3 mb-1"><?= esc($title ?? 'Reservation') ?></h1>
+    <div class="slams-page-header">
+        <div class="slams-page-header-left">
+            <h1 class="slams-page-title"><?= esc($title ?? 'Reservation') ?></h1>
+        </div>
+        <div class="slams-page-header-actions">
+            <a href="/admin/reservations" class="btn btn-glass btn-sm"><i class="bi bi-arrow-left me-1"></i>Back</a>
+        </div>
     </div>
 
     <?php if (session()->getFlashdata('error')): ?>
