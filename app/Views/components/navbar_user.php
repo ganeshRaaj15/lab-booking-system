@@ -52,11 +52,12 @@ $navItems = [
 
 if ($isLoggedIn) {
     if ($user->inGroup('external')) {
-        $navItems[] = [
-            'label'    => 'Requests',
+        // Replace the public Home item with the external user's dashboard as their home
+        $navItems[0] = [
+            'label'    => 'Home',
             'href'     => '/dashboard/external',
-            'icon'     => 'bi-clipboard-check',
-            'patterns' => ['dashboard/external*'],
+            'icon'     => 'bi-house-door',
+            'patterns' => ['dashboard/external*', ''],
         ];
     } elseif ($user->inGroup('pic') || $user->inGroup('manager')) {
         $navItems[] = [
