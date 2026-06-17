@@ -76,7 +76,8 @@ class AdminDashboard extends BaseController
         // ------------------------------------------------------------
         $facultyBreakdown = $this->db->table('bookings')
             ->select('faculties.name_en AS faculty, COUNT(bookings.id) AS total')
-            ->join('faculties', 'faculties.id = bookings.faculty_id', 'left')
+            ->join('faculties', 'faculties.id = bookings.faculty_id', 'inner')
+            ->where('bookings.faculty_id IS NOT NULL')
             ->groupBy('faculties.name_en')
             ->orderBy('total', 'DESC')
             ->get()
@@ -134,6 +135,7 @@ class AdminDashboard extends BaseController
     ->join("laboratories", "laboratories.id = bookings.lab_id", "left")
     ->join("faculties", "faculties.id = bookings.faculty_id", "left")
     ->where('status', 'APPROVED')
+    ->where('bookings.faculty_id IS NOT NULL')
     ->orderBy('date', 'DESC')
     ->findAll();
 
@@ -149,6 +151,7 @@ class AdminDashboard extends BaseController
     ->join("laboratories", "laboratories.id = bookings.lab_id", "left")
     ->join("faculties", "faculties.id = bookings.faculty_id", "left")
     ->where('status', 'REJECTED')
+    ->where('bookings.faculty_id IS NOT NULL')
     ->orderBy('date', 'DESC')
     ->findAll();
 

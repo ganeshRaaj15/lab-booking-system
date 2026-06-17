@@ -140,14 +140,17 @@ class BookingModel extends Model
 
             'approved' => $db->table('bookings')
                 ->where('status', 'APPROVED')
+                ->where('faculty_id IS NOT NULL')
                 ->countAllResults(),
 
             'rejected' => $db->table('bookings')
                 ->where('status', 'REJECTED')
+                ->where('faculty_id IS NOT NULL')
                 ->countAllResults(),
 
             'cancelled' => $db->table('bookings')
                 ->where('status', 'CANCELLED')
+                ->where('faculty_id IS NOT NULL')
                 ->countAllResults(),
         ];
     }
@@ -169,6 +172,7 @@ class BookingModel extends Model
     {
         return $this->select("DATE_FORMAT(date, '%Y-%m') AS month, COUNT(*) AS total")
                     ->whereIn('status', self::CORE_STATUSES)
+                    ->where('faculty_id IS NOT NULL')
                     ->groupBy("DATE_FORMAT(date, '%Y-%m')")
                     ->orderBy("month", "ASC")
                     ->findAll();

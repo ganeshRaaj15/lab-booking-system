@@ -316,9 +316,10 @@ class ManagerDashboard extends BaseController
         $approved = $db->table('bookings')
             ->whereIn('lab_id', $labIds)
             ->where('status', 'APPROVED')
+            ->where('faculty_id IS NOT NULL')
             ->countAllResults();
-            
-        // Pending bookings (all pending stages)
+
+        // Pending bookings (all pending stages) — not filtered, operational metric
         $pending = $db->table('bookings')
             ->whereIn('lab_id', $labIds)
             ->where('status', 'PENDING')
@@ -328,11 +329,13 @@ class ManagerDashboard extends BaseController
         $rejected = $db->table('bookings')
             ->whereIn('lab_id', $labIds)
             ->where('status', 'REJECTED')
+            ->where('faculty_id IS NOT NULL')
             ->countAllResults();
 
         $cancelled = $db->table('bookings')
             ->whereIn('lab_id', $labIds)
             ->where('status', 'CANCELLED')
+            ->where('faculty_id IS NOT NULL')
             ->countAllResults();
 
         // Total bookings (only core statuses for consistency)
@@ -357,12 +360,14 @@ class ManagerDashboard extends BaseController
         $currentWeek = $db->table('bookings')
             ->whereIn('lab_id', $labIds)
             ->whereIn('status', $statusFilter)
+            ->where('faculty_id IS NOT NULL')
             ->where('YEARWEEK(date, 1) = YEARWEEK(CURDATE(), 1)')
             ->countAllResults();
-            
+
         $lastWeek = $db->table('bookings')
             ->whereIn('lab_id', $labIds)
             ->whereIn('status', $statusFilter)
+            ->where('faculty_id IS NOT NULL')
             ->where('YEARWEEK(date, 1) = YEARWEEK(CURDATE() - INTERVAL 1 WEEK, 1)')
             ->countAllResults();
             
@@ -420,6 +425,7 @@ private function getWeeklyUtilization(array $labIds, int $weeks = 8): array
         ")
         ->whereIn('lab_id', $labIds)
         ->where('status', 'APPROVED')
+        ->where('faculty_id IS NOT NULL')
         ->where('date >=', date('Y-m-d', strtotime("-$weeks weeks")))
         ->groupBy('YEARWEEK(date, 1)')
         ->orderBy('week', 'DESC')
@@ -458,7 +464,7 @@ private function getPeakHoursAnalysis(array $labIds): array
 {
     $db = \Config\Database::connect();
     
-    // Peak hours by time slot - FIXED
+    // Peak hours by time slot
     $qSlots = $db->table('bookings')
         ->select("
             HOUR(start_time) as hour,
@@ -466,25 +472,27 @@ private function getPeakHoursAnalysis(array $labIds): array
         ")
         ->whereIn('lab_id', $labIds)
         ->where('status', 'APPROVED')
+        ->where('faculty_id IS NOT NULL')
         ->where('start_time >=', '08:00:00')
         ->where('start_time <=', '17:00:00')
         ->groupBy('hour')
         ->orderBy('hour', 'ASC')
         ->get();
     $timeSlots = $qSlots ? $qSlots->getResultArray() : [];
-        
+
     // Add hour labels
     foreach ($timeSlots as &$slot) {
         $slot['hour_label'] = sprintf('%02d:00', $slot['hour']);
     }
-    
-    // Busiest days - FIXED
+
+    // Busiest days
     // First get total approved bookings for percentage calculation
     $totalApproved = $db->table('bookings')
         ->whereIn('lab_id', $labIds)
         ->where('status', 'APPROVED')
+        ->where('faculty_id IS NOT NULL')
         ->countAllResults();
-    
+
     $qDays = $db->table('bookings')
         ->select("
             DAYNAME(date) as day,
@@ -492,6 +500,7 @@ private function getPeakHoursAnalysis(array $labIds): array
         ")
         ->whereIn('lab_id', $labIds)
         ->where('status', 'APPROVED')
+        ->where('faculty_id IS NOT NULL')
         ->groupBy('day')
         ->orderBy('booking_count', 'DESC')
         ->get();
@@ -577,6 +586,7 @@ private function getPeakHoursAnalysis(array $labIds): array
             ->select("DATE_FORMAT(date, '%Y-%m') as month, COUNT(*) as total")
             ->whereIn('lab_id', $labIds)
             ->whereIn('status', BookingModel::CORE_STATUSES)
+            ->where('faculty_id IS NOT NULL')
             ->where('date >=', date('Y-m-01', strtotime("-$months months")))
             ->groupBy('month')
             ->orderBy('month', 'ASC')

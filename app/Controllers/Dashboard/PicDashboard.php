@@ -115,6 +115,7 @@ class PicDashboard extends BaseController
             ->join('laboratories', 'laboratories.id = bookings.lab_id', 'left')
             ->where("LOWER(TRIM(laboratories.pic_email)) =", $picEmail)
             ->where('bookings.status', 'APPROVED')
+            ->where('bookings.faculty_id IS NOT NULL')
             ->orderBy('bookings.date', 'DESC')
             ->limit(10) // Show only recent ones
             ->findAll();
@@ -125,6 +126,7 @@ class PicDashboard extends BaseController
             ->join('laboratories', 'laboratories.id = bookings.lab_id', 'left')
             ->where("LOWER(TRIM(laboratories.pic_email)) =", $picEmail)
             ->where('bookings.status', 'REJECTED')
+            ->where('bookings.faculty_id IS NOT NULL')
             ->orderBy('bookings.date', 'DESC')
             ->limit(5)
             ->findAll();
@@ -133,18 +135,21 @@ class PicDashboard extends BaseController
             ->join('laboratories', 'laboratories.id = bookings.lab_id', 'left')
             ->where("LOWER(TRIM(laboratories.pic_email)) =", $picEmail)
             ->where('bookings.status', 'APPROVED')
+            ->where('bookings.faculty_id IS NOT NULL')
             ->countAllResults();
 
         $rejectedCount = $bookingModel
             ->join('laboratories', 'laboratories.id = bookings.lab_id', 'left')
             ->where("LOWER(TRIM(laboratories.pic_email)) =", $picEmail)
             ->where('bookings.status', 'REJECTED')
+            ->where('bookings.faculty_id IS NOT NULL')
             ->countAllResults();
 
         $cancelledCount = $bookingModel
             ->join('laboratories', 'laboratories.id = bookings.lab_id', 'left')
             ->where("LOWER(TRIM(laboratories.pic_email)) =", $picEmail)
             ->where('bookings.status', 'CANCELLED')
+            ->where('bookings.faculty_id IS NOT NULL')
             ->countAllResults();
 
         // -----------------------------------------------------
