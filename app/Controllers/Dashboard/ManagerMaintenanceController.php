@@ -67,6 +67,7 @@ class ManagerMaintenanceController extends BaseController
             'roleLabel'         => $this->viewerRoleLabel(),
             'backUrl'           => $this->viewerBackUrl(),
             'basePath'          => $this->viewerBasePath(),
+            'layoutView'        => $this->viewerLayout(),
         ]);
     }
 
@@ -102,6 +103,7 @@ class ManagerMaintenanceController extends BaseController
             'user'         => auth()->user(),
             'roleLabel'    => $this->viewerRoleLabel(),
             'backUrl'      => $this->viewerBasePath(),
+            'layoutView'   => $this->viewerLayout(),
         ]);
     }
 
@@ -135,5 +137,11 @@ class ManagerMaintenanceController extends BaseController
     {
         $user = auth()->user();
         return $user && $user->inGroup('admin') ? '/dashboard/admin/maintenance' : '/dashboard/manager/maintenance';
+    }
+
+    protected function viewerLayout(): string
+    {
+        $user = auth()->user();
+        return $user && $user->inGroup('admin') ? 'layouts/main_admin' : 'layouts/main_user';
     }
 }

@@ -16,7 +16,7 @@ $basePath          = $basePath          ?? '/dashboard/manager/maintenance';
 $priorityBadge = ['low' => 'secondary', 'medium' => 'primary', 'high' => 'warning', 'critical' => 'danger'];
 $statusBadge   = ['reported' => 'info', 'scheduled' => 'primary', 'in_progress' => 'warning', 'testing' => 'secondary', 'completed' => 'success', 'cancelled' => 'danger'];
 ?>
-<?= $this->extend('layouts/main_user') ?>
+<?= $this->extend($layoutView ?? 'layouts/main_user') ?>
 <?= $this->section('content') ?>
 
 <div class="container py-4">
