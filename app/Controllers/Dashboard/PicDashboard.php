@@ -208,6 +208,7 @@ private function getMonthlyBookingsForLabs(array $labIds, int $months = 6): arra
         ->whereIn('lab_id', $labIds)
         ->whereIn('status', BookingModel::CORE_STATUSES)
         ->where('date >=', date('Y-m-01', strtotime("-$months months")))
+        ->where('faculty_id IS NOT NULL')
         ->groupBy('month')  // Group by the alias
         ->orderBy('month', 'ASC')
         ->get()
@@ -238,6 +239,7 @@ private function getMonthlyBookingsForLabs(array $labIds, int $months = 6): arra
             ->join('faculties f', 'f.id = b.faculty_id', 'left')
             ->whereIn('b.lab_id', $labIds)
             ->where('b.status', 'APPROVED')
+            ->where('b.faculty_id IS NOT NULL')
             ->groupBy('b.faculty_id')
             ->orderBy('count', 'DESC')
             ->limit(5)
@@ -266,6 +268,7 @@ private function getUsageTrends(array $labIds): array
         ->select("DAYNAME(date) as day, COUNT(*) as count")
         ->whereIn('lab_id', $labIds)
         ->where('status', 'APPROVED')
+        ->where('faculty_id IS NOT NULL')
         ->groupBy('day')  // Group by the alias instead of the function
         ->orderBy('FIELD(day, "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")')
         ->get()
@@ -274,7 +277,7 @@ private function getUsageTrends(array $labIds): array
     // Time slot distribution - FIXED QUERY
     $timeSlots = $db->table('bookings')
         ->select("
-            CASE 
+            CASE
                 WHEN start_time >= '08:00:00' AND end_time <= '10:00:00' THEN '08:00-10:00'
                 WHEN start_time >= '10:00:00' AND end_time <= '12:00:00' THEN '10:00-12:00'
                 WHEN start_time >= '13:00:00' AND end_time <= '15:00:00' THEN '13:00-15:00'
@@ -285,6 +288,7 @@ private function getUsageTrends(array $labIds): array
         ")
         ->whereIn('lab_id', $labIds)
         ->where('status', 'APPROVED')
+        ->where('faculty_id IS NOT NULL')
         ->groupBy('slot')  // Group by the alias
         ->orderBy('slot', 'ASC')
         ->get()
