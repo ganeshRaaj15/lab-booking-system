@@ -29,7 +29,7 @@ $priorityBadgeClass = [
     'critical' => 'badge text-bg-danger',
 ];
 ?>
-<?= $this->extend('layouts/main_user') ?>
+<?= $this->extend('layouts/main_admin') ?>
 <?= $this->section('content') ?>
 <div class="container-fluid">
     <?php if (session()->getFlashdata('success')): ?><div class="alert alert-success border-0 shadow-sm"><?= esc(session()->getFlashdata('success')) ?></div><?php endif; ?>
