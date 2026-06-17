@@ -54,7 +54,7 @@ $loginErrors = array_values(array_filter((array) (session('errors') ?? [])));
     <section class="auth-panel slams-reveal is-visible">
         <div class="auth-panel-header">
             <div class="auth-panel-badge">
-                <span class="auth-panel-badge-icon"><i class="bi bi-fingerprint"></i></span>
+                <span class="auth-panel-badge-icon"><img src="<?= slams_asset('images/logo.png') ?>" alt="SLAMS" style="width:1.7rem;height:1.7rem;object-fit:contain;"></span>
                 <div>
                     <div class="auth-panel-badge-title">SLAMS</div>
                     <div class="auth-panel-badge-copy">Smart Laboratory and Asset Management System</div>
