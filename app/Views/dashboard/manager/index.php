@@ -12,7 +12,7 @@ $insightPeriod     = $insightPeriod ?? '30d';
 $pendingMgr        = $pendingMgr ?? [];
 $pendingExternalMgr = $pendingExternalMgr ?? [];
 ?>
-<?= $this->extend('layouts/main_admin') ?>
+<?= $this->extend('layouts/main_manager') ?>
 <?= $this->section('content') ?>
 
 <div class="slams-page-header">
