@@ -5,15 +5,30 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<div class="reports-shell">
-    <div class="card reports-hero">
-        <div>
-            <h2 class="fw-bold text-primary mb-1"><?= esc($pageTitle) ?></h2>
-            <p class="text-muted"><?= esc($pageDescription) ?></p>
-            <div class="small text-muted mt-2">Scope: <?= esc($report['scopeLabel'] ?? '') ?></div>
-            <div class="small text-muted">Generated: <?= esc($report['generatedAtDisplay'] ?? ($report['generatedAt'] ?? '')) ?></div>
+<div class="rpt-shell">
+
+    <!-- Page header -->
+    <div class="slams-page-header">
+        <div class="slams-page-header-left">
+            <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                <span class="badge rounded-pill text-bg-primary" style="font-size:0.74rem;font-weight:700;letter-spacing:0.04em">
+                    <?= esc($report['roleDisplay'] ?? 'Report') ?>
+                </span>
+                <span class="text-muted" style="font-size:0.8rem"><?= esc($report['scopeLabel'] ?? '') ?></span>
+            </div>
+            <h1 class="slams-page-title"><?= esc($pageTitle) ?></h1>
+            <p class="slams-page-subtitle mb-0"><?= esc($pageDescription) ?></p>
+            <div class="text-muted mt-1" style="font-size:0.77rem">
+                <i class="bi bi-clock me-1"></i>Generated: <?= esc($report['generatedAtDisplay'] ?? ($report['generatedAt'] ?? '')) ?>
+            </div>
         </div>
-        <div class="reports-export-group">
+        <div class="slams-page-header-actions">
+            <button class="btn btn-glass btn-sm" type="button" id="rptFilterToggle" aria-expanded="false">
+                <i class="bi bi-funnel me-1"></i> Filters
+                <?php if (! empty($report['appliedFilters'])): ?>
+                    <span class="badge rounded-pill bg-primary ms-1"><?= esc((string) count($report['appliedFilters'])) ?></span>
+                <?php endif; ?>
+            </button>
             <a href="<?= esc($summaryExportUrls['pdf']) ?>" class="btn btn-glass btn-sm">
                 <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
             </a>
@@ -23,79 +38,65 @@
         </div>
     </div>
 
-    <?php if (! empty($report['uiProfile'])): ?>
-        <div class="card reports-role-card">
-            <div class="card-body">
-                <div class="reports-role-grid">
-                    <div>
-                        <div class="reports-role-kicker"><?= esc($report['roleDisplay'] ?? 'Report Role') ?></div>
-                        <h3><?= esc($report['uiProfile']['headline'] ?? '') ?></h3>
-                        <p class="text-muted mb-0"><?= esc($report['uiProfile']['subheadline'] ?? '') ?></p>
-                    </div>
-                    <div class="reports-focus-list">
-                        <?php foreach (($report['uiProfile']['focusAreas'] ?? []) as $area): ?>
-                            <span class="reports-pill"><?= esc($area) ?></span>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-
-                <?php if (($report['uiProfile']['highlights'] ?? []) !== []): ?>
-                    <div class="reports-role-highlight-grid">
-                        <?php foreach (($report['uiProfile']['highlights'] ?? []) as $item): ?>
-                            <div class="reports-summary-card reports-tone-<?= esc($item['tone'] ?? 'primary') ?>">
-                                <small><?= esc($item['label'] ?? 'Highlight') ?></small>
-                                <div class="reports-summary-value"><?= esc((string) ($item['value'] ?? '0')) ?></div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
-
-                <?php if (($report['uiProfile']['webCallout'] ?? []) !== []): ?>
-                    <div class="reports-callout-grid">
-                        <?php foreach (($report['uiProfile']['webCallout'] ?? []) as $callout): ?>
-                            <div class="reports-callout-box">
-                                <div class="reports-callout-label"><?= esc($callout['label'] ?? 'Reference') ?></div>
-                                <div class="reports-callout-value"><?= esc($callout['value'] ?? '-') ?></div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
-            </div>
+    <!-- Collapsible filter panel -->
+    <div class="rpt-filter-collapse" id="rptFilterPanel">
+        <div>
+            <?= view('reports/partials/filter_form', [
+                'filterAction' => $filterAction,
+                'filterFields' => $filterFields,
+                'filters'      => $report['filters'] ?? [],
+            ]) ?>
         </div>
-    <?php endif; ?>
+    </div>
 
-    <?= view('reports/partials/filter_form', [
-        'filterAction' => $filterAction,
-        'filterFields' => $filterFields,
-        'filters' => $report['filters'] ?? [],
-    ]) ?>
-
-    <?php if (($report['appliedFilters'] ?? []) !== []): ?>
-        <div class="reports-pill-row">
-            <?php foreach (($report['appliedFilters'] ?? []) as $filter): ?>
-                <span class="reports-pill">
-                    <span class="reports-pill-label"><?= esc($filter['label'] ?? 'Filter') ?>:</span>
+    <!-- Active filter pills -->
+    <?php if (! empty($report['appliedFilters'])): ?>
+        <div class="rpt-pill-row">
+            <span class="text-muted fw-semibold" style="font-size:0.8rem">Active filters:</span>
+            <?php foreach ($report['appliedFilters'] as $filter): ?>
+                <span class="rpt-pill">
+                    <span class="rpt-pill-label"><?= esc($filter['label'] ?? '') ?>:</span>
                     <span><?= esc($filter['value'] ?? '') ?></span>
                 </span>
             <?php endforeach; ?>
+            <a href="<?= esc($filterAction) ?>" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.8rem">
+                <i class="bi bi-x me-1"></i>Clear
+            </a>
         </div>
     <?php endif; ?>
 
+    <!-- Role-specific content -->
     <?= view('reports/roles/web_' . ($report['role'] ?? 'pic'), ['report' => $report]) ?>
 
-    <?php if (($report['limitations'] ?? []) !== []): ?>
-        <div class="card reports-limitations-card">
-            <div class="card-body">
-                <h3>Data Scope Notes</h3>
-                <ul class="mb-0">
-                    <?php foreach (($report['limitations'] ?? []) as $item): ?>
+    <!-- Data scope notes -->
+    <?php if (! empty($report['limitations'])): ?>
+        <div class="card border-0 shadow-sm">
+            <div class="card-body py-3">
+                <h6 class="fw-bold mb-2" style="font-size:0.83rem">
+                    <i class="bi bi-info-circle me-1 text-muted"></i>Data Scope Notes
+                </h6>
+                <ul class="mb-0 ps-3" style="font-size:0.82rem;color:var(--slams-muted)">
+                    <?php foreach ($report['limitations'] as $item): ?>
                         <li><?= esc($item) ?></li>
                     <?php endforeach; ?>
                 </ul>
             </div>
         </div>
     <?php endif; ?>
+
 </div>
+
+<script>
+(function () {
+    const toggle = document.getElementById('rptFilterToggle');
+    const panel  = document.getElementById('rptFilterPanel');
+    if (!toggle || !panel) return;
+    toggle.addEventListener('click', function () {
+        const open = panel.classList.toggle('rpt-filter-open');
+        this.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+})();
+</script>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
