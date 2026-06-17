@@ -296,7 +296,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
 }
 
 /* The label wraps the hidden input + track + text */
@@ -310,6 +310,7 @@
     line-height: 1;
     user-select: none;
     flex-shrink: 0;
+    max-width: 100%;
 }
 
 /* sr-only: visually hidden but accessible to keyboard and screen readers */
@@ -332,6 +333,8 @@
     position: relative;
     width: 36px;
     height: 20px;
+    min-width: 36px;
+    min-height: 20px;
     border-radius: 10px;
     background-color: #9ca3af;
     transition: background-color 0.2s ease;
@@ -485,5 +488,18 @@
     .auth-showcase-copy {
         max-width: 100%;
         padding: 1rem;
+    }
+
+    .auth-bottom-row {
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: flex-start;
+        gap: 0.55rem;
+    }
+
+    .auth-remember-label,
+    .auth-inline-link {
+        width: auto;
+        max-width: 100%;
     }
 }
