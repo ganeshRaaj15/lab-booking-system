@@ -299,29 +299,50 @@
 }
 
 .auth-form-row .form-check {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-left: 0;
+    min-height: auto;
     margin: 0;
 }
 
+/* Fully self-contained pill toggle — overrides Bootstrap entirely */
 .auth-form-row .form-check-input[type="checkbox"] {
-    width: 2rem;
-    height: 1.1rem;
-    margin-top: 0.14rem;
-    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+    display: inline-block;
+    width: 2.2rem;
+    height: 1.2rem;
+    border-radius: 999px;
+    border: none;
+    background-color: color-mix(in srgb, var(--slams-muted) 40%, var(--slams-bg-muted));
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: left center;
+    background-size: contain;
     flex-shrink: 0;
+    margin: 0;
+    cursor: pointer;
+    box-shadow: none;
+    transition: background-color 0.22s ease, background-position 0.18s ease-in-out;
 }
 
 .auth-form-row .form-check-input[type="checkbox"]:checked {
     background-color: var(--slams-primary);
     border-color: var(--slams-primary);
+    background-position: right center;
 }
 
 .auth-form-row .form-check-input[type="checkbox"]:focus {
-    border-color: color-mix(in srgb, var(--slams-primary) 56%, var(--slams-border));
-    box-shadow: 0 0 0 0.16rem color-mix(in srgb, var(--slams-primary) 16%, transparent);
+    outline: none;
+    box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--slams-primary) 18%, transparent);
 }
 
 .auth-form-row .form-check-label {
     cursor: pointer;
+    margin: 0;
+    font-size: 0.9rem;
 }
 
 .auth-inline-link,
