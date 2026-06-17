@@ -290,80 +290,80 @@
     font-size: 0.8rem;
 }
 
-.auth-field-label-row {
+/* Row containing the toggle label and forgot-password link */
+.auth-bottom-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.5rem;
+    gap: 0.75rem;
+    flex-wrap: nowrap;
 }
 
-.auth-field-label-row .form-label {
-    margin: 0;
-}
-
-/* Screen-reader accessible, visually hidden */
-.auth-remember-input {
-    position: absolute;
-    opacity: 0;
-    width: 1px;
-    height: 1px;
-    margin: 0;
-    padding: 0;
-}
-
-.auth-remember {
-    display: flex;
-    align-items: center;
-}
-
+/* The label wraps the hidden input + track + text */
 .auth-remember-label {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 8px;
     cursor: pointer;
     margin: 0;
     font-size: 0.9rem;
     line-height: 1;
-}
-
-/* The pill track — an explicit element so width/height are guaranteed */
-.auth-remember-track {
-    display: block;
-    position: relative;
+    user-select: none;
     flex-shrink: 0;
-    width: 2.2rem;
-    height: 1.2rem;
-    border-radius: 999px;
-    background-color: color-mix(in srgb, var(--slams-muted) 40%, var(--slams-bg-muted));
-    transition: background-color 0.22s ease;
 }
 
-/* The sliding knob */
+/* sr-only: visually hidden but accessible to keyboard and screen readers */
+.auth-remember-input {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+/* Pill track — pixel sizes so no rem scaling can distort it */
+.auth-remember-track {
+    display: inline-block;
+    flex-shrink: 0;
+    position: relative;
+    width: 36px;
+    height: 20px;
+    border-radius: 10px;
+    background-color: #9ca3af;
+    transition: background-color 0.2s ease;
+    vertical-align: middle;
+}
+
+/* Sliding knob */
 .auth-remember-track::after {
     content: '';
     position: absolute;
-    top: 50%;
-    left: 0.15rem;
-    transform: translateY(-50%);
-    width: 0.9rem;
-    height: 0.9rem;
+    top: 3px;
+    left: 3px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
     background: #fff;
-    transition: left 0.18s ease-in-out;
+    transition: left 0.18s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
-/* Checked: teal track + knob slides right */
-.auth-remember-input:checked + .auth-remember-label .auth-remember-track {
+/* Checked state */
+.auth-remember-input:checked ~ .auth-remember-track {
     background-color: var(--slams-primary);
 }
 
-.auth-remember-input:checked + .auth-remember-label .auth-remember-track::after {
-    left: calc(2.2rem - 0.9rem - 0.15rem);
+.auth-remember-input:checked ~ .auth-remember-track::after {
+    left: 19px;
 }
 
-/* Focus ring on track when hidden input is keyboard-focused */
-.auth-remember-input:focus + .auth-remember-label .auth-remember-track {
-    box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--slams-primary) 18%, transparent);
+/* Focus ring */
+.auth-remember-input:focus ~ .auth-remember-track {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--slams-primary) 22%, transparent);
 }
 
 .auth-inline-link,

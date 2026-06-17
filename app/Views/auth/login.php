@@ -122,13 +122,7 @@ $loginErrors = array_values(array_filter((array) (session('errors') ?? [])));
                     </div>
 
                     <div class="auth-field">
-                        <div class="auth-field-label-row">
-                            <label class="form-label" for="loginPassword">Password</label>
-                            <a href="<?= url_to('magic-link') ?>" class="auth-inline-link">
-                                <i class="bi bi-key"></i>
-                                Forgot password?
-                            </a>
-                        </div>
+                        <label class="form-label" for="loginPassword">Password</label>
                         <div class="password-wrapper">
                             <input
                                 type="password"
@@ -144,12 +138,16 @@ $loginErrors = array_values(array_filter((array) (session('errors') ?? [])));
                         </div>
                     </div>
 
-                    <div class="auth-remember">
-                        <input type="checkbox" name="remember" id="remember" class="auth-remember-input" role="switch" <?= old('remember') ? 'checked' : '' ?>>
-                        <label for="remember" class="auth-remember-label">
+                    <div class="auth-bottom-row">
+                        <label class="auth-remember-label" for="remember">
+                            <input type="checkbox" name="remember" id="remember" class="auth-remember-input" role="switch" <?= old('remember') ? 'checked' : '' ?>>
                             <span class="auth-remember-track" aria-hidden="true"></span>
                             Remember me
                         </label>
+                        <a href="<?= url_to('magic-link') ?>" class="auth-inline-link">
+                            <i class="bi bi-key"></i>
+                            Forgot password?
+                        </a>
                     </div>
 
                     <button type="submit" class="auth-submit-btn">
