@@ -15,7 +15,7 @@ $tabIcons = [
 ?>
 
 <!-- ── KPI Cards ─────────────────────────────────────────────────────── -->
-<div class="row g-3 mb-1">
+<div class="row g-3 mb-3">
 
     <div class="col-6 col-md-4 col-xl-3">
         <div class="slams-kpi slams-kpi-info">
