@@ -140,7 +140,7 @@ $loginErrors = array_values(array_filter((array) (session('errors') ?? [])));
 
                     <div class="auth-form-row">
                         <div class="auth-remember">
-                            <input type="checkbox" name="remember" id="remember" class="auth-remember-toggle" role="switch" <?= old('remember') ? 'checked' : '' ?>>
+                            <input type="checkbox" name="remember" id="remember" class="auth-remember-input" role="switch" <?= old('remember') ? 'checked' : '' ?>>
                             <label for="remember" class="auth-remember-label">Remember me</label>
                         </div>
                         <a href="<?= url_to('magic-link') ?>" class="auth-inline-link">
