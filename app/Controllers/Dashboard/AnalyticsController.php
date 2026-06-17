@@ -32,7 +32,12 @@ class AnalyticsController extends BaseController
                 ->to('/dashboard/reports/analytics')
                 ->with('error', $e->getMessage());
         } catch (Throwable $e) {
-            log_message('error', 'Analytics report page failed: {message}', ['message' => $e->getMessage()]);
+            log_message('error', 'Analytics build failed [{class}] {message} in {file}:{line}', [
+                'class'   => get_class($e),
+                'message' => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+            ]);
 
             return redirect()
                 ->to('/dashboard')

@@ -26,19 +26,32 @@ class ReportController extends BaseController
             return $report;
         }
 
-        $dompdf = new Dompdf(['isRemoteEnabled' => true]);
-        $dompdf->loadHtml(view('reports/summary_pdf', ['report' => $report]));
-        $dompdf->setPaper('A4', 'portrait');
-        $dompdf->render();
+        try {
+            $dompdf = new Dompdf(['isRemoteEnabled' => true]);
+            $dompdf->loadHtml(view('reports/summary_pdf', ['report' => $report]));
+            $dompdf->setPaper('A4', 'portrait');
+            $dompdf->render();
 
-        $canvas = $dompdf->getCanvas();
-        $font = $dompdf->getFontMetrics()->getFont('Helvetica', 'normal');
-        $canvas->page_text(500, 820, 'Page {PAGE_NUM} of {PAGE_COUNT}', $font, 9, [0.4, 0.45, 0.55]);
+            $canvas = $dompdf->getCanvas();
+            $font = $dompdf->getFontMetrics()->getFont('Helvetica', 'normal');
+            $canvas->page_text(500, 820, 'Page {PAGE_NUM} of {PAGE_COUNT}', $font, 9, [0.4, 0.45, 0.55]);
 
-        return $this->response
-            ->setHeader('Content-Type', 'application/pdf')
-            ->setHeader('Content-Disposition', 'attachment; filename="' . $this->reports->pdfFilename($report) . '"')
-            ->setBody($dompdf->output());
+            return $this->response
+                ->setHeader('Content-Type', 'application/pdf')
+                ->setHeader('Content-Disposition', 'attachment; filename="' . $this->reports->pdfFilename($report) . '"')
+                ->setBody($dompdf->output());
+        } catch (Throwable $e) {
+            log_message('error', 'PDF render failed [{class}] {message} in {file}:{line}', [
+                'class'   => get_class($e),
+                'message' => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+            ]);
+
+            return redirect()
+                ->to('/dashboard/reports/analytics')
+                ->with('error', 'The PDF could not be generated. Please try again or contact support.');
+        }
     }
 
     public function downloadCsv()
@@ -48,10 +61,23 @@ class ReportController extends BaseController
             return $report;
         }
 
-        return $this->response
-            ->setHeader('Content-Type', 'text/csv; charset=UTF-8')
-            ->setHeader('Content-Disposition', 'attachment; filename="' . $this->reports->csvFilename($report) . '"')
-            ->setBody($this->reports->buildCsv($report));
+        try {
+            return $this->response
+                ->setHeader('Content-Type', 'text/csv; charset=UTF-8')
+                ->setHeader('Content-Disposition', 'attachment; filename="' . $this->reports->csvFilename($report) . '"')
+                ->setBody($this->reports->buildCsv($report));
+        } catch (Throwable $e) {
+            log_message('error', 'CSV build failed [{class}] {message} in {file}:{line}', [
+                'class'   => get_class($e),
+                'message' => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+            ]);
+
+            return redirect()
+                ->to('/dashboard/reports/analytics')
+                ->with('error', 'The CSV could not be generated. Please try again or contact support.');
+        }
     }
 
     private function buildReport()
@@ -67,7 +93,12 @@ class ReportController extends BaseController
                 ->to('/dashboard/reports/analytics')
                 ->with('error', $e->getMessage());
         } catch (Throwable $e) {
-            log_message('error', 'Report export failed: {message}', ['message' => $e->getMessage()]);
+            log_message('error', 'Report build failed [{class}] {message} in {file}:{line}', [
+                'class'   => get_class($e),
+                'message' => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+            ]);
 
             return redirect()
                 ->to('/dashboard/reports/analytics')
