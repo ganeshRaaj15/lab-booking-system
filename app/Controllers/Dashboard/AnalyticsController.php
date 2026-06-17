@@ -32,16 +32,26 @@ class AnalyticsController extends BaseController
                 ->to('/dashboard/reports/analytics')
                 ->with('error', $e->getMessage());
         } catch (Throwable $e) {
-            log_message('error', 'Analytics build failed [{class}] {message} in {file}:{line}', [
-                'class'   => get_class($e),
-                'message' => $e->getMessage(),
-                'file'    => $e->getFile(),
-                'line'    => $e->getLine(),
-            ]);
+            $detail = sprintf(
+                '[%s] %s in %s line %d',
+                get_class($e),
+                $e->getMessage(),
+                basename($e->getFile()),
+                $e->getLine()
+            );
+            log_message('error', 'Analytics build failed ' . $detail);
 
-            return redirect()
-                ->to('/dashboard')
-                ->with('error', 'The analytics report is temporarily unavailable.');
+            return $this->response->setBody(
+                '<html><head><title>Report Error</title>'
+                . '<style>body{font-family:sans-serif;padding:32px;background:#f8f9fa}'
+                . 'pre{background:#fff;border:1px solid #dee2e6;border-radius:6px;padding:20px;white-space:pre-wrap;word-break:break-word}'
+                . 'a{color:#0d6efd}</style></head><body>'
+                . '<h2 style="color:#dc3545">Report Build Failed</h2>'
+                . '<p>Copy the error below and share it to get it fixed:</p>'
+                . '<pre>' . htmlspecialchars($detail) . '</pre>'
+                . '<p><a href="/dashboard">Back to Dashboard</a></p>'
+                . '</body></html>'
+            );
         }
 
         $layoutView = in_array($report['role'], ['admin', 'pic'], true) ? 'layouts/main_admin' : 'layouts/main_user';
