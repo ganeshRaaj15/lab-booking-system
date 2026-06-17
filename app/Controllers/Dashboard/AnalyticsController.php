@@ -32,7 +32,7 @@ class AnalyticsController extends BaseController
                 ->with('error', $e->getMessage());
         }
 
-        $layoutView = $report['role'] === 'admin' ? 'layouts/main_admin' : 'layouts/main_user';
+        $layoutView = in_array($report['role'], ['admin', 'pic'], true) ? 'layouts/main_admin' : 'layouts/main_user';
 
         return view('reports/analytics', [
             'layoutView' => $layoutView,

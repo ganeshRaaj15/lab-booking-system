@@ -364,6 +364,6 @@ class ExternalRequestsController extends BaseController
 
     protected function resolveLayout($user): string
     {
-        return $user->inGroup('admin') ? 'layouts/main_admin' : 'layouts/main_user';
+        return ($user->inGroup('admin') || $user->inGroup('pic')) ? 'layouts/main_admin' : 'layouts/main_user';
     }
 }

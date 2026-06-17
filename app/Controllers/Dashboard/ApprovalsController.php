@@ -50,6 +50,7 @@ class ApprovalsController extends BaseController
                     'role'     => $role,
                     'focusBookingId' => (int) $this->request->getGet('focus_booking'),
                     'filters' => $filters,
+                    'layout'  => 'layouts/main_admin',
                 ]);
             }
         } else {
@@ -128,11 +129,14 @@ class ApprovalsController extends BaseController
         // ---------------------------------------------------------------------
         // 5. Render approvals page
         // ---------------------------------------------------------------------
+        $layout = in_array($role, ['admin', 'pic'], true) ? 'layouts/main_admin' : 'layouts/main_user';
+
         return view('dashboard/approvals/index', [
             'bookings' => $bookings,
             'role'     => $role,
             'focusBookingId' => (int) $this->request->getGet('focus_booking'),
             'filters' => $filters,
+            'layout'  => $layout,
         ]);
     }
 

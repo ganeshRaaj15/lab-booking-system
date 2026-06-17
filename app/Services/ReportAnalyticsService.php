@@ -1862,26 +1862,17 @@ class ReportAnalyticsService
 
     private function modelApplyBookingFilters(BaseBuilder $builder, array $filters, array $scope, array $options = []): void
     {
-        $reflection = new \ReflectionClass($this->model);
-        $method = $reflection->getMethod('applyBookingFilters');
-        $method->setAccessible(true);
-        $method->invoke($this->model, $builder, $filters, $scope, $options);
+        $this->model->applyBookingFilters($builder, $filters, $scope, $options);
     }
 
     private function modelApplyAssetFilters(BaseBuilder $builder, array $filters, array $scope): void
     {
-        $reflection = new \ReflectionClass($this->model);
-        $method = $reflection->getMethod('applyAssetFilters');
-        $method->setAccessible(true);
-        $method->invoke($this->model, $builder, $filters, $scope);
+        $this->model->applyAssetFilters($builder, $filters, $scope);
     }
 
     private function modelApplyMaintenanceFilters(BaseBuilder $builder, array $filters, array $scope): void
     {
-        $reflection = new \ReflectionClass($this->model);
-        $method = $reflection->getMethod('applyMaintenanceFilters');
-        $method->setAccessible(true);
-        $method->invoke($this->model, $builder, $filters, $scope);
+        $this->model->applyMaintenanceFilters($builder, $filters, $scope);
     }
 
     private function applyScopeToLabColumn(BaseBuilder $builder, array $scope, string $column): void

@@ -4,7 +4,7 @@
 $lab    = $lab ?? [];
 $errors = session()->getFlashdata('errors') ?? [];
 ?>
-<?= $this->extend('layouts/main_user') ?>
+<?= $this->extend('layouts/main_admin') ?>
 <?= $this->section('content') ?>
 
 <div class="container py-4">

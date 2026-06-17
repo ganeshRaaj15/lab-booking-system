@@ -1,4 +1,4 @@
-<?= $this->extend('layouts/main_user') ?>
+<?= $this->extend($layout ?? 'layouts/main_user') ?>
 <?= $this->section('content') ?>
 
 <?php $filters = $filters ?? ['q' => '', 'date_from' => '', 'date_to' => '']; ?>

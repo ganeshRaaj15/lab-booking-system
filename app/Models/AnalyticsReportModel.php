@@ -472,7 +472,7 @@ class AnalyticsReportModel extends Model
         $builder->whereIn($column, $labIds);
     }
 
-    private function applyBookingFilters(BaseBuilder $builder, array $filters, array $scope, array $options = []): void
+    public function applyBookingFilters(BaseBuilder $builder, array $filters, array $scope, array $options = []): void
     {
         $skipStatus = (bool) ($options['skip_status'] ?? false);
 
@@ -505,7 +505,7 @@ class AnalyticsReportModel extends Model
         }
     }
 
-    private function applyAssetFilters(BaseBuilder $builder, array $filters, array $scope): void
+    public function applyAssetFilters(BaseBuilder $builder, array $filters, array $scope): void
     {
         $this->applyScopeToBuilder($builder, $scope, 'a.lab_id');
 
@@ -538,7 +538,7 @@ class AnalyticsReportModel extends Model
         }
     }
 
-    private function applyMaintenanceFilters(BaseBuilder $builder, array $filters, array $scope): void
+    public function applyMaintenanceFilters(BaseBuilder $builder, array $filters, array $scope): void
     {
         $this->applyScopeToBuilder($builder, $scope, 'a.lab_id');
 
