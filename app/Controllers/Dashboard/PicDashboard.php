@@ -243,8 +243,10 @@ private function getMonthlyBookingsForLabs(array $labIds, int $months = 6): arra
             ->limit(5)
             ->get()
             ->getResultArray();
-            
-        return $result;
+
+        return array_values(array_filter($result, static function (array $row): bool {
+            return isset($row['faculty']) && $row['faculty'] !== null && $row['faculty'] !== '';
+        }));
     }
     
     /**
