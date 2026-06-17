@@ -298,17 +298,13 @@
     margin-top: -0.1rem;
 }
 
-.auth-form-row .form-check {
+.auth-remember {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding-left: 0;
-    min-height: auto;
-    margin: 0;
 }
 
-/* Fully self-contained pill toggle — overrides Bootstrap entirely */
-.auth-form-row .form-check-input[type="checkbox"] {
+.auth-remember-toggle {
     -webkit-appearance: none;
     appearance: none;
     display: inline-block;
@@ -328,18 +324,17 @@
     transition: background-color 0.22s ease, background-position 0.18s ease-in-out;
 }
 
-.auth-form-row .form-check-input[type="checkbox"]:checked {
+.auth-remember-toggle:checked {
     background-color: var(--slams-primary);
-    border-color: var(--slams-primary);
     background-position: right center;
 }
 
-.auth-form-row .form-check-input[type="checkbox"]:focus {
+.auth-remember-toggle:focus {
     outline: none;
     box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--slams-primary) 18%, transparent);
 }
 
-.auth-form-row .form-check-label {
+.auth-remember-label {
     cursor: pointer;
     margin: 0;
     font-size: 0.9rem;
