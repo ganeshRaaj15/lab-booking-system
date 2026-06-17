@@ -235,11 +235,9 @@ private function getMonthlyBookingsForLabs(array $labIds, int $months = 6): arra
         
         $result = $db->table('bookings b')
             ->select('f.name_en as faculty, COUNT(*) as count')
-            ->join('faculties f', 'f.id = b.faculty_id', 'inner')
+            ->join('faculties f', 'f.id = b.faculty_id', 'left')
             ->whereIn('b.lab_id', $labIds)
             ->where('b.status', 'APPROVED')
-            ->where('b.faculty_id IS NOT NULL')
-            ->where('f.name_en IS NOT NULL')
             ->groupBy('b.faculty_id')
             ->orderBy('count', 'DESC')
             ->limit(5)
