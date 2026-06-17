@@ -67,10 +67,8 @@ if ($isLoggedIn) {
         ];
     }
 
-    if ($user->inGroup('pic') || $user->inGroup('manager') || $user->inGroup('admin')) {
-        $reportLabel = $user->inGroup('pic')
-            ? 'Lab Report'
-            : ($user->inGroup('manager') ? 'Lab Analytics' : 'System Analytics');
+    if ($user->inGroup('manager') || $user->inGroup('admin')) {
+        $reportLabel = $user->inGroup('manager') ? 'Lab Analytics' : 'System Analytics';
 
         $navItems[] = [
             'label'    => $reportLabel,

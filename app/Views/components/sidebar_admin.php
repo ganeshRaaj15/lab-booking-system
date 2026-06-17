@@ -51,9 +51,11 @@ $maintenanceUrl = $isPicWorkspace ? '/technician/maintenance' : '/dashboard/admi
         <i class="bi bi-wrench-adjustable"></i> Maintenance
     </a>
 
-    <a href="/dashboard/reports/analytics" class="sidebar-link <?= url_is('dashboard/reports/analytics*') || url_is('dashboard/reports/pdf*') || url_is('dashboard/reports/csv*') ? 'active' : '' ?>">
-        <i class="bi bi-bar-chart-line"></i> <?= esc($isPicWorkspace ? 'Lab Report' : 'System Analytics') ?>
-    </a>
+    <?php if (! $isPicWorkspace): ?>
+        <a href="/dashboard/reports/analytics" class="sidebar-link <?= url_is('dashboard/reports/analytics*') || url_is('dashboard/reports/pdf*') || url_is('dashboard/reports/csv*') ? 'active' : '' ?>">
+            <i class="bi bi-bar-chart-line"></i> System Analytics
+        </a>
+    <?php endif; ?>
 
     <?php if (! $isPicWorkspace): ?>
         <span class="sidebar-section-label">System</span>
