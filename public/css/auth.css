@@ -298,13 +298,14 @@
     margin-top: -0.1rem;
 }
 
-/* Visually hidden but keyboard/screen-reader accessible */
+/* Screen-reader accessible, visually hidden */
 .auth-remember-input {
     position: absolute;
     opacity: 0;
     width: 1px;
     height: 1px;
     margin: 0;
+    padding: 0;
 }
 
 .auth-remember {
@@ -312,7 +313,6 @@
     align-items: center;
 }
 
-/* Label doubles as the visual row: [track] [text] */
 .auth-remember-label {
     display: flex;
     align-items: center;
@@ -320,32 +320,46 @@
     cursor: pointer;
     margin: 0;
     font-size: 0.9rem;
+    line-height: 1;
 }
 
-/* ::before is the pill track */
-.auth-remember-label::before {
-    content: '';
-    display: inline-block;
+/* The pill track — an explicit element so width/height are guaranteed */
+.auth-remember-track {
+    display: block;
+    position: relative;
     flex-shrink: 0;
     width: 2.2rem;
     height: 1.2rem;
     border-radius: 999px;
     background-color: color-mix(in srgb, var(--slams-muted) 40%, var(--slams-bg-muted));
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: left center;
-    background-size: contain;
-    transition: background-color 0.22s ease, background-position 0.18s ease-in-out;
+    transition: background-color 0.22s ease;
 }
 
-/* Checked state: move knob right and change track colour */
-.auth-remember-input:checked + .auth-remember-label::before {
+/* The sliding knob */
+.auth-remember-track::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0.15rem;
+    transform: translateY(-50%);
+    width: 0.9rem;
+    height: 0.9rem;
+    border-radius: 50%;
+    background: #fff;
+    transition: left 0.18s ease-in-out;
+}
+
+/* Checked: teal track + knob slides right */
+.auth-remember-input:checked + .auth-remember-label .auth-remember-track {
     background-color: var(--slams-primary);
-    background-position: right center;
 }
 
-/* Focus ring on the track when the hidden input is focused */
-.auth-remember-input:focus + .auth-remember-label::before {
+.auth-remember-input:checked + .auth-remember-label .auth-remember-track::after {
+    left: calc(2.2rem - 0.9rem - 0.15rem);
+}
+
+/* Focus ring on track when hidden input is keyboard-focused */
+.auth-remember-input:focus + .auth-remember-label .auth-remember-track {
     box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--slams-primary) 18%, transparent);
 }
 
