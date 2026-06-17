@@ -193,11 +193,12 @@ $registerPasswordConfirmError = $fieldError($registerErrorsByField, 'password_co
                         <?php endif; ?>
                     </div>
 
-                    <div class="auth-form-row">
-                        <div class="form-check">
-                            <input type="checkbox" name="remember" id="remember" class="form-check-input" <?= old('remember') ? 'checked' : '' ?>>
-                            <label for="remember" class="form-check-label">Remember me</label>
-                        </div>
+                    <div class="auth-bottom-row">
+                        <label class="auth-remember-label" for="remember">
+                            <input type="checkbox" name="remember" id="remember" class="auth-remember-input" role="switch" <?= old('remember') ? 'checked' : '' ?>>
+                            <span class="auth-remember-track" aria-hidden="true"></span>
+                            Remember me
+                        </label>
                         <a href="<?= url_to('magic-link') ?>" class="auth-inline-link">
                             <i class="bi bi-key"></i>
                             Forgot password?
