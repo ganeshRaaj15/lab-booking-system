@@ -303,9 +303,25 @@
 }
 
 .auth-form-row .form-check-input[type="checkbox"] {
-    width: 1.05rem;
-    height: 1.05rem;
-    margin-top: 0.15rem;
+    width: 2rem;
+    height: 1.1rem;
+    margin-top: 0.14rem;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.auth-form-row .form-check-input[type="checkbox"]:checked {
+    background-color: var(--slams-primary);
+    border-color: var(--slams-primary);
+}
+
+.auth-form-row .form-check-input[type="checkbox"]:focus {
+    border-color: color-mix(in srgb, var(--slams-primary) 56%, var(--slams-border));
+    box-shadow: 0 0 0 0.16rem color-mix(in srgb, var(--slams-primary) 16%, transparent);
+}
+
+.auth-form-row .form-check-label {
+    cursor: pointer;
 }
 
 .auth-inline-link,
