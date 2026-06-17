@@ -1209,7 +1209,7 @@ class ReportAnalyticsService
 
         $this->modelApplyMaintenanceFilters($builder, $filters, $scope);
 
-        return array_map(static fn(array $row): array => [
+        return array_map(fn(array $row): array => [
             'asset_name' => (string) ($row['asset_name'] ?? 'Unknown Asset'),
             'laboratory_name' => (string) ($row['laboratory_name'] ?? 'Unknown Lab'),
             'status' => $this->titleize((string) ($row['status'] ?? 'maintenance')),
