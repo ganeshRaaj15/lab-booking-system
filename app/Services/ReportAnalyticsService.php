@@ -54,13 +54,21 @@ class ReportAnalyticsService
 
         $labUsageRows = $this->model->laboratoryUsageRows($filters, $scope);
         usort($labUsageRows, static fn(array $a, array $b): int => ($b['total_bookings'] <=> $a['total_bookings']) ?: ($b['usage_percentage'] <=> $a['usage_percentage']));
-        $maintenanceStatusSummary = $this->model->maintenanceStatusSummary($filters, $scope);
-        $maintenanceTrend = $this->normalizeTrendRows($this->model->maintenanceTrend($filters, $scope, 'month'));
-        $maintenanceRows = $this->model->maintenanceReportRows($filters, $scope);
+        $hasMaintenanceRecords = $this->db->tableExists('maintenance_records');
+
+        $maintenanceStatusSummary = $hasMaintenanceRecords
+            ? $this->model->maintenanceStatusSummary($filters, $scope)
+            : array_fill_keys(['reported', 'scheduled', 'in_progress', 'testing', 'completed', 'cancelled'], 0);
+        $maintenanceTrend = $hasMaintenanceRecords
+            ? $this->normalizeTrendRows($this->model->maintenanceTrend($filters, $scope, 'month'))
+            : [];
+        $maintenanceRows = $hasMaintenanceRecords
+            ? $this->model->maintenanceReportRows($filters, $scope)
+            : [];
         $assetRows = $this->model->assetReportRows($filters, $scope);
         $mostUsedAssets = $this->normalizeAssetDemandRows($this->model->mostUsedAssets($filters, $scope, 10));
         $leastUsedAssets = $this->leastUsedAssets($filters, $scope, 10);
-        $frequentMaintenanceAssets = $this->frequentMaintenanceAssets($filters, $scope, 10);
+        $frequentMaintenanceAssets = $hasMaintenanceRecords ? $this->frequentMaintenanceAssets($filters, $scope, 10) : [];
         $recentMaintenanceRows = array_slice(array_map(function (array $row): array {
             return [
                 'case' => (string) ($row['title'] ?? ('Maintenance #' . ($row['id'] ?? ''))),
@@ -76,7 +84,7 @@ class ReportAnalyticsService
         $assetsByLabRows = $this->assetsByLaboratoryRows($filters, $scope);
         $assetsByCategoryRows = $this->assetsByCategoryRows($filters, $scope);
         $assetAvailabilityRows = $this->assetAvailabilityRows($assetRows, $assetStatusRows);
-        $currentMaintenanceAssets = $this->currentMaintenanceAssets($filters, $scope);
+        $currentMaintenanceAssets = $hasMaintenanceRecords ? $this->currentMaintenanceAssets($filters, $scope) : [];
 
         $bookingRoleRows = $this->bookingRoleRows($filters, $scope);
         $bookingApplicantTypeRows = $this->bookingApplicantTypeRows($filters, $scope);
@@ -85,15 +93,17 @@ class ReportAnalyticsService
         $bookingDuration = $this->bookingDurationMetrics($filters, $scope);
         $externalBookingStats = $this->externalBookingMetrics($filters, $scope);
 
-        $labMaintenanceRows = $this->maintenanceByLaboratoryRows($filters, $scope);
+        $labMaintenanceRows = $hasMaintenanceRecords ? $this->maintenanceByLaboratoryRows($filters, $scope) : [];
         $labComparisonRows = $this->laboratoryComparisonRows($labUsageRows, $assetsByLabRows, $labMaintenanceRows);
 
-        $maintenancePriorityRows = $this->maintenancePriorityRows($filters, $scope);
-        $maintenanceByAssetRows = $this->maintenanceByAssetRows($filters, $scope);
-        $maintenanceReporterRows = $this->maintenanceReporterRows($filters, $scope);
-        $maintenancePicWorkloadRows = $this->maintenancePicWorkloadRows($filters, $scope);
-        $maintenanceResolutionMetrics = $this->maintenanceResolutionMetrics($filters, $scope);
-        $repeatedMaintenanceRows = $this->repeatedMaintenanceRows($filters, $scope);
+        $maintenancePriorityRows       = $hasMaintenanceRecords ? $this->maintenancePriorityRows($filters, $scope) : [];
+        $maintenanceByAssetRows        = $hasMaintenanceRecords ? $this->maintenanceByAssetRows($filters, $scope) : [];
+        $maintenanceReporterRows       = $hasMaintenanceRecords ? $this->maintenanceReporterRows($filters, $scope) : [];
+        $maintenancePicWorkloadRows    = $hasMaintenanceRecords ? $this->maintenancePicWorkloadRows($filters, $scope) : [];
+        $maintenanceResolutionMetrics  = $hasMaintenanceRecords
+            ? $this->maintenanceResolutionMetrics($filters, $scope)
+            : ['average_resolution_hours' => 0.0, 'average_resolution_days' => 0.0];
+        $repeatedMaintenanceRows       = $hasMaintenanceRecords ? $this->repeatedMaintenanceRows($filters, $scope) : [];
 
         $notificationRows = $this->notificationAnalytics($filters, $scope);
         $userAnalytics = $scope['role'] === 'admin' ? $this->userAnalytics() : null;
