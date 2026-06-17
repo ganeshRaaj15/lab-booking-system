@@ -44,7 +44,7 @@ class AnalyticsController extends BaseController
                 ->with('error', 'The analytics report is temporarily unavailable.');
         }
 
-        $layoutView = in_array($report['role'], ['admin', 'pic'], true) ? 'layouts/main_admin' : 'layouts/main_user';
+        $layoutView = in_array($report['role'], ['admin', 'manager', 'pic'], true) ? 'layouts/main_admin' : 'layouts/main_user';
 
         return view('reports/analytics', [
             'layoutView' => $layoutView,

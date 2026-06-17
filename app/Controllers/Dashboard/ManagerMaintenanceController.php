@@ -141,7 +141,6 @@ class ManagerMaintenanceController extends BaseController
 
     protected function viewerLayout(): string
     {
-        $user = auth()->user();
-        return $user && $user->inGroup('admin') ? 'layouts/main_admin' : 'layouts/main_user';
+        return 'layouts/main_admin';
     }
 }
