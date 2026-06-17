@@ -4,6 +4,7 @@ namespace App\Controllers\Dashboard;
 
 use App\Controllers\BaseController;
 use App\Services\ReportAnalyticsService;
+use Throwable;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -30,6 +31,12 @@ class AnalyticsController extends BaseController
             return redirect()
                 ->to('/dashboard/reports/analytics')
                 ->with('error', $e->getMessage());
+        } catch (Throwable $e) {
+            log_message('error', 'Analytics report page failed: {message}', ['message' => $e->getMessage()]);
+
+            return redirect()
+                ->to('/dashboard')
+                ->with('error', 'The analytics report is temporarily unavailable.');
         }
 
         $layoutView = in_array($report['role'], ['admin', 'pic'], true) ? 'layouts/main_admin' : 'layouts/main_user';

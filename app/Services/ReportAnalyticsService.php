@@ -1326,13 +1326,33 @@ class ReportAnalyticsService
 
     private function notificationScopeBuilder(array $filters, array $scope): BaseBuilder
     {
+        $hasMaintenanceRecords = $this->db->tableExists('maintenance_records');
+        $hasAssets = $this->db->tableExists('assets');
+        $hasExternalRequests = $this->db->tableExists('external_requests');
+        $hasExternalAccessRequests = $this->db->tableExists('external_access_requests');
+
         $builder = $this->db->table('notifications n')
-            ->join('bookings nb', "n.entity_type = 'booking' AND nb.id = n.entity_id", 'left', false)
-            ->join('maintenance_records nmr', "n.entity_type = 'maintenance' AND nmr.id = n.entity_id", 'left', false)
-            ->join('assets nma', 'nma.id = nmr.asset_id', 'left')
-            ->join('assets na', "n.entity_type = 'asset' AND na.id = n.entity_id", 'left', false)
-            ->join('external_requests ner', "n.entity_type = 'external_request' AND ner.id = n.entity_id", 'left', false)
-            ->join('external_access_requests near', "n.entity_type = 'external_access_request' AND near.id = n.entity_id", 'left', false);
+            ->join('bookings nb', "n.entity_type = 'booking' AND nb.id = n.entity_id", 'left', false);
+
+        if ($hasMaintenanceRecords) {
+            $builder->join('maintenance_records nmr', "n.entity_type = 'maintenance' AND nmr.id = n.entity_id", 'left', false);
+        }
+
+        if ($hasMaintenanceRecords && $hasAssets) {
+            $builder->join('assets nma', 'nma.id = nmr.asset_id', 'left');
+        }
+
+        if ($hasAssets) {
+            $builder->join('assets na', "n.entity_type = 'asset' AND na.id = n.entity_id", 'left', false);
+        }
+
+        if ($hasExternalRequests) {
+            $builder->join('external_requests ner', "n.entity_type = 'external_request' AND ner.id = n.entity_id", 'left', false);
+        }
+
+        if ($hasExternalAccessRequests) {
+            $builder->join('external_access_requests near', "n.entity_type = 'external_access_request' AND near.id = n.entity_id", 'left', false);
+        }
 
         if ($filters['date_from'] !== '') {
             $builder->where('n.created_at >=', $filters['date_from'] . ' 00:00:00');
@@ -1348,15 +1368,36 @@ class ReportAnalyticsService
             } else {
                 $builder->groupStart()
                     ->where('n.user_id', (int) $scope['user_id'])
-                    ->orWhereIn('nb.lab_id', $labIds)
-                    ->orWhereIn('nma.lab_id', $labIds)
-                    ->orWhereIn('na.lab_id', $labIds)
-                    ->orWhereIn('ner.lab_id', $labIds)
-                    ->groupEnd();
+                    ->orWhereIn('nb.lab_id', $labIds);
+
+                if ($hasMaintenanceRecords && $hasAssets) {
+                    $builder->orWhereIn('nma.lab_id', $labIds);
+                }
+
+                if ($hasAssets) {
+                    $builder->orWhereIn('na.lab_id', $labIds);
+                }
+
+                if ($hasExternalRequests) {
+                    $builder->orWhereIn('ner.lab_id', $labIds);
+                }
+
+                $builder->groupEnd();
             }
         } elseif ($scope['role'] === 'manager') {
+            $entityTypes = ['booking'];
+            if ($hasMaintenanceRecords) {
+                $entityTypes[] = 'maintenance';
+            }
+            if ($hasAssets) {
+                $entityTypes[] = 'asset';
+            }
+            if ($hasExternalRequests) {
+                $entityTypes[] = 'external_request';
+            }
+
             $builder->groupStart()
-                ->whereIn('n.entity_type', ['booking', 'maintenance', 'asset', 'external_request'])
+                ->whereIn('n.entity_type', $entityTypes)
                 ->orWhere('n.user_id', (int) $scope['user_id'])
                 ->groupEnd();
         }
@@ -1364,11 +1405,21 @@ class ReportAnalyticsService
         if ($filters['lab_id'] !== '') {
             $labId = (int) $filters['lab_id'];
             $builder->groupStart()
-                ->where('nb.lab_id', $labId)
-                ->orWhere('nma.lab_id', $labId)
-                ->orWhere('na.lab_id', $labId)
-                ->orWhere('ner.lab_id', $labId)
-                ->groupEnd();
+                ->where('nb.lab_id', $labId);
+
+            if ($hasMaintenanceRecords && $hasAssets) {
+                $builder->orWhere('nma.lab_id', $labId);
+            }
+
+            if ($hasAssets) {
+                $builder->orWhere('na.lab_id', $labId);
+            }
+
+            if ($hasExternalRequests) {
+                $builder->orWhere('ner.lab_id', $labId);
+            }
+
+            $builder->groupEnd();
         }
 
         return $builder;

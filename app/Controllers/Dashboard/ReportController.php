@@ -5,6 +5,7 @@ namespace App\Controllers\Dashboard;
 use App\Controllers\BaseController;
 use App\Services\ReportAnalyticsService;
 use Dompdf\Dompdf;
+use Throwable;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -65,6 +66,12 @@ class ReportController extends BaseController
             return redirect()
                 ->to('/dashboard/reports/analytics')
                 ->with('error', $e->getMessage());
+        } catch (Throwable $e) {
+            log_message('error', 'Report export failed: {message}', ['message' => $e->getMessage()]);
+
+            return redirect()
+                ->to('/dashboard/reports/analytics')
+                ->with('error', 'The report could not be generated right now. Please try again later.');
         }
     }
 }
